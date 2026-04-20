@@ -1,0 +1,114 @@
+<Window x:Class="Banco.UI.Wpf.Views.AzzeraContenutoChoiceDialogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
+        MinWidth="460"
+        MaxWidth="620"
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True">
+    <Border Background="{DynamicResource ModalOverlayBrush}">
+        <Border Width="500"
+                Margin="24"
+                Padding="20"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrushBase}"
+                BorderThickness="1"
+                CornerRadius="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" LastChildFill="True">
+                    <TextBlock Text="Banco / scheda"
+                               FontSize="11"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               VerticalAlignment="Center" />
+                    <Button DockPanel.Dock="Right"
+                            Width="28"
+                            Height="28"
+                            Margin="12,0,0,0"
+                            Click="CloseButton_OnClick"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            ToolTip="Chiudi">
+                        <Border Background="{DynamicResource ModalChromeBrush}"
+                                BorderBrush="{StaticResource BorderBrushBase}"
+                                BorderThickness="1"
+                                CornerRadius="7">
+                            <TextBlock Text="✕"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
+                </DockPanel>
+
+                <Border Grid.Row="1"
+                        Margin="0,14,0,0"
+                        BorderBrush="{DynamicResource ModalAccentBorderBrush}"
+                        BorderThickness="4,0,0,0"
+                        Padding="14,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Annulla contenuto"
+                                   FontSize="21"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Margin="0,8,0,0"
+                                   Text="La scheda contiene gia` dei dati. Scegli come vuoi procedere."
+                                   FontSize="13.5"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="2"
+                        Margin="0,18,0,0"
+                        Padding="12,10"
+                        Background="{DynamicResource ModalInfoSurfaceBrush}"
+                        BorderBrush="{DynamicResource ModalInfoBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12">
+                    <TextBlock Text="Rimanda lascia invariata la scheda. Aggiungi articolo torna subito alla ricerca. Annulla azzera righe e pagamenti della scheda corrente."
+                               FontSize="13.5"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource ModalInfoForegroundBrush}"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <StackPanel Grid.Row="3"
+                            Margin="0,22,0,0"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Content="Rimanda"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            MinWidth="96"
+                            Margin="0,0,10,0"
+                            Click="RimandaButton_OnClick" />
+                    <Button Content="Aggiungi articolo"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            MinWidth="132"
+                            Margin="0,0,10,0"
+                            Click="AggiungiArticoloButton_OnClick" />
+                    <Button Content="Annulla"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            MinWidth="104"
+                            IsDefault="True"
+                            Click="AnnullaButton_OnClick" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</Window>

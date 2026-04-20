@@ -1,0 +1,127 @@
+﻿<UserControl x:Class="Banco.UI.Wpf.Views.DiagnosticsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock FontSize="22"
+                   FontWeight="SemiBold"
+                   Text="{Binding Titolo}" />
+        <TextBlock Margin="0,6,0,0"
+                   Foreground="{StaticResource TextSecondaryBrush}"
+                   Text="Informazioni di sistema e stato dell'archivio." />
+
+        <Border Margin="0,18,0,0"
+                Style="{StaticResource CardStyle}"
+                Background="{StaticResource WindowBackgroundBrush}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource IconDatabase}"
+                          Fill="{StaticResource TextPrimaryBrush}"
+                          Width="18" Height="18" Stretch="Uniform"
+                          VerticalAlignment="Center" />
+                    <TextBlock Margin="10,0,0,0" FontSize="18" FontWeight="SemiBold"
+                               VerticalAlignment="Center" Text="Supporto tecnico" />
+                </StackPanel>
+
+                <Border Margin="0,14,0,0" Height="1" Background="{StaticResource HairlineBrush}" />
+
+                <StackPanel Margin="0,14,0,0" Orientation="Horizontal">
+                    <Path Data="{StaticResource IconFolder}"
+                          Fill="{StaticResource TextMutedBrush}"
+                          Width="14" Height="14" Stretch="Uniform"
+                          VerticalAlignment="Center" />
+                    <TextBlock Margin="8,0,0,0" FontSize="14"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Percorso database:" />
+                </StackPanel>
+                <Border Margin="0,8,0,0"
+                        Background="{StaticResource SurfaceAltBrush}"
+                        CornerRadius="6" Padding="12,10">
+                    <TextBlock FontSize="13" FontFamily="Consolas"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Text="{Binding LocalStorePath}"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <StackPanel Margin="0,14,0,0" Orientation="Horizontal">
+                    <Path Data="{StaticResource IconFolder}"
+                          Fill="{StaticResource TextMutedBrush}"
+                          Width="14" Height="14" Stretch="Uniform"
+                          VerticalAlignment="Center" />
+                    <TextBlock Margin="8,0,0,0" FontSize="14"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="File configurazione attivo:" />
+                </StackPanel>
+                <Border Margin="0,8,0,0"
+                        Background="{StaticResource SurfaceAltBrush}"
+                        CornerRadius="6" Padding="12,10">
+                    <StackPanel>
+                        <TextBlock FontSize="12.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Text="{Binding ConfigurationScope}" />
+                        <TextBlock Margin="0,6,0,0"
+                                   FontSize="13"
+                                   FontFamily="Consolas"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   Text="{Binding ConfigurationPath}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Margin="0,14,0,0" Orientation="Horizontal">
+                    <Path Data="{StaticResource IconDatabase}"
+                          Fill="{StaticResource TextMutedBrush}"
+                          Width="14" Height="14" Stretch="Uniform"
+                          VerticalAlignment="Center" />
+                    <TextBlock Margin="8,0,0,0" FontSize="14"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Connessione DB legacy:" />
+                </StackPanel>
+                <Border Margin="0,8,0,0"
+                        Background="{StaticResource SurfaceAltBrush}"
+                        CornerRadius="6" Padding="12,10">
+                    <TextBlock FontSize="13" FontFamily="Consolas"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Text="{Binding GestionaleDatabaseConnection}"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <StackPanel Margin="0,14,0,0" Orientation="Horizontal">
+                    <Path Data="{StaticResource IconFolder}"
+                          Fill="{StaticResource TextMutedBrush}"
+                          Width="14" Height="14" Stretch="Uniform"
+                          VerticalAlignment="Center" />
+                    <TextBlock Margin="8,0,0,0" FontSize="14"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Radice contenuti FM:" />
+                </StackPanel>
+                <Border Margin="0,8,0,0"
+                        Background="{StaticResource SurfaceAltBrush}"
+                        CornerRadius="6" Padding="12,10">
+                    <TextBlock FontSize="13" FontFamily="Consolas"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Text="{Binding FmRootDirectory}"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <StackPanel Margin="0,14,0,0" Orientation="Horizontal">
+                    <Path Data="{StaticResource IconFolder}"
+                          Fill="{StaticResource TextMutedBrush}"
+                          Width="14" Height="14" Stretch="Uniform"
+                          VerticalAlignment="Center" />
+                    <TextBlock Margin="8,0,0,0" FontSize="14"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Cartella immagini articoli:" />
+                </StackPanel>
+                <Border Margin="0,8,0,0"
+                        Background="{StaticResource SurfaceAltBrush}"
+                        CornerRadius="6" Padding="12,10">
+                    <TextBlock FontSize="13" FontFamily="Consolas"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Text="{Binding ArticleImagesPath}"
+                               TextWrapping="Wrap" />
+                </Border>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

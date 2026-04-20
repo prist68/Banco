@@ -1,0 +1,50 @@
+# Build output
+**/bin/
+**/obj/
+publish/
+artifacts/
+_buildcheck/
+_tmp_build_*/
+_tmp_build_cash_cancel_enable/
+_tmp_build_cash_cancel_visual/
+_tmp_build_cash_layout_fix/
+_tmp_build_cash_modal/
+_tmp_build_cash_ops/
+_tmp_build_cash_receipt_ops/
+_tmp_build_cash_receipt_ops2/
+_tmp_build_cash_receipt_ops3/
+_tmp_build_receipt_points/
+_diag_mysql_query/
+
+# IDE / tooling
+.vs/
+.vscode/
+.idea/
+.claude/
+.codex/
+.dotnet/
+.dotnet-cli/
+
+# Logs
+*.log
+**/Log/
+
+# Local runtime / databases
+**/LocalStore/
+*.db
+*.sqlite
+
+# User / machine specific configuration
+**/appsettings.user.json
+**/*.user
+**/*.suo
+**/*.userosscache
+**/*.rsuser
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+Thumbs.db
+Desktop.ini

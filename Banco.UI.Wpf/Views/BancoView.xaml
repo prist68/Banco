@@ -1,0 +1,2013 @@
+﻿<UserControl x:Class="Banco.UI.Wpf.Views.BancoView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:input="clr-namespace:Banco.UI.Wpf.Infrastructure.Input"
+             xmlns:sel="clr-namespace:Banco.UI.Wpf.Infrastructure.Selection"
+             xmlns:viewModels="clr-namespace:Banco.UI.Wpf.ViewModels"
+             mc:Ignorable="d"
+             d:DesignWidth="1600"
+             d:DesignHeight="900"
+             PreviewKeyDown="BancoView_OnPreviewKeyDown"
+             PreviewTextInput="BancoView_OnPreviewTextInput">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <Style x:Key="PaymentLabelButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PaymentInputTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource CompactTextBoxStyle}">
+            <Setter Property="input:PosAmountTextBoxBehavior.IsEnabled" Value="True" />
+            <Setter Property="input:PosAmountTextBoxBehavior.CultureName" Value="it-IT" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="8,0,8,0" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Right" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Background" Value="{DynamicResource BancoInputSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BancoInputBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="PaymentBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center"
+                                          TextElement.FontFamily="{TemplateBinding FontFamily}"
+                                          TextElement.FontSize="{TemplateBinding FontSize}"
+                                          TextElement.FontWeight="{TemplateBinding FontWeight}"
+                                          TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="PaymentBorder" Property="BorderBrush" Value="{DynamicResource BancoInputHoverBorderBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="PaymentBorder" Property="BorderBrush" Value="{DynamicResource BancoInputFocusBorderBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Sconto inline: trasparente di default, box visibile al hover/focus -->
+        <Style x:Key="ScontoInlineTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource CompactTextBoxStyle}">
+            <Setter Property="input:PosAmountTextBoxBehavior.IsEnabled" Value="True" />
+            <Setter Property="input:PosAmountTextBoxBehavior.CultureName" Value="it-IT" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="6,0,18,0" />
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Right" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{DynamicResource BancoWarningForegroundBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="ScontoBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center"
+                                          TextElement.FontFamily="{TemplateBinding FontFamily}"
+                                          TextElement.FontSize="{TemplateBinding FontSize}"
+                                          TextElement.FontWeight="{TemplateBinding FontWeight}"
+                                          TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ScontoBorder" Property="Background" Value="{DynamicResource BancoInputSurfaceBrush}" />
+                                <Setter TargetName="ScontoBorder" Property="BorderBrush" Value="{DynamicResource BancoWarningBorderBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="ScontoBorder" Property="Background" Value="{DynamicResource BancoInputSurfaceBrush}" />
+                                <Setter TargetName="ScontoBorder" Property="BorderBrush" Value="{DynamicResource BancoWarningForegroundBrush}" />
+                                <Setter TargetName="ScontoBorder" Property="BorderThickness" Value="1.5" />
+                                <Setter Property="Cursor" Value="IBeam" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Pagamenti inline: contorno sottile arrotondato, box pieno al hover/focus -->
+        <Style x:Key="PaymentInlineTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource CompactTextBoxStyle}">
+            <Setter Property="input:PosAmountTextBoxBehavior.IsEnabled" Value="True" />
+            <Setter Property="input:PosAmountTextBoxBehavior.CultureName" Value="it-IT" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="8,0,22,0" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Right" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Background" Value="{DynamicResource BancoInputSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BancoInlineBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="PmtBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center"
+                                          TextElement.FontFamily="{TemplateBinding FontFamily}"
+                                          TextElement.FontSize="{TemplateBinding FontSize}"
+                                          TextElement.FontWeight="{TemplateBinding FontWeight}"
+                                          TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="PmtBorder" Property="Background" Value="{DynamicResource BancoInputSurfaceBrush}" />
+                                <Setter TargetName="PmtBorder" Property="BorderBrush" Value="{DynamicResource BancoInputHoverBorderBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="PmtBorder" Property="Background" Value="{DynamicResource BancoInputSurfaceBrush}" />
+                                <Setter TargetName="PmtBorder" Property="BorderBrush" Value="{DynamicResource BancoInputFocusBorderBrush}" />
+                                <Setter TargetName="PmtBorder" Property="BorderThickness" Value="1.5" />
+                                <Setter Property="Cursor" Value="IBeam" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CurrencyGridEditingTextBoxStyle" TargetType="TextBox">
+            <Setter Property="input:PosAmountTextBoxBehavior.IsEnabled" Value="True" />
+            <Setter Property="input:PosAmountTextBoxBehavior.CultureName" Value="it-IT" />
+            <Setter Property="HorizontalContentAlignment" Value="Right" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Language" Value="it-IT" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource BancoInputSurfaceBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource BancoSelectionBrush}" />
+            <Setter Property="SelectionTextBrush" Value="{DynamicResource BancoSelectionTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BancoInputFocusBorderBrush}" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="Tag" Value="CurrencyInput" />
+        </Style>
+        <Style x:Key="HistoryButtonStyle" TargetType="Button" BasedOn="{StaticResource CompactSecondaryButtonStyle}">
+            <Setter Property="Background" Value="{DynamicResource BancoAccentSoftBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BancoAccentSoftBorderBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource BancoAccentSoftForegroundBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style x:Key="BancoSettingsShortcutButtonStyle" TargetType="Button" BasedOn="{StaticResource CompactPrimaryButtonStyle}">
+            <Setter Property="Background" Value="{DynamicResource BancoActionPrimaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource BancoSelectionTextBrush}" />
+            <Setter Property="Padding" Value="9,6" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{DynamicResource BancoActionPrimaryBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="7"
+                                Effect="{StaticResource SubtleShadow}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Left"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource BancoActionPrimaryHoverBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{StaticResource CardShadow}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource BancoActionPrimaryPressedBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{x:Null}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="BancoCashRegisterShortcutButtonStyle" TargetType="Button" BasedOn="{StaticResource CompactSecondaryButtonStyle}">
+            <Setter Property="Background" Value="{DynamicResource BancoActionWarningBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource BancoActionWarningForegroundBrush}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{DynamicResource BancoActionWarningBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="7"
+                                Effect="{StaticResource SubtleShadow}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource BancoActionWarningHoverBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{StaticResource CardShadow}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource BancoActionWarningPressedBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{x:Null}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="BancoPrintShortcutButtonStyle" TargetType="Button" BasedOn="{StaticResource CompactGreenButtonStyle}">
+            <Setter Property="Background" Value="{DynamicResource BancoActionSuccessBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource BancoSelectionTextBrush}" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{DynamicResource BancoActionSuccessBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="7"
+                                Effect="{StaticResource SubtleShadow}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Left"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource BancoActionSuccessHoverBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{StaticResource CardShadow}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource BancoActionSuccessPressedBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{x:Null}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CompactSectionCaptionStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        </Style>
+        <Style x:Key="CompactCardTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        </Style>
+        <Style x:Key="MetricValueStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        </Style>
+        <Style x:Key="InlineBadgeTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        </Style>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="165*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.RowSpan="2"
+                Grid.ColumnSpan="2"
+                Margin="0,0,0,6"
+                Padding="12,10"
+                CornerRadius="10"
+                Background="{DynamicResource BancoHeaderSurfaceBrush}"
+                BorderBrush="{DynamicResource BancoHeaderBorderBrush}"
+                BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0"
+                            MinWidth="320"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <TextBlock FontSize="19"
+                                   FontWeight="Bold"
+                                   Text="{Binding Titolo}" />
+                        <Border Margin="12,0,0,0"
+                                Padding="8,3"
+                                Background="{DynamicResource BancoHeaderBadgeSurfaceBrush}"
+                                BorderBrush="{DynamicResource BancoHeaderBadgeBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="7"
+                                VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource InlineBadgeTextStyle}"
+                                       Text="Documento operativo" />
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <Border Grid.Column="2"
+                        Height="34"
+                        Padding="8,4"
+                        Background="{DynamicResource BancoHeaderControlSurfaceBrush}"
+                        BorderBrush="{DynamicResource BancoHeaderControlBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        VerticalAlignment="Center">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   VerticalAlignment="Center"
+                                   FontSize="10.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Text="Listino" />
+                        <ComboBox Grid.Column="2"
+                                  Width="150"
+                                  MinHeight="24"
+                                  Padding="6,1"
+                                  Style="{StaticResource CompactComboBoxStyle}"
+                                  ItemsSource="{Binding ListiniDisponibili}"
+                                  SelectedItem="{Binding ListinoSelezionato, Mode=TwoWay}"
+                                  IsEnabled="{Binding CanSelectListino}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayLabel}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="4"
+                        Height="32"
+                        Padding="10,0"
+                        CornerRadius="8"
+                        BorderThickness="1"
+                        VerticalAlignment="Center">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="BorderBrush" Value="{DynamicResource BancoNotificationBorderBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource BancoNotificationSurfaceBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasHeaderNotification}" Value="True">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BancoNotificationAlertBorderBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource BancoNotificationAlertSurfaceBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource BancoNotificationForegroundBrush}"
+                               TextWrapping="NoWrap"
+                               TextTrimming="CharacterEllipsis"
+                               Text="{Binding HeaderNotificationText}" />
+                </Border>
+
+                <StackPanel Grid.Column="6"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <Button Style="{StaticResource CompactSecondaryButtonStyle}"
+                            Command="{Binding AbilitaModificaDocumentoFiscalizzatoCommand}"
+                            Content="Abilita modifica"
+                            Visibility="{Binding CanEnableConsultationEdit, Converter={StaticResource BoolToVisibilityConverter}}"
+                            ToolTip="Sblocca la scheda fiscalizzata per una correzione manuale controllata. Salva con F4/F10 senza ristampa."
+                            VerticalAlignment="Center"
+                            Margin="0,0,8,0"
+                            Background="{DynamicResource BancoActionHighlightSurfaceBrush}"
+                            Foreground="{DynamicResource BancoNotificationForegroundBrush}" />
+                    <Button Style="{StaticResource CompactSecondaryButtonStyle}"
+                            Content="Annulla contenuto"
+                            Click="AzzeraContenutoButton_OnClick"
+                            IsEnabled="{Binding CanAzzeraContenuto}"
+                            VerticalAlignment="Center"
+                            Margin="0,0,8,0"
+                            Foreground="{DynamicResource BancoActionSuccessSoftForegroundBrush}"
+                            Background="{DynamicResource BancoActionSuccessSoftBrush}" />
+                    <Button Style="{StaticResource CompactSecondaryButtonStyle}"
+                            Content="Cancella scheda"
+                            Click="CancellaSchedaButton_OnClick"
+                            IsEnabled="{Binding CanCancellaScheda}"
+                            VerticalAlignment="Center"
+                            Margin="0,0,8,0"
+                            Background="{DynamicResource BancoActionDangerStrongBrush}"
+                            Foreground="{DynamicResource BancoSelectionTextBrush}" />
+                    <Button Style="{StaticResource CompactPrimaryButtonStyle}"
+                            Content="Salva"
+                            Click="SalvaDocumentoButton_OnClick"
+                            IsEnabled="{Binding CanSaveDocumentoLocale}"
+                            ToolTip="Pubblica o aggiorna il documento Banco su db_diltech (F4/F10)"
+                            VerticalAlignment="Center"
+                            Margin="0,0,8,0" />
+                    <Button Style="{StaticResource CompactSecondaryButtonStyle}"
+                            Command="{Binding MostraListaDocumentiCommand}"
+                            Content="Documenti"
+                            VerticalAlignment="Center"
+                            Margin="0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2.35*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="0.56*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="8" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.35*" />
+                        <ColumnDefinition Width="6" />
+                        <ColumnDefinition Width="0.95*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource CompactCardStyle}" Padding="12,10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="4" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="6" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Style="{StaticResource CompactCardTitleStyle}"
+                                       Text="Ricerca articoli" />
+                            <TextBlock Grid.Row="1"
+                                       Style="{StaticResource CompactSectionCaptionStyle}"
+                                       Text="Codice, barcode o parole chiave. INVIO per aggiungere subito." />
+
+                            <Grid Grid.Row="2" Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Grid Margin="0,0,0,0">
+                                    <TextBox x:Name="ArticleSearchTextBox"
+                                             Style="{StaticResource CompactTextBoxStyle}"
+                                             input:TextBoxPlaceholderService.Placeholder="Cerca articoli, lettore barcode o ricerca multi-termine"
+                                             Text="{Binding SearchArticoloText, UpdateSourceTrigger=PropertyChanged}"
+                                             PreviewKeyDown="ArticleSearchTextBox_OnKeyDown"
+                                             IsEnabled="{Binding CanModifyDocument}"
+                                             Background="#FFFFFFFF"
+                                             Foreground="{StaticResource TextPrimaryBrush}"
+                                             CaretBrush="{StaticResource TextPrimaryBrush}"
+                                             SelectionBrush="#663D73C6"
+                                             SelectionTextBrush="{StaticResource TextPrimaryBrush}"
+                                             FontSize="12.5"
+                                             FontWeight="SemiBold"
+                                             MinHeight="30"
+                                             VerticalContentAlignment="Center"
+                                             Margin="0"
+                                             Padding="10,4" />
+                                </Grid>
+                                <Button Grid.Column="1"
+                                        Content="A"
+                                        Command="{Binding ApriStoricoAcquistiArticoloCommand}"
+                                        Width="32"
+                                        Margin="6,0,0,0"
+                                        Padding="0"
+                                        Height="30"
+                                        FontSize="12"
+                                        FontWeight="Bold"
+                                        Style="{StaticResource CompactSecondaryButtonStyle}"
+                                        ToolTip="Apri la ricerca acquisti libera" />
+                                <Button Grid.Column="2"
+                                        Content="Aggiungi"
+                                        Style="{StaticResource CompactPrimaryButtonStyle}"
+                                        Command="{Binding AggiungiArticoloCommand}"
+                                        Width="88"
+                                        Margin="6,0,0,0"
+                                        Height="30" />
+                            </Grid>
+
+                            <Border Grid.Row="4"
+                                    Margin="0,2,0,0"
+                                    Padding="10,7"
+                                    Background="#FFF4F8FD"
+                                    BorderBrush="#FFE1E9F3"
+                                    BorderThickness="1"
+                                    CornerRadius="8">
+                                <Grid>
+                                    <Grid.Style>
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasQuickArticlePurchaseInfo}" Value="False">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock FontSize="10.5"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextMutedBrush}"
+                                               Text="Ultimo acquisto"
+                                               TextWrapping="Wrap" />
+
+                                    <Grid Grid.Row="1"
+                                          Margin="0,6,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2.4*" />
+                                            <ColumnDefinition Width="0.9*" />
+                                            <ColumnDefinition Width="1*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Padding="10,8"
+                                                Background="#66FFFFFF"
+                                                BorderBrush="#FFD9E3EF"
+                                                BorderThickness="1"
+                                                CornerRadius="8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Orientation="Horizontal"
+                                                            VerticalAlignment="Center"
+                                                            Margin="0,0,8,0">
+                                                    <TextBlock FontSize="10.5"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMutedBrush}"
+                                                               Text="Fornitore" />
+                                                    <TextBlock Margin="8,0,0,0"
+                                                               FontSize="13"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                                               Text="{Binding UltimoAcquistoFornitoreLabel}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1"
+                                                            HorizontalAlignment="Right"
+                                                            VerticalAlignment="Center">
+                                                    <TextBlock HorizontalAlignment="Right"
+                                                               FontSize="10"
+                                                               Foreground="{StaticResource TextMutedBrush}"
+                                                               Text="Data" />
+                                                    <TextBlock Margin="0,2,0,0"
+                                                               HorizontalAlignment="Right"
+                                                               FontSize="12"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                                               Text="{Binding UltimoAcquistoDataLabel}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+
+                                        <Border Grid.Column="1"
+                                                Margin="6,0,0,0"
+                                                Padding="10,8"
+                                                Background="#66FFFFFF"
+                                                BorderBrush="#FFD9E3EF"
+                                                BorderThickness="1"
+                                                CornerRadius="8">
+                                            <StackPanel>
+                                                <TextBlock FontSize="10.5"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TextMutedBrush}"
+                                                           Text="FT" />
+                                                <TextBlock Margin="0,3,0,0"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                                           Text="{Binding UltimoAcquistoFtLabel}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Grid.Column="2"
+                                                Margin="6,0,0,0"
+                                                Padding="10,8"
+                                                Background="#66FFFFFF"
+                                                BorderBrush="#FFD9E3EF"
+                                                BorderThickness="1"
+                                                CornerRadius="8">
+                                            <StackPanel>
+                                                <TextBlock FontSize="10.5"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TextMutedBrush}"
+                                                           Text="Ultimo prezzo" />
+                                                <TextBlock Margin="0,3,0,0"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                                           Text="{Binding UltimoAcquistoPrezzoLabel}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+
+                            <Popup Grid.Row="2"
+                                   IsOpen="{Binding IsArticlePopupOpen}"
+                                   PlacementTarget="{Binding ElementName=ArticleSearchTextBox}"
+                                   Placement="Bottom"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True"
+                                   PopupAnimation="Fade">
+                                <Border Width="520"
+                                        Background="White"
+                                        BorderBrush="{StaticResource BorderBrushBase}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="4">
+                                    <DataGrid x:Name="ArticleLookupGrid"
+                                              AutoGenerateColumns="False"
+                                              HeadersVisibility="Column"
+                                              GridLinesVisibility="Horizontal"
+                                              CanUserAddRows="False"
+                                              CanUserDeleteRows="False"
+                                              CanUserResizeRows="False"
+                                              SelectionMode="Single"
+                                              SelectionUnit="FullRow"
+                                              PreviewKeyDown="ArticleLookupGrid_OnKeyDown"
+                                              MouseDoubleClick="ArticleLookupGrid_OnMouseDoubleClick"
+                                              ItemsSource="{Binding RisultatiRicercaArticoli}"
+                                              SelectedItem="{Binding ArticoloSelezionato, Mode=TwoWay}"
+                                              Background="{StaticResource SurfaceAltBrush}"
+                                              BorderThickness="0"
+                                              MinHeight="180"
+                                              MaxHeight="250"
+                                              RowStyle="{StaticResource CompactDataGridRowStyle}"
+                                              CellStyle="{StaticResource CompactDataGridCellStyle}"
+                                              ColumnHeaderStyle="{StaticResource CompactDataGridHeaderStyle}">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Articolo" Binding="{Binding DisplayLabel}" Width="*" IsReadOnly="True" />
+                                            <DataGridTextColumn Header="Prezzo" Binding="{Binding PrezzoVendita, StringFormat={}{0:N2}}" Width="90" IsReadOnly="True" />
+                                            <DataGridTextColumn Header="Quantita`" Binding="{Binding Giacenza, StringFormat={}{0:N2}}" Width="90" IsReadOnly="True" />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="2"
+                            Style="{StaticResource CompactCardStyle}" Padding="12,10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="4" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="8" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0"
+                                       Style="{StaticResource CompactCardTitleStyle}"
+                                       Text="Cliente" />
+                            <TextBlock Grid.Row="1"
+                                       Style="{StaticResource CompactSectionCaptionStyle}"
+                                       Text="Conferma il cliente per storico, punti e premio." />
+
+                            <Grid Grid.Row="2" Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Grid Grid.Column="0">
+                                    <TextBox x:Name="CustomerSearchTextBox"
+                                             input:TextBoxPlaceholderService.Placeholder="Cerca cliente o carta fedelta`"
+                                             Text="{Binding SearchClienteText, UpdateSourceTrigger=PropertyChanged}"
+                                             PreviewKeyDown="CustomerSearchTextBox_OnKeyDown"
+                                             PreviewMouseLeftButtonDown="CustomerSearchTextBox_OnPreviewMouseLeftButtonDown"
+                                             GotKeyboardFocus="CustomerSearchTextBox_OnGotKeyboardFocus"
+                                             LostKeyboardFocus="CustomerSearchTextBox_OnLostKeyboardFocus"
+                                             IsEnabled="{Binding CanModifyDocument}"
+                                             Background="#FFFFFFFF"
+                                             Foreground="{StaticResource TextPrimaryBrush}"
+                                             CaretBrush="{StaticResource TextPrimaryBrush}"
+                                             SelectionBrush="#663D73C6"
+                                             SelectionTextBrush="{StaticResource TextPrimaryBrush}"
+                                             FontSize="12.5"
+                                             FontWeight="SemiBold"
+                                             MinHeight="30"
+                                             VerticalContentAlignment="Center"
+                                             Margin="0"
+                                             Padding="10,4">
+                                        <TextBox.Style>
+                                            <Style TargetType="TextBox" BasedOn="{StaticResource CompactTextBoxStyle}">
+                                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsClienteConfermato}" Value="True">
+                                                        <Setter Property="Foreground" Value="#FF3D75FF" />
+                                                        <Setter Property="FontWeight" Value="Bold" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
+                                </Grid>
+                                <Button Grid.Column="2"
+                                        Content="Conferma"
+                                        Style="{StaticResource CompactPrimaryButtonStyle}"
+                                        Command="{Binding SelezionaClienteCommand}"
+                                        MinWidth="86"
+                                        Height="30" />
+                            </Grid>
+
+                            <Popup Grid.Row="2"
+                                   IsOpen="{Binding IsCustomerPopupOpen}"
+                                   PlacementTarget="{Binding ElementName=CustomerSearchTextBox}"
+                                   Placement="Bottom"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True"
+                                   PopupAnimation="Fade">
+                                <Border Width="388"
+                                        Background="White"
+                                        BorderBrush="{StaticResource BorderBrushBase}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="4">
+                                    <ListBox x:Name="CustomerLookupList"
+                                             ItemsSource="{Binding RisultatiRicercaClienti}"
+                                             SelectedItem="{Binding ClienteSelezionato, Mode=TwoWay}"
+                                             BorderThickness="0"
+                                             Background="{StaticResource SurfaceAltBrush}"
+                                             PreviewKeyDown="CustomerLookupList_OnKeyDown"
+                                             PreviewMouseLeftButtonUp="CustomerLookupList_OnPreviewMouseLeftButtonUp"
+                                             MouseDoubleClick="CustomerLookupList_OnMouseDoubleClick"
+                                             MinHeight="140"
+                                             MaxHeight="220">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <DockPanel Margin="4,3">
+                                                    <TextBlock DockPanel.Dock="Right"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                                               Text="{Binding PuntiLabel}" />
+                                                    <TextBlock Text="{Binding DisplayLabel}" />
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Border>
+                            </Popup>
+
+                            <Border Grid.Row="4"
+                                    Margin="0,2,0,0"
+                                    Height="44"
+                                    Padding="10,0"
+                                    CornerRadius="10"
+                                    BorderThickness="1"
+                                    BorderBrush="#FFD7E4F5"
+                                    Background="#FFF7FAFF">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock VerticalAlignment="Center"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Text="{Binding CustomerInfoLineText}"
+                                               TextWrapping="NoWrap"
+                                               TextTrimming="CharacterEllipsis" />
+
+                                    <Button Grid.Column="1"
+                                            Margin="8,0,0,0"
+                                            Content="Storico"
+                                            Command="{Binding ApriStoricoAcquistiCommand}"
+                                            MinWidth="78"
+                                            Height="28"
+                                            VerticalAlignment="Center"
+                                            ToolTip="Apri lo storico acquisti del cliente selezionato">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource HistoryButtonStyle}">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CanOpenCustomerHistory}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <Border Grid.Row="2"
+                        Style="{StaticResource CompactCardStyle}"
+                        Padding="12,10">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="8" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Border Padding="10,8"
+                                Background="#FFF7FAFE"
+                                BorderBrush="#FFDCE4EF"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock FontSize="15"
+                                               FontWeight="Bold"
+                                               VerticalAlignment="Center"
+                                               ><Run Language="it-it" Text="D"/><Run Text="ocumento"/></TextBlock>
+                                        <Border Margin="10,0,0,0"
+                                            Padding="7,3"
+                                            Background="#FFF7FAFF"
+                                            BorderBrush="#FFD9E4F1"
+                                            BorderThickness="1"
+                                            CornerRadius="7"
+                                            VerticalAlignment="Center">
+                                            <TextBlock Style="{StaticResource InlineBadgeTextStyle}"
+                                                   Text="{Binding Righe.Count, StringFormat={}{0} righe}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Margin="0,5,0,0"
+                                           Style="{StaticResource CompactSectionCaptionStyle}"
+                                           Text="Righe, pagamenti e stato vendita vengono riepilogati nella testata." />
+                                </StackPanel>
+
+                                <Border Grid.Column="1"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Padding="10,6"
+                                    Background="#FFF7FAFF"
+                                    BorderBrush="#FFD7E3F1"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    MinWidth="300"
+                                    MaxWidth="420">
+                                    <TextBlock FontSize="11.5"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Text="Righe, pagamenti e stato vendita vengono riepilogati nella testata."
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis" />
+                                </Border>
+
+                                <Border Grid.Column="2"
+                                    Padding="0"
+                                    VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border Height="32"
+                                            Margin="0,0,10,0"
+                                            Padding="8,0,6,0"
+                                            CornerRadius="7"
+                                            BorderThickness="1"
+                                            BorderBrush="{StaticResource BorderBrushBase}"
+                                            Background="#FFFFFFFF">
+                                            <Grid VerticalAlignment="Center">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="70" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock FontSize="11"
+                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0,8,0"
+                                                       Text="Quantita`" />
+
+                                                <TextBlock Grid.Column="1"
+                                                       Text="{Binding QuantitaRigaSelezionata, StringFormat={}{0:N2}}"
+                                                       FontSize="13"
+                                                       FontWeight="Bold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       HorizontalAlignment="left"
+                                                       VerticalAlignment="Center" />
+
+                                                <StackPanel Grid.Column="2"
+                                                        Orientation="Horizontal"
+                                                        Margin="4,0,0,0">
+                                                    <Button Content="-"
+                                                        Width="24" Height="24"
+                                                        BorderThickness="0"
+                                                        Background="Transparent"
+                                                        Foreground="{StaticResource TextPrimaryBrush}"
+                                                        FontSize="17"
+                                                        FontWeight="Bold"
+                                                        Padding="0"
+                                                        Cursor="Hand"
+                                                        Command="{Binding DecrementaQuantitaRigaSelezionataCommand}" />
+                                                    <Button Content="+"
+                                                        Width="24" Height="24"
+                                                        BorderThickness="0"
+                                                        Background="Transparent"
+                                                        Foreground="{StaticResource TextPrimaryBrush}"
+                                                        FontSize="17"
+                                                        FontWeight="Bold"
+                                                        Padding="0"
+                                                        Cursor="Hand"
+                                                        Command="{Binding IncrementaQuantitaRigaSelezionataCommand}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+
+                                        <Border Height="32"
+                                            Padding="8,0"
+                                            CornerRadius="7"
+                                            BorderThickness="1"
+                                            BorderBrush="{StaticResource BorderBrushBase}"
+                                            Background="#FFFFFFFF">
+                                            <StackPanel Orientation="Horizontal"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock FontSize="11"
+                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,10,0"
+                                                       Text="Disp." />
+                                                <TextBlock FontSize="16"
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center"
+                                                       Text="{Binding DisponibilitaResiduaRigaSelezionata, StringFormat={}{0:N2}}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#FF2E8B57" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDisponibilitaResiduaCritica}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#FFC43D3D" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Row="2">
+                            <DataGrid x:Name="DocumentoRowsGrid"
+                                  Loaded="DocumentoRowsGrid_OnLoaded"
+                                  SizeChanged="DocumentoRowsGrid_OnSizeChanged"
+                                  AutoGenerateColumns="False"
+                                  HeadersVisibility="All"
+                                  GridLinesVisibility="Horizontal"
+                                  ItemsSource="{Binding Righe}"
+                                  SelectedItem="{Binding RigaSelezionata, Mode=TwoWay}"
+                                  CanUserAddRows="False"
+                                  IsReadOnly="False"
+                                  CanUserReorderColumns="True"
+                                  PreviewKeyDown="DocumentoRowsGrid_OnPreviewKeyDown"
+                                  PreviewTextInput="DocumentoRowsGrid_OnPreviewTextInput"
+                                  PreparingCellForEdit="DocumentoRowsGrid_OnPreparingCellForEdit"
+                                  SelectionChanged="DocumentoRowsGrid_SelectionChanged"
+                                  GotKeyboardFocus="DocumentoRowsGrid_OnGotKeyboardFocus"
+                                  FontSize="12.5"
+                                  CanUserResizeRows="True"
+                                  RowHeaderWidth="18"
+                                  MinRowHeight="28"
+                                  AlternationCount="2"
+                                  AlternatingRowBackground="{DynamicResource GrigliaBancoRigaAltBrush}"
+                                  RowBackground="{DynamicResource GrigliaBancoRigaBrush}"
+                                  HorizontalGridLinesBrush="{StaticResource HairlineBrush}"
+                                  SelectionUnit="FullRow"
+                                  BorderThickness="0"
+                                  Background="Transparent">
+                                <DataGrid.ColumnHeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DocumentListGridHeaderStyle}">
+                                        <Setter Property="Background" Value="{DynamicResource BancoGridHeaderBrush}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource BancoGridHeaderForegroundBrush}" />
+                                        <Setter Property="FontSize" Value="11" />
+                                        <Setter Property="Padding" Value="8,7" />
+                                        <Setter Property="BorderBrush" Value="#FFCFD9E6" />
+                                        <Setter Property="BorderThickness" Value="0,0,1,1" />
+                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <!-- Template custom: rispetta il Background scelto dall'utente -->
+                                                <ControlTemplate TargetType="DataGridColumnHeader">
+                                                    <Grid SnapsToDevicePixels="True">
+                                                        <Border x:Name="HeaderBorder"
+                                                            Background="{TemplateBinding Background}"
+                                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                                            Padding="{TemplateBinding Padding}"
+                                                            SnapsToDevicePixels="True">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <ContentPresenter Grid.Column="0"
+                                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                              VerticalAlignment="Center"
+                                                                              RecognizesAccessKey="True"
+                                                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                                                <!-- Freccia ordinamento -->
+                                                                <Path x:Name="SortArrow"
+                                                                  Grid.Column="1"
+                                                                  Visibility="Collapsed"
+                                                                  Width="8" Height="6"
+                                                                  Margin="4,0,2,0"
+                                                                  VerticalAlignment="Center"
+                                                                  Fill="{TemplateBinding Foreground}"
+                                                                  Stretch="Uniform"
+                                                                  Data="M 0,6 L 4,0 L 8,6 Z" />
+                                                            </Grid>
+                                                        </Border>
+                                                        <!-- Thumb richiesti dal DataGrid per il resize colonne -->
+                                                        <Thumb x:Name="PART_LeftHeaderGripper"
+                                                           HorizontalAlignment="Left"
+                                                           Width="8"
+                                                           Cursor="SizeWE">
+                                                            <Thumb.Template>
+                                                                <ControlTemplate TargetType="Thumb">
+                                                                    <Border Background="Transparent" />
+                                                                </ControlTemplate>
+                                                            </Thumb.Template>
+                                                        </Thumb>
+                                                        <Thumb x:Name="PART_RightHeaderGripper"
+                                                           HorizontalAlignment="Right"
+                                                           Width="8"
+                                                           Cursor="SizeWE">
+                                                            <Thumb.Template>
+                                                                <ControlTemplate TargetType="Thumb">
+                                                                    <Border Background="Transparent" />
+                                                                </ControlTemplate>
+                                                            </Thumb.Template>
+                                                        </Thumb>
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="SortDirection" Value="Ascending">
+                                                            <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                                            <Setter TargetName="SortArrow" Property="Data" Value="M 0,6 L 4,0 L 8,6 Z" />
+                                                        </Trigger>
+                                                        <Trigger Property="SortDirection" Value="Descending">
+                                                            <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                                            <Setter TargetName="SortArrow" Property="Data" Value="M 0,0 L 4,6 L 8,0 Z" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </DataGrid.ColumnHeaderStyle>
+                                <DataGrid.RowStyle>
+                                    <Style TargetType="DataGridRow" BasedOn="{StaticResource DocumentListGridRowStyle}">
+                                        <Setter Property="sel:SelezioneLuceCorsaService.IsAbilitato" Value="True" />
+                                        <Setter Property="FontSize" Value="12.5" />
+                                        <Setter Property="MinHeight" Value="28" />
+                                        <Setter Property="SnapsToDevicePixels" Value="True" />
+                                        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                        <Style.Triggers>
+                                            <!-- Colori palette: AlternationIndex aggiorna quando il servizio cambia la risorsa -->
+                                            <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                                                <Setter Property="Background" Value="{DynamicResource GrigliaBancoRigaBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                                                <Setter Property="Background" Value="{DynamicResource GrigliaBancoRigaAltBrush}" />
+                                            </Trigger>
+                                            <DataTrigger Binding="{Binding IsInReorderList}" Value="True">
+                                                <Setter Property="Background" Value="#FFFCE7EA" />
+                                                <Setter Property="Foreground" Value="#FF8E2430" />
+                                            </DataTrigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource GrigliaSelezioneSfondoBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource GrigliaSelezioneForegroundBrush}" />
+                                            </Trigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True" />
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False" />
+                                                    <Condition Binding="{Binding IsInReorderList}" Value="False" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Background" Value="#E8EFF8" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGrid.RowStyle>
+                                <DataGrid.RowHeaderStyle>
+                                    <Style TargetType="DataGridRowHeader">
+                                        <Setter Property="Width" Value="14" />
+                                        <Setter Property="Background" Value="{DynamicResource GrigliaBancoRigaBrush}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource HairlineBrush}" />
+                                        <Setter Property="BorderThickness" Value="0,0,1,0" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="DataGridRowHeader">
+                                                    <Grid Background="{TemplateBinding Background}"
+                                                      SnapsToDevicePixels="True">
+                                                        <Border BorderBrush="{TemplateBinding BorderBrush}"
+                                                            BorderThickness="{TemplateBinding BorderThickness}" />
+                                                        <!-- segnaposto riga: visibile solo sulla riga selezionata/corrente -->
+                                                        <Path x:Name="Indicatore"
+                                                          Data="M 0,0 L 6,4 L 0,8 Z"
+                                                          Fill="#1358A5"
+                                                          Width="6" Height="8"
+                                                          Stretch="Uniform"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"
+                                                          Visibility="Collapsed" />
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
+                                                            <Setter TargetName="Indicatore" Property="Visibility" Value="Visible" />
+                                                            <Setter Property="Background" Value="{DynamicResource BancoGridHeaderBrush}" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </DataGrid.RowHeaderStyle>
+                                <DataGrid.CellStyle>
+                                    <!-- stile minimo: padding e selezione gestita dall'adorner, non dal rendering nativo -->
+                                    <Style TargetType="DataGridCell" BasedOn="{StaticResource DocumentListGridCellStyle}">
+                                        <Setter Property="Padding" Value="7,2" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="Transparent" />
+                                                <Setter Property="Foreground" Value="{DynamicResource GrigliaSelezioneForegroundBrush}" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGrid.CellStyle>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn x:Name="RigaColumn" Header="RIGA" Binding="{Binding OrdineRiga}" Width="60" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                                <Setter Property="TextAlignment" Value="Center" />
+                                                <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn x:Name="CodiceColumn" Header="Articolo" Binding="{Binding CodiceArticolo}" Width="150" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                                <Setter Property="HorizontalAlignment" Value="Left" />
+                                                <Setter Property="TextAlignment" Value="Left" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn x:Name="DescrizioneColumn" Header="Descrizione" Binding="{Binding Descrizione, UpdateSourceTrigger=PropertyChanged}" Width="*">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="HorizontalAlignment" Value="Left" />
+                                                <Setter Property="TextAlignment" Value="Left" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn x:Name="UnitaMisuraColumn" Header="Um" Binding="{Binding UnitaMisura}" Width="62" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                                <Setter Property="TextAlignment" Value="Center" />
+                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn x:Name="QuantitaColumn" Header="Quantita`" Binding="{Binding Quantita, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}" Width="82">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                                <Setter Property="TextAlignment" Value="Center" />
+                                                <Setter Property="FontWeight" Value="Medium" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn x:Name="DisponibilitaColumn" Header="Disp." Binding="{Binding DisponibilitaRiferimento, StringFormat={}{0:N2}}" Width="70" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                                <Setter Property="TextAlignment" Value="Center" />
+                                                <Setter Property="Foreground" Value="#FF5A9968" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn x:Name="PrezzoColumn" Header="Valore Ivato" Binding="{Binding PrezzoUnitario, UpdateSourceTrigger=LostFocus, StringFormat={}{0:0.00}, ConverterCulture=it-IT}" Width="92">
+                                        <DataGridTextColumn.EditingElementStyle>
+                                            <Style TargetType="TextBox" BasedOn="{StaticResource CurrencyGridEditingTextBoxStyle}" />
+                                        </DataGridTextColumn.EditingElementStyle>
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                                <Setter Property="TextAlignment" Value="Center" />
+                                                <Setter Property="FontWeight" Value="Medium" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn x:Name="ScontoColumn" Header="Sc1 %" Binding="{Binding Sconto1, StringFormat={}{0:N2}}" Width="62" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                                <Setter Property="TextAlignment" Value="Center" />
+                                                <Setter Property="FontWeight" Value="Medium" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn x:Name="ImportoColumn" Header="Importo" Binding="{Binding ImportoRiga, StringFormat={}{0:N2}}" Width="96" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                                <Setter Property="TextAlignment" Value="Center" />
+                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn x:Name="IvaColumn" Header="Iva" Binding="{Binding IvaLabel}" Width="78" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                                <Setter Property="TextAlignment" Value="Center" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn x:Name="TipoRigaColumn" Header="Tipo" Binding="{Binding TipoRigaLabel}" Width="80" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                                <Setter Property="TextAlignment" Value="Center" />
+                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTemplateColumn x:Name="AzioniColumn" Header="" Width="42">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type viewModels:RigaDocumentoLocaleViewModel}">
+                                                <Button Command="{Binding DataContext.RimuoviRigaCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    CommandParameter="{Binding}"
+                                                    IsEnabled="{Binding DataContext.CanModifyDocument, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    Width="26" Height="26"
+                                                    Padding="0"
+                                                    Cursor="Hand"
+                                                    ToolTip="Rimuovi riga">
+                                                    <Button.Template>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border x:Name="IconBorder"
+                                                                Width="26" Height="26"
+                                                                CornerRadius="13"
+                                                                Background="Transparent"
+                                                                SnapsToDevicePixels="True">
+                                                                <Path x:Name="IconPath"
+                                                                  Data="M18,6.41L16.59,5 12,10.59 7.41,5 6,6.41 10.59,12 6,17.59 7.41,19 12,13.41 16.59,19 18,17.59 13.41,12Z"
+                                                                  Fill="{StaticResource TextMutedBrush}"
+                                                                  Width="12" Height="12"
+                                                                  Stretch="Uniform"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center" />
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter TargetName="IconBorder" Property="Background" Value="#FFFDE8E8" />
+                                                                    <Setter TargetName="IconPath" Property="Fill" Value="#FFC43D3D" />
+                                                                </Trigger>
+                                                                <Trigger Property="IsPressed" Value="True">
+                                                                    <Setter TargetName="IconBorder" Property="Background" Value="#FFF8D0D0" />
+                                                                    <Setter TargetName="IconPath" Property="Fill" Value="#FFA02E2E" />
+                                                                </Trigger>
+                                                                <Trigger Property="IsEnabled" Value="False">
+                                                                    <Setter TargetName="IconPath" Property="Opacity" Value="0.3" />
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Button.Template>
+                                                </Button>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <Border Width="10"
+                                    Height="30"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
+                                    Background="{DynamicResource BancoGridHeaderBrush}"
+                                    BorderBrush="#FFCFD9E6"
+                                    BorderThickness="0,0,1,1"
+                                    CornerRadius="8,0,0,0"
+                                    SnapsToDevicePixels="True"
+                                    Panel.ZIndex="2" />
+                            <Border Width="10"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,30,0,0"
+                                    Background="{DynamicResource GrigliaBancoRigaBrush}"
+                                    BorderBrush="{StaticResource HairlineBrush}"
+                                    BorderThickness="0,0,1,0"
+                                    SnapsToDevicePixels="True">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasDocumentRows}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                            <Border Margin="18"
+                                    Padding="18,14"
+                                    Background="#FFF9FBFE"
+                                    BorderBrush="#FFD9E4EF"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Center"
+                                    MaxWidth="760">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasDocumentRows}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <Grid>
+                                    <StackPanel HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                MaxWidth="360">
+                                        <Border Width="44"
+                                                Height="44"
+                                                CornerRadius="10"
+                                                Background="#FFEAF1FB"
+                                                BorderBrush="#FFD6E2F0"
+                                                BorderThickness="1">
+                                            <Path Data="{StaticResource IconCart}"
+                                                  Width="20"
+                                                  Height="20"
+                                                  Stretch="Uniform"
+                                                  Fill="#FF3D73C6"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Margin="0,12,0,0"
+                                                   FontSize="16"
+                                                   FontWeight="Bold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   Text="{Binding EmptyDocumentStateTitle}" />
+                                        <TextBlock Margin="0,8,0,0"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   Text="{Binding EmptyDocumentStateMessage}"
+                                                   TextWrapping="Wrap"
+                                                   TextAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Column="2" VerticalAlignment="Top">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="6" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="6" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0"
+                        Style="{StaticResource CompactCardStyle}"
+                        Padding="10,8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="6" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="6" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Style="{StaticResource CompactCardTitleStyle}"
+                                   Text="Totali e stato" />
+
+                        <!-- Totali compatti -->
+                        <Border Grid.Row="2"
+                                Background="{DynamicResource BancoMetricSurfaceBrush}"
+                                BorderBrush="{DynamicResource BancoMetricBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="14,10">
+                            <StackPanel>
+                                <!-- Totale -->
+                                <DockPanel Height="38">
+                                    <TextBlock DockPanel.Dock="Right"
+                                               VerticalAlignment="Center"
+                                               FontSize="23" FontWeight="Bold"
+                                               Foreground="{DynamicResource BancoPositiveForegroundBrush}"
+                                               Text="{Binding TotaleDocumento, StringFormat={}{0:N2} €}" />
+                                    <TextBlock VerticalAlignment="Center"
+                                               FontSize="18" FontWeight="Bold"
+                                               Foreground="{DynamicResource BancoPositiveForegroundBrush}" Text="Totale" />
+                                </DockPanel>
+                                <Border Height="1" Background="{DynamicResource BancoDividerBrush}" Margin="0,6,0,4" />
+                                <!-- Incassato -->
+                                <DockPanel Height="27">
+                                    <TextBlock DockPanel.Dock="Right"
+                                               VerticalAlignment="Center"
+                                               FontSize="12.5" FontWeight="Bold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               Text="{Binding TotalePagato, StringFormat={}{0:N2} €}" />
+                                    <TextBlock VerticalAlignment="Center"
+                                               FontSize="12" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource BancoQuietForegroundBrush}" Text="Incassato" />
+                                </DockPanel>
+                                <Border Height="1" Background="{DynamicResource BancoDividerBrush}" Margin="0,4,0,4" />
+                                <!-- Sconto (editabile al passaggio mouse) -->
+                                <DockPanel Height="27">
+                                    <Grid DockPanel.Dock="Right" Width="88">
+                                        <TextBox x:Name="ScontoPagamentoTextBox"
+                                                 Style="{StaticResource ScontoInlineTextBoxStyle}"
+                                                 Text="{Binding ScontoPagamentoText, UpdateSourceTrigger=PropertyChanged}"
+                                                 PreviewMouseLeftButtonDown="PaymentTextBox_OnPreviewMouseLeftButtonDown"
+                                                 PreviewKeyDown="PaymentTextBox_OnPreviewKeyDown"
+                                                 LostKeyboardFocus="PaymentTextBox_OnLostKeyboardFocus"
+                                                 IsEnabled="{Binding CanModifyDocument}" />
+                                        <TextBlock VerticalAlignment="Center"
+                                                   HorizontalAlignment="Right"
+                                                   Margin="0,0,4,0"
+                                                   FontSize="12" FontWeight="Bold"
+                                                   Foreground="{DynamicResource BancoWarningForegroundBrush}" Text="€"
+                                                   IsHitTestVisible="False" />
+                                    </Grid>
+                                    <Button Style="{StaticResource PaymentLabelButtonStyle}"
+                                            Content="Sconto"
+                                            Command="{Binding ApplicaImportoPagamentoCommand}"
+                                            CommandParameter="sconto"
+                                            Click="PaymentButton_OnClick"
+                                            IsEnabled="{Binding CanModifyDocument}"
+                                            FontSize="12" FontWeight="Bold"
+                                            Foreground="{DynamicResource BancoWarningForegroundBrush}" />
+                                </DockPanel>
+                                <Border Height="1" Background="{DynamicResource BancoDividerBrush}" Margin="0,4,0,4" />
+                                <!-- Resto (ex Residuo) -->
+                                <DockPanel Height="28">
+                                    <TextBlock DockPanel.Dock="Right"
+                                               VerticalAlignment="Center"
+                                               FontSize="12.5" FontWeight="Bold"
+                                               Foreground="{DynamicResource BancoDangerForegroundBrush}"
+                                               Text="{Binding Resto, StringFormat={}{0:N2} €}" />
+                                    <TextBlock VerticalAlignment="Center"
+                                               FontSize="12.5" FontWeight="Bold"
+                                               Foreground="{DynamicResource BancoDangerForegroundBrush}" Text="Resto" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Pagamenti e chiusura -->
+                        <Border Grid.Row="4"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BancoMetricBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="14,12">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource CompactCardTitleStyle}"
+                                           Text="Pagamenti e chiusura" />
+                                <TextBlock Margin="0,3,0,0"
+                                           Style="{StaticResource CompactSectionCaptionStyle}"
+                                           Text="Stessa logica operativa esistente: autofill, fallback." />
+
+                                <!-- Contanti - pulsante dedicato sul tipo pagamento -->
+                                <Border Margin="0,10,0,0"
+                                    Tag="contanti"
+                                    Background="Transparent"
+                                    Cursor="Arrow">
+                                    <DockPanel Height="32">
+                                        <Grid DockPanel.Dock="Right" Width="92">
+                                            <TextBox x:Name="ContantiPagamentoTextBox"
+                                                     Style="{StaticResource PaymentInlineTextBoxStyle}"
+                                                     Text="{Binding ContantiPagamentoText, UpdateSourceTrigger=PropertyChanged}"
+                                                     PreviewMouseLeftButtonDown="PaymentTextBox_OnPreviewMouseLeftButtonDown"
+                                                     PreviewKeyDown="PaymentTextBox_OnPreviewKeyDown"
+                                                     LostKeyboardFocus="PaymentTextBox_OnLostKeyboardFocus"
+                                                     IsEnabled="{Binding CanModifyDocument}" Margin="-8,0,0,0" />
+                                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                       Margin="0,0,8,0" FontSize="12.5" FontWeight="Bold"
+                                                       Foreground="{StaticResource TextMutedBrush}" Text="€"
+                                                       IsHitTestVisible="False" />
+                                        </Grid>
+                                        <Button Style="{StaticResource PaymentLabelButtonStyle}"
+                                                Click="PaymentButton_OnClick"
+                                                CommandParameter="contanti"
+                                                IsEnabled="{Binding CanModifyDocument}"
+                                                Padding="0"
+                                                HorizontalContentAlignment="Left"
+                                                Foreground="{DynamicResource BancoPaymentLabelForegroundBrush}">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                <Border Width="18" Height="18" CornerRadius="4"
+                                                        Background="{DynamicResource ModalFieldSurfaceBrush}" BorderBrush="{DynamicResource BancoPaymentCashBorderBrush}" BorderThickness="1">
+                                                    <Path Data="M3,6H21V18H3V6M6,9H10V11H6V9M12,9H18V11H12V9M6,13H18V15H6V13Z"
+                                                          Fill="{DynamicResource BancoPaymentCashIconBrush}" Width="13" Height="13"
+                                                          Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <TextBlock Margin="6,0,0,0" VerticalAlignment="Center"
+                                                           FontSize="12.5" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource BancoPaymentLabelForegroundBrush}" Text="Contanti" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- Carta - pulsante dedicato sul tipo pagamento -->
+                                <Border Margin="0,8,0,0"
+                                    Tag="carta"
+                                    Background="Transparent"
+                                    Cursor="Arrow">
+                                    <DockPanel Height="32">
+                                        <Grid DockPanel.Dock="Right" Width="92">
+                                            <TextBox x:Name="CartaPagamentoTextBox"
+                                                     Style="{StaticResource PaymentInlineTextBoxStyle}"
+                                                     Text="{Binding CartaPagamentoText, UpdateSourceTrigger=PropertyChanged}"
+                                                     PreviewMouseLeftButtonDown="PaymentTextBox_OnPreviewMouseLeftButtonDown"
+                                                     PreviewKeyDown="PaymentTextBox_OnPreviewKeyDown"
+                                                     LostKeyboardFocus="PaymentTextBox_OnLostKeyboardFocus"
+                                                     IsEnabled="{Binding CanModifyDocument}" Margin="-8,0,0,0" />
+                                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                       Margin="0,0,8,0" FontSize="12.5" FontWeight="Bold"
+                                                       Foreground="{StaticResource TextMutedBrush}" Text="€"
+                                                       IsHitTestVisible="False" />
+                                        </Grid>
+                                        <Button Style="{StaticResource PaymentLabelButtonStyle}"
+                                                Click="PaymentButton_OnClick"
+                                                CommandParameter="carta"
+                                                IsEnabled="{Binding CanModifyDocument}"
+                                                Padding="0"
+                                                HorizontalContentAlignment="Left"
+                                                Foreground="{DynamicResource BancoPaymentLabelForegroundBrush}">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                <Border Width="18" Height="18" CornerRadius="4"
+                                                        Background="{DynamicResource ModalFieldSurfaceBrush}" BorderBrush="{DynamicResource BancoPaymentCardBorderBrush}" BorderThickness="1">
+                                                    <Path Data="M4,6H20A2,2 0 0,1 22,8V16A2,2 0 0,1 20,18H4A2,2 0 0,1 2,16V8A2,2 0 0,1 4,6M4,10V16H20V10H4M6,12H11V14H6V12Z"
+                                                          Fill="{DynamicResource BancoPaymentCardIconBrush}" Width="13" Height="13"
+                                                          Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <TextBlock Margin="6,0,0,0" VerticalAlignment="Center"
+                                                           FontSize="12.5" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource BancoPaymentLabelForegroundBrush}" Text="Carta" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- Sospeso - pulsante dedicato sul tipo pagamento -->
+                                <Border Margin="0,8,0,0"
+                                    Tag="sospeso"
+                                    Background="Transparent"
+                                    Cursor="Arrow">
+                                    <DockPanel Height="32">
+                                        <Grid DockPanel.Dock="Right" Width="92">
+                                            <TextBox x:Name="SospesoPagamentoTextBox"
+                                                     Style="{StaticResource PaymentInlineTextBoxStyle}"
+                                                     Text="{Binding SospesoPagamentoText, UpdateSourceTrigger=PropertyChanged}"
+                                                     PreviewMouseLeftButtonDown="PaymentTextBox_OnPreviewMouseLeftButtonDown"
+                                                     PreviewKeyDown="PaymentTextBox_OnPreviewKeyDown"
+                                                     LostKeyboardFocus="PaymentTextBox_OnLostKeyboardFocus"
+                                                     IsEnabled="{Binding CanModifyDocument}" Margin="-8,0,0,0" />
+                                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                       Margin="0,0,8,0" FontSize="12.5" FontWeight="Bold"
+                                                       Foreground="{StaticResource TextMutedBrush}" Text="€"
+                                                       IsHitTestVisible="False" />
+                                        </Grid>
+                                        <Button Style="{StaticResource PaymentLabelButtonStyle}"
+                                                Click="PaymentButton_OnClick"
+                                                CommandParameter="sospeso"
+                                                IsEnabled="{Binding CanModifyDocument}"
+                                                Padding="0"
+                                                HorizontalContentAlignment="Left"
+                                                Foreground="{DynamicResource BancoPaymentLabelForegroundBrush}">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                <Border Width="18" Height="18" CornerRadius="4"
+                                                        Background="{DynamicResource ModalFieldSurfaceBrush}" BorderBrush="{DynamicResource BancoPaymentSuspendedBorderBrush}" BorderThickness="1">
+                                                    <Path Data="M7,2H17A2,2 0 0,1 19,4V20L12,17L5,20V4A2,2 0 0,1 7,2M8,6V8H16V6H8M8,10V12H16V10H8M8,14V16H13V14H8Z"
+                                                          Fill="{DynamicResource BancoPaymentSuspendedIconBrush}" Width="13" Height="13"
+                                                          Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <TextBlock Margin="6,0,0,0" VerticalAlignment="Center"
+                                                           FontSize="12.5" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource BancoPaymentLabelForegroundBrush}" Text="Sospeso" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- Pulsanti chiusura -->
+                                <StackPanel Margin="0,12,0,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="1*" />
+                                            <ColumnDefinition Width="1*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Button Grid.Column="0"
+                                                   Click="AnteprimaPos80BuoniButton_OnClick"
+                                                   ToolTip="Anteprima ricevuta POS80"
+                                                   IsEnabled="{Binding CanEmettiCortesia}"
+                                                   Style="{StaticResource CompactSecondaryButtonStyle}"
+                                                   HorizontalAlignment="Stretch"
+                                                   Margin="0,0,3,0"
+                                                   Height="31"
+                                                   MinHeight="31">
+                                                        <TextBlock Text="Anteprima"
+                                                        FontSize="12" FontWeight="Bold"
+                                                        Foreground="{DynamicResource BancoActionPrimaryBorderBrush}" VerticalAlignment="Center" />
+                                         </Button>
+
+                                        <Button Grid.Column="1"
+                                                   Click="CortesiaButton_OnClick"
+                                                   ToolTip="Pubblica il documento Banco come cortesia sul legacy (F5)"
+                                                   IsEnabled="{Binding CanEmettiCortesia}"
+                                                   Style="{StaticResource CompactSecondaryButtonStyle}"
+                                                   HorizontalAlignment="Stretch"
+                                                   Margin="3,0,0,0"
+                                                   Height="31"
+                                                  MinHeight="31">
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                <Path Data="{StaticResource IconReceipt}"
+                                                      Fill="{DynamicResource BancoActionPrimaryBorderBrush}" Width="12" Height="12"
+                                                      Stretch="Uniform" Margin="0,0,6,0" />
+                                                <TextBlock Text="Cortesia (F5)"
+                                                           FontSize="12" FontWeight="Bold"
+                                                           Foreground="{DynamicResource BancoActionPrimaryBorderBrush}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+
+                                    <Button Click="ScontrinoButton_OnClick"
+                                            IsEnabled="{Binding CanEmettiScontrino}"
+                                            Style="{StaticResource CompactGreenButtonStyle}"
+                                            HorizontalAlignment="Stretch"
+                                            Height="38" MinHeight="38"
+                                            Margin="0,7,0,0">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Path Data="{StaticResource IconReceipt}"
+                                                  Fill="{DynamicResource BancoSelectionTextBrush}" Width="14" Height="14"
+                                                  Stretch="Uniform" Margin="0,0,6,0" />
+                                            <TextBlock Text="Scontrino (F8)"
+                                                       FontSize="12" FontWeight="Bold"
+                                                       Foreground="{DynamicResource BancoSelectionTextBrush}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="4"
+                        Background="{DynamicResource BancoHeaderSurfaceBrush}"
+                        BorderBrush="{DynamicResource BancoHeaderBadgeBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="10,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Button Click="SalvaDocumentoButton_OnClick"
+                                    IsEnabled="{Binding CanSaveDocumentoLocale}"
+                                    ToolTip="Pubblica o aggiorna il documento Banco su db_diltech"
+                                    Style="{StaticResource CompactPrimaryButtonStyle}"
+                                    HorizontalAlignment="Stretch"
+                                    Height="30"
+                                    MinHeight="30"
+                                    Margin="0">
+                                <TextBlock Text="Salva (F4)"
+                                           FontSize="12"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource BancoSelectionTextBrush}"
+                                           VerticalAlignment="Center" />
+                            </Button>
+
+                            <Button Style="{StaticResource CompactSecondaryButtonStyle}"
+                                    Command="{Binding NuovoDocumentoCommand}"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalContentAlignment="Center"
+                                    Height="30"
+                                    MinHeight="30"
+                                    Margin="8,0,0,0">
+                                <TextBlock Text="Nuovo (F2)"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"
+                                           TextAlignment="Center" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="6"
+                        Background="{DynamicResource BancoHeaderSurfaceBrush}"
+                        BorderBrush="{DynamicResource BancoHeaderBadgeBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="10,8">
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Left">
+                        <Button Style="{StaticResource BancoSettingsShortcutButtonStyle}"
+                                Command="{Binding ApriImpostazioniBancoCommand}"
+                                Width="34"
+                                Height="30"
+                                Margin="0"
+                                ToolTip="Apri la configurazione Banco">
+                            <Path Data="{StaticResource IconSettings}"
+                                  Fill="White"
+                                  Width="13"
+                                  Height="13"
+                                  Stretch="Uniform"
+                                  Margin="0" />
+                        </Button>
+
+                        <Button Style="{StaticResource BancoCashRegisterShortcutButtonStyle}"
+                                Command="{Binding ApriRegistratoreCassaCommand}"
+                                Width="40"
+                                Height="30"
+                                Margin="8,0,0,0"
+                                ToolTip="Apri le opzioni cassa e registratore">
+                            <Path Data="{StaticResource IconCash}"
+                                  Fill="#FF3D2A0A"
+                                  Width="14"
+                                  Height="14"
+                                  Stretch="Uniform" />
+                        </Button>
+
+                        <Button Style="{StaticResource BancoPrintShortcutButtonStyle}"
+                                Command="{Binding StampaPos80Command}"
+                                IsEnabled="{Binding CanPrintPos80}"
+                                Width="82"
+                                Height="30"
+                                Margin="8,0,0,0"
+                                ToolTip="Stampa diretta POS80 del documento corrente (F10)">
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Left">
+                                <Path Data="{StaticResource IconPrint}"
+                                      Fill="White"
+                                      Width="14"
+                                      Height="14"
+                                      Stretch="Uniform"
+                                      Margin="0,0,4,0" />
+                                <TextBlock Text="F10"
+                                           FontSize="12"
+                                           FontWeight="Bold"
+                                           Foreground="White"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <Grid Grid.RowSpan="3"
+              Grid.ColumnSpan="2"
+              Panel.ZIndex="100">
+            <Border Background="#AA0C1220">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsOperationPopupVisible}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+
+                <Border Width="440"
+                        Padding="24"
+                        CornerRadius="20"
+                        BorderThickness="1"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushBase}" />
+                            <Setter Property="Effect" Value="{StaticResource CardShadow}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding OperationPopupIsBusy}" Value="True">
+                                    <Setter Property="BorderBrush" Value="#FF4D84D8" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding OperationPopupIsSuccess}" Value="True">
+                                    <Setter Property="BorderBrush" Value="#FF4CAF63" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+
+                    <StackPanel>
+                        <TextBlock FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Text="Banco" 
+                                   Foreground="{StaticResource TextMutedBrush}" />
+                        <TextBlock Margin="0,8,0,0"
+                                   FontSize="22"
+                                   FontWeight="Bold"
+                                   Text="{Binding OperationPopupTitle}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding OperationPopupIsBusy}" Value="True">
+                                            <Setter Property="Foreground" Value="#FF4D84D8" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding OperationPopupIsSuccess}" Value="True">
+                                            <Setter Property="Foreground" Value="#FF2F8F4E" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Margin="0,10,0,0"
+                                   FontSize="16"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Text="{Binding OperationPopupMessage}" />
+                        <ProgressBar Margin="0,20,0,0"
+                                     Height="6"
+                                     IsIndeterminate="{Binding OperationPopupIsBusy}">
+                            <ProgressBar.Style>
+                                <Style TargetType="ProgressBar">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding OperationPopupIsBusy}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ProgressBar.Style>
+                        </ProgressBar>
+                        <TextBlock Margin="0,16,0,0"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Text="{Binding OperationPopupFooterText}" />
+                        <StackPanel Margin="0,18,0,0"
+                                    HorizontalAlignment="Right"
+                                    Orientation="Horizontal">
+                            <Button MinWidth="116"
+                                    Padding="14,8"
+                                    Command="{Binding RiprovaOperazionePosCommand}"
+                                    Content="Riprova">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding OperationPopupCanRetry}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Margin="10,0,0,0"
+                                    MinWidth="116"
+                                    Padding="14,8"
+                                    Command="{Binding AnnullaOperazionePosCommand}"
+                                    Content="Annulla">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding OperationPopupCanCancel}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

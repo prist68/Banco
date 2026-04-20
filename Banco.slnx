@@ -1,0 +1,13 @@
+﻿<Solution>
+  <Project Path="Banco.Vendita/Banco.Vendita.csproj" />
+  <Project Path="Banco.Riordino/Banco.Riordino.csproj" />
+  <Project Path="Banco.Magazzino/Banco.Magazzino.csproj" />
+  <Project Path="Banco.Punti/Banco.Punti.csproj" />
+  <Project Path="Banco.Core.Contracts/Banco.Core.Contracts.csproj" />
+  <Project Path="Banco.Core.Domain/Banco.Core.Domain.csproj" />
+  <Project Path="Banco.Core.Infrastructure/Banco.Core.Infrastructure.csproj" />
+  <Project Path="Banco.Core.LocalStore/Banco.Core.LocalStore.csproj" />
+  <Project Path="Banco.Stampa/Banco.Stampa.csproj" />
+  <Project Path="Banco.Sidebar/Banco.Sidebar.csproj" />
+  <Project Path="Banco.UI.Wpf/Banco.UI.Wpf.csproj" />
+</Solution>

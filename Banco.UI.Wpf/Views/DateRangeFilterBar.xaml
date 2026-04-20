@@ -1,0 +1,170 @@
+<UserControl x:Class="Banco.UI.Wpf.Views.DateRangeFilterBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <Style x:Key="DateRangeInlineTextBoxStyle"
+               TargetType="TextBox"
+               BasedOn="{StaticResource CompactTextBoxStyle}">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="MinWidth" Value="104" />
+            <Setter Property="FontFamily" Value="Consolas" />
+        </Style>
+
+        <Style x:Key="DateRangeInlineCalendarButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource CompactSecondaryButtonStyle}">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="MinWidth" Value="30" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="4,0,0,0" />
+        </Style>
+    </UserControl.Resources>
+    <WrapPanel Orientation="Horizontal"
+               VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Margin="0,0,12,4">
+            <TextBlock Text="Da data:"
+                       VerticalAlignment="Center"
+                       Margin="0,0,6,0"
+                       FontSize="13"
+                       Foreground="{StaticResource TextSecondaryBrush}" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="DataInizioBox"
+                         MaxLength="10"
+                         VerticalContentAlignment="Center"
+                         PreviewTextInput="DateBox_PreviewTextInput"
+                         PreviewKeyDown="DateBox_PreviewKeyDown"
+                         LostFocus="DataInizioBox_LostFocus"
+                         Style="{StaticResource DateRangeInlineTextBoxStyle}" />
+                <Button Grid.Column="1"
+                        Click="DataInizioCalendarButton_OnClick"
+                        ToolTip="Apri calendario"
+                        Style="{StaticResource DateRangeInlineCalendarButtonStyle}">
+                        <TextBlock FontFamily="Segoe MDL2 Assets"
+                                   FontSize="14"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Text="&#xE787;" />
+                </Button>
+                <Popup x:Name="DataInizioPopup"
+                       PlacementTarget="{Binding ElementName=DataInizioBox}"
+                       Placement="Bottom"
+                       StaysOpen="False"
+                       AllowsTransparency="True"
+                       PopupAnimation="Fade">
+                    <Border Background="{DynamicResource UIDocumentCalendarPopupBrush}"
+                            BorderBrush="{DynamicResource UIDocumentCalendarPopupBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="8"
+                            Effect="{StaticResource CardShadow}">
+                        <Calendar x:Name="DataInizioCalendar"
+                                  SelectedDatesChanged="DataInizioCalendar_OnSelectedDatesChanged" />
+                    </Border>
+                </Popup>
+            </Grid>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,12,4">
+            <TextBlock Text="A data:"
+                       VerticalAlignment="Center"
+                       Margin="0,0,6,0"
+                       FontSize="13"
+                       Foreground="{StaticResource TextSecondaryBrush}" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="DataFineBox"
+                         MaxLength="10"
+                         VerticalContentAlignment="Center"
+                         PreviewTextInput="DateBox_PreviewTextInput"
+                         PreviewKeyDown="DateBox_PreviewKeyDown"
+                         LostFocus="DataFineBox_LostFocus"
+                         Style="{StaticResource DateRangeInlineTextBoxStyle}" />
+                <Button Grid.Column="1"
+                        Click="DataFineCalendarButton_OnClick"
+                        ToolTip="Apri calendario"
+                        Style="{StaticResource DateRangeInlineCalendarButtonStyle}">
+                        <TextBlock FontFamily="Segoe MDL2 Assets"
+                                   FontSize="14"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Text="&#xE787;" />
+                </Button>
+                <Popup x:Name="DataFinePopup"
+                       PlacementTarget="{Binding ElementName=DataFineBox}"
+                       Placement="Bottom"
+                       StaysOpen="False"
+                       AllowsTransparency="True"
+                       PopupAnimation="Fade">
+                    <Border Background="{DynamicResource UIDocumentCalendarPopupBrush}"
+                            BorderBrush="{DynamicResource UIDocumentCalendarPopupBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="8"
+                            Effect="{StaticResource CardShadow}">
+                        <Calendar x:Name="DataFineCalendar"
+                                  SelectedDatesChanged="DataFineCalendar_OnSelectedDatesChanged" />
+                    </Border>
+                </Popup>
+            </Grid>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,12,4"
+                    Visibility="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ShowMonthSelector, Converter={StaticResource BoolToVis}, FallbackValue=Visible}">
+            <TextBlock Text="Mese:"
+                       VerticalAlignment="Center"
+                       Margin="0,0,6,0"
+                       FontSize="13"
+                       Foreground="{StaticResource TextSecondaryBrush}" />
+            <ComboBox x:Name="MonthCombo"
+                      Width="126"
+                      SelectedValue="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=SelectedMonth, Mode=TwoWay}"
+                      SelectedValuePath="Tag"
+                      SelectionChanged="MonthCombo_OnSelectionChanged"
+                      VerticalContentAlignment="Center"
+                      Style="{StaticResource CompactComboBoxStyle}">
+                <ComboBoxItem Content="—" Tag="{x:Null}" />
+                <ComboBoxItem Content="Gennaio" Tag="1" />
+                <ComboBoxItem Content="Febbraio" Tag="2" />
+                <ComboBoxItem Content="Marzo" Tag="3" />
+                <ComboBoxItem Content="Aprile" Tag="4" />
+                <ComboBoxItem Content="Maggio" Tag="5" />
+                <ComboBoxItem Content="Giugno" Tag="6" />
+                <ComboBoxItem Content="Luglio" Tag="7" />
+                <ComboBoxItem Content="Agosto" Tag="8" />
+                <ComboBoxItem Content="Settembre" Tag="9" />
+                <ComboBoxItem Content="Ottobre" Tag="10" />
+                <ComboBoxItem Content="Novembre" Tag="11" />
+                <ComboBoxItem Content="Dicembre" Tag="12" />
+            </ComboBox>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,4"
+                    Visibility="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ShowYearSelector, Converter={StaticResource BoolToVis}, FallbackValue=Visible}">
+            <TextBlock Text="Anno:"
+                       VerticalAlignment="Center"
+                       Margin="0,0,6,0"
+                       FontSize="13"
+                       Foreground="{StaticResource TextSecondaryBrush}" />
+            <ComboBox x:Name="YearCombo"
+                      Width="90"
+                      ItemsSource="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=AvailableYearsSource, Mode=OneWay}"
+                      SelectedItem="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=SelectedYear, Mode=TwoWay}"
+                      SelectionChanged="YearCombo_OnSelectionChanged"
+                      VerticalContentAlignment="Center"
+                      Style="{StaticResource CompactComboBoxStyle}" />
+        </StackPanel>
+    </WrapPanel>
+</UserControl>

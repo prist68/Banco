@@ -1,0 +1,218 @@
+<UserControl x:Class="Banco.UI.Wpf.PosModule.PosConfigurationView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:input="clr-namespace:Banco.UI.Wpf.Infrastructure.Input">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,0,18">
+            <TextBlock FontSize="22"
+                       FontWeight="SemiBold"
+                       Text="{Binding Titolo}" />
+            <TextBlock Margin="0,6,0,0"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       Text="{Binding Descrizione}" />
+
+            <WrapPanel Margin="0,16,0,0">
+                <Button Content="Salva configurazione POS"
+                        Command="{Binding SaveCommand}"
+                        Style="{StaticResource PrimaryButtonStyle}" />
+                <Button Content="Test connessione POS"
+                        Command="{Binding TestConnectionCommand}"
+                        Style="{StaticResource SecondaryButtonStyle}" />
+            </WrapPanel>
+
+            <Border Margin="0,18,0,0"
+                    Style="{StaticResource CardStyle}"
+                    Background="{StaticResource WindowBackgroundBrush}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource IconPos}"
+                              Fill="{StaticResource TextPrimaryBrush}"
+                              Width="18" Height="18" Stretch="Uniform"
+                              VerticalAlignment="Center" />
+                        <TextBlock Margin="10,0,0,0"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Text="Parametri POS Nexi / Protocollo 17" />
+                    </StackPanel>
+
+                    <CheckBox Margin="0,18,0,0"
+                              Content="Abilita integrazione POS"
+                              IsChecked="{Binding Enabled}" />
+
+                    <UniformGrid Margin="0,16,0,0" Columns="2">
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Nome dispositivo" />
+                            <TextBox Text="{Binding DeviceName, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Modalita` gestione" />
+                            <TextBox Text="{Binding ManagementMode, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Tipo protocollo" />
+                            <TextBox Text="{Binding ProtocolType, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Tipo connessione" />
+                            <TextBox Text="{Binding ConnectionType, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="IP POS" />
+                            <TextBox Text="{Binding PosIpAddress, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Porta POS" />
+                            <TextBox Text="{Binding PosPort, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+
+                        <StackPanel Margin="12,0,0,0">
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Codice terminale / TID" />
+                            <TextBox Text="{Binding TerminalId, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Codice cassa" />
+                            <TextBox Text="{Binding CashRegisterId, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="IP registratore / PC cassa" />
+                            <TextBox Text="{Binding CashRegisterIpAddress, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Porta registratore / PC cassa" />
+                            <TextBox Text="{Binding CashRegisterPort, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <CheckBox Margin="0,16,0,0"
+                                      Content="Scambio importo obbligatorio"
+                                      IsChecked="{Binding AmountExchangeRequired}" />
+
+                            <CheckBox Content="Conferma importo da ECR"
+                                      IsChecked="{Binding ConfirmAmountFromEcr}" />
+
+                            <CheckBox Content="Stampa ticket su ECR / registratore"
+                                      IsChecked="{Binding PrintTicketOnEcr}" />
+
+                            <CheckBox Content="Controllo ID terminale"
+                                      IsChecked="{Binding CheckTerminalId}" />
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <TextBlock FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Testo finale scontrino / ticket POS" />
+                    <TextBox Text="{Binding ReceiptFooterText, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True"
+                             MinHeight="62"
+                             TextWrapping="Wrap" />
+
+                    <Border Margin="0,12,0,0"
+                            Background="{StaticResource SurfaceAltBrush}"
+                            CornerRadius="8"
+                            Padding="12">
+                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="Nota: la stampa ticket su ECR si riferisce al lato cassa / registratore collegato al gestionale, non alla stampa nativa del POS. Il Codice cassa usato dal POS deve essere un ID numerico a 8 cifre." />
+                    </Border>
+
+                    <TextBlock Margin="0,12,0,0"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Note operative" />
+                    <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True"
+                             MinHeight="88"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Border Margin="0,18,0,0"
+                    Style="{StaticResource CardStyle}"
+                    Background="{StaticResource WindowBackgroundBrush}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource IconCash}"
+                              Fill="{StaticResource TextPrimaryBrush}"
+                              Width="18" Height="18" Stretch="Uniform"
+                              VerticalAlignment="Center" />
+                        <TextBlock Margin="10,0,0,0"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Text="Test importo" />
+                    </StackPanel>
+
+                    <TextBlock Margin="0,10,0,0"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Text="Questo test invia un pacchetto ECR-17 con framing, LRC e testo finale ticket configurato. Serve a verificare il dialogo reale col POS e la sua risposta applicativa." />
+
+                    <UniformGrid Margin="0,16,0,0" Columns="2">
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Importo di prova" />
+                            <TextBox Text="{Binding TestAmount, UpdateSourceTrigger=PropertyChanged}"
+                                     input:PosAmountTextBoxBehavior.IsEnabled="True"
+                                     input:PosAmountTextBoxBehavior.CultureName="it-IT" />
+                        </StackPanel>
+
+                        <StackPanel Margin="12,20,0,0">
+                            <WrapPanel>
+                                <Button Content="Invia importo di prova"
+                                        Command="{Binding TestAmountCommand}"
+                                        Style="{StaticResource SecondaryButtonStyle}" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <Border Margin="0,12,0,0"
+                            Background="{StaticResource SurfaceAltBrush}"
+                            CornerRadius="8"
+                            Padding="12">
+                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding TestResultMessage}" />
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Margin="0,18,0,0">
+                <WrapPanel>
+                    <Button Content="Salva configurazione POS"
+                            Command="{Binding SaveCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}" />
+                </WrapPanel>
+
+                <TextBlock Margin="0,12,0,0"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="{Binding StatusMessage}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

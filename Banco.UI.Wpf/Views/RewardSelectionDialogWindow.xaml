@@ -1,0 +1,150 @@
+<Window x:Class="Banco.UI.Wpf.Views.RewardSelectionDialogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
+        MinWidth="460"
+        MaxWidth="620"
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True">
+    <Border Background="{DynamicResource ModalOverlayBrush}">
+        <Border Width="500"
+                Margin="24"
+                Padding="20"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrushBase}"
+                BorderThickness="1"
+                CornerRadius="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" LastChildFill="True">
+                    <TextBlock Text="{Binding Eyebrow, RelativeSource={RelativeSource AncestorType=Window}}"
+                               FontSize="11"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               VerticalAlignment="Center" />
+                    <Button DockPanel.Dock="Right"
+                            Width="28"
+                            Height="28"
+                            Margin="12,0,0,0"
+                            Click="CloseButton_OnClick"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            ToolTip="Chiudi">
+                        <Border Background="{DynamicResource ModalChromeBrush}"
+                                BorderBrush="{StaticResource BorderBrushBase}"
+                                BorderThickness="1"
+                                CornerRadius="7">
+                            <TextBlock Text="✕"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
+                </DockPanel>
+
+                <Border Grid.Row="1"
+                        Margin="0,14,0,0"
+                        BorderBrush="{DynamicResource ModalAccentBorderBrush}"
+                        BorderThickness="4,0,0,0"
+                        Padding="14,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="{Binding DialogTitle, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   FontSize="21"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Margin="0,8,0,0"
+                                   Text="{Binding DialogMessage, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   FontSize="13.5"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="2"
+                        Margin="0,18,0,0"
+                        Padding="12"
+                        Background="{DynamicResource ModalInfoSurfaceBrush}"
+                        BorderBrush="{DynamicResource ModalInfoBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12">
+                    <StackPanel>
+                        <TextBlock Text="Scegli il premio da applicare"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                        <ListBox x:Name="RewardsListBox"
+                                 Margin="0,10,0,0"
+                                 MinWidth="420"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 SelectedIndex="0">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Margin" Value="0,0,0,8" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="12,10"
+                                            Background="{DynamicResource ModalFieldSurfaceBrush}"
+                                            BorderBrush="{DynamicResource ModalInfoBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="10">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding RuleName}"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                            <TextBlock Margin="0,4,0,0"
+                                                       Text="{Binding RewardDescription}"
+                                                       FontSize="13"
+                               Foreground="{DynamicResource ModalInfoForegroundBrush}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Margin="0,4,0,0"
+                                                       Text="{Binding RequiredPointsLabel}"
+                                                       FontSize="12.5"
+                                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Row="3"
+                            Margin="0,22,0,0"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Content="Non adesso"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            MinWidth="104"
+                            Margin="0,0,10,0"
+                            IsCancel="True"
+                            Click="SecondaryButton_OnClick" />
+                    <Button Content="Applica premio"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            MinWidth="110"
+                            IsDefault="True"
+                            Click="PrimaryButton_OnClick" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</Window>

@@ -1,0 +1,681 @@
+<UserControl x:Class="Banco.UI.Wpf.Views.UIDocumentListControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:views="clr-namespace:Banco.UI.Wpf.Views">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <Style x:Key="UIDocumentCardStyle"
+               TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource UIDocumentCardBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource UIDocumentCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12" />
+        </Style>
+
+        <Style x:Key="UIDocumentMetricCardStyle"
+               TargetType="Border"
+               BasedOn="{StaticResource UIDocumentCardStyle}">
+            <Setter Property="Padding" Value="10,9" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Background" Value="{DynamicResource UIDocumentMetricBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource UIDocumentMetricBorderBrush}" />
+        </Style>
+
+        <Style x:Key="UIDocumentToolbarButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource CompactSecondaryButtonStyle}">
+            <Setter Property="MinWidth" Value="84" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+        </Style>
+
+        <Style x:Key="UIDocumentFilterToggleStyle"
+               TargetType="ToggleButton"
+               BasedOn="{StaticResource CompactToolbarToggleButtonStyle}">
+            <Setter Property="MinWidth" Value="92" />
+        </Style>
+
+        <Style x:Key="UIDocumentDangerActionButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Padding" Value="5,2" />
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="{DynamicResource UIDocumentDangerForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource UIDocumentDangerBorderBrush}" />
+            <Setter Property="Background" Value="{DynamicResource UIDocumentDangerBackgroundBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="UIDocumentMainRowStyle"
+               TargetType="DataGridRow"
+               BasedOn="{StaticResource CompactDataGridRowStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasSospesoComponent}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource UIDocumentRowSospesoBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsPubblicatoBanco}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource UIDocumentRowPublishedBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsNonScontrinato}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource UIDocumentRowNonScontrinatoBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="UIDocumentHeaderStyle"
+               TargetType="DataGridColumnHeader"
+               BasedOn="{StaticResource CompactDataGridHeaderStyle}">
+            <Setter Property="Background" Value="{DynamicResource DocumentListGridHeaderBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DocumentListGridHeaderForegroundBrush}" />
+            <Setter Property="Padding" Value="8,7" />
+        </Style>
+
+        <Style x:Key="UIDocumentCellStyle"
+               TargetType="DataGridCell"
+               BasedOn="{StaticResource CompactDataGridCellStyle}">
+            <Setter Property="Padding" Value="6,5" />
+        </Style>
+
+        <Style x:Key="UIDocumentDetailRowStyle"
+               TargetType="DataGridRow"
+               BasedOn="{StaticResource CompactDataGridRowStyle}" />
+
+        <Style x:Key="UIDocumentFooterRowStyle"
+               TargetType="DataGridRow"
+               BasedOn="{StaticResource CompactFooterRowStyle}">
+            <Setter Property="Background" Value="{DynamicResource UIDocumentFooterRowBrush}" />
+        </Style>
+
+        <Style x:Key="UIDocumentFooterCellStyle"
+               TargetType="DataGridCell"
+               BasedOn="{StaticResource CompactFooterCellStyle}" />
+
+        <Style x:Key="UIDocumentSplitterStyle"
+               TargetType="GridSplitter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Width" Value="10" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="SizeWE" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GridSplitter">
+                        <Grid Background="Transparent">
+                            <Border Width="4"
+                                    Height="84"
+                                    CornerRadius="2"
+                                    Background="{DynamicResource UIDocumentSplitterBrush}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="6" />
+            <RowDefinition Height="0" />
+            <RowDefinition Height="0" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Style="{StaticResource UIDocumentCardStyle}"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource UIDocumentCardBorderBrush}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock VerticalAlignment="Center"
+                           FontSize="17"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           Text="Documenti" />
+
+                <WrapPanel Grid.Column="2"
+                           VerticalAlignment="Center">
+                    <Border Style="{StaticResource UIDocumentMetricCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Documenti visibili"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="11" />
+                            <TextBlock Margin="0,3,0,0"
+                                       Text="{Binding UIFilteredCount, StringFormat={}{0:N0}}"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource UIDocumentMetricCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Ufficiali filtro"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="11" />
+                            <TextBlock Margin="0,3,0,0"
+                                       Text="{Binding UIFilteredOfficialCount, StringFormat={}{0:N0}}"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource UIDocumentMetricCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Totale filtro"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="11" />
+                            <TextBlock Margin="0,3,0,0"
+                                       Text="{Binding UIFilteredTotale, StringFormat={}{0:N2}}"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource UIDocumentMetricCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Selezione"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="11" />
+                            <TextBlock Margin="0,3,0,0"
+                                       Text="{Binding SelectedDocumentsCount, StringFormat={}{0:N0}}"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource UIDocumentCardStyle}"
+                            MinWidth="220"
+                            Margin="0"
+                            Background="{DynamicResource UIDocumentStatusBrush}"
+                            BorderBrush="{DynamicResource UIDocumentCardBorderBrush}">
+                        <TextBlock Text="{Binding UIStatusMessage}"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                    </Border>
+                </WrapPanel>
+
+                <StackPanel Grid.Column="4"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <CheckBox Content="Includi record tecnici"
+                              IsChecked="{Binding IncludeLocalDocuments, Mode=TwoWay}"
+                              Style="{StaticResource CompactCheckBoxStyle}" />
+                    <Button Margin="12,0,0,0"
+                            Content="Aggiorna"
+                            Command="{Binding RefreshCommand}"
+                            Style="{StaticResource CompactSecondaryButtonStyle}" />
+                    <Button Margin="8,0,0,0"
+                            Content="Nuova vendita"
+                            Click="NewBancoDocumentButton_OnClick"
+                            Style="{StaticResource CompactPrimaryButtonStyle}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="ListColumnDef" Width="1.9*" MinWidth="540" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition x:Name="DetailColumnDef" Width="1.05*" MinWidth="330" />
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource UIDocumentCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="8" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="8" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="6" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+                            <TextBlock Text="Vista operativa"
+                                       FontSize="14"
+                                       FontWeight="SemiBold" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <TextBlock Margin="0,0,8,0"
+                                       VerticalAlignment="Center"
+                                       Text="Nominativo"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextMutedBrush}" />
+                            <TextBox Width="220"
+                                     Margin="0,0,10,0"
+                                     VerticalAlignment="Center"
+                                     Text="{Binding NominativoSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource CompactTextBoxStyle}" />
+                            <Button x:Name="OpenInBancoButton"
+                                    Content="Banco (F2)"
+                                    Click="OpenDocumentInBancoButton_OnClick"
+                                    Style="{StaticResource CompactSecondaryButtonStyle}" />
+                            <Button x:Name="DeleteSelectedButton"
+                                    Margin="8,0,0,0"
+                                    Content="Cancella selezionati"
+                                    Click="DeleteSelectedLocalDocumentsButton_OnClick"
+                                    Style="{StaticResource CompactSecondaryButtonStyle}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Grid.Row="2"
+                            Padding="10,8"
+                            CornerRadius="8"
+                            Background="{DynamicResource UIDocumentPanelBrush}"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource UIDocumentPanelBorderBrush}">
+                        <Grid VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                <TextBlock Margin="0,0,8,0"
+                                           VerticalAlignment="Center"
+                                           Text="Periodo"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextMutedBrush}" />
+                                <ComboBox x:Name="PeriodFilterCombo"
+                                          Width="126"
+                                          SelectionChanged="PeriodFilterCombo_OnSelectionChanged"
+                                          Style="{StaticResource CompactComboBoxStyle}">
+                                    <sys:String>Personalizzato</sys:String>
+                                    <sys:String>Oggi</sys:String>
+                                    <sys:String>Settimana</sys:String>
+                                    <sys:String>Mese</sys:String>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                <TextBlock Margin="0,0,8,0"
+                                           VerticalAlignment="Center"
+                                           Text="Intervallo"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextMutedBrush}" />
+                                <views:DateRangeFilterBar StartDate="{Binding DataDa, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          EndDate="{Binding DataA, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          ShowMonthSelector="False"
+                                                          ShowYearSelector="False" />
+                            </StackPanel>
+
+                            <TextBlock Grid.Column="6"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Right"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Text="{Binding SelectionSummary}" />
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="4"
+                            BorderBrush="{StaticResource BorderBrushBase}"
+                            BorderThickness="1"
+                            CornerRadius="8,8,0,0"
+                            Background="{StaticResource SurfaceBrush}"
+                            ClipToBounds="True">
+                        <DataGrid x:Name="DocumentsGrid"
+                                  ItemsSource="{Binding UIDocumentsView}"
+                                  SelectedItem="{Binding SelectedDocument, Mode=TwoWay}"
+                                  AutoGenerateColumns="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="None"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  CanUserResizeRows="False"
+                                  CanUserResizeColumns="True"
+                                  CanUserReorderColumns="True"
+                                  CanUserSortColumns="True"
+                                  SelectionMode="Extended"
+                                  SelectionUnit="FullRow"
+                                  AlternationCount="2"
+                                  RowHeaderWidth="0"
+                                  MouseDoubleClick="DocumentsGrid_OnMouseDoubleClick"
+                                  SelectionChanged="DocumentsGrid_OnSelectionChanged"
+                                  PreviewMouseLeftButtonUp="DocumentsGrid_OnPreviewMouseLeftButtonUp"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  RowStyle="{StaticResource DocumentListGridRowStyle}"
+                                  ColumnHeaderStyle="{StaticResource DocumentListGridHeaderStyle}"
+                                  CellStyle="{StaticResource DocumentListGridCellStyle}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn x:Name="StatusColumn" Header="#" Binding="{Binding SourceLabel}" Width="56" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="OrigineColumn" Header="Origine" Binding="{Binding SourceLabel}" Width="90" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="OidColumn" Header="OID" Binding="{Binding NumeroSorgenteLabel}" Width="80" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="DocumentoColumn" Header="Numero" Binding="{Binding NumeroDocumento}" Width="110" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="DataColumn" Header="Data" Binding="{Binding DataLabel}" Width="110" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="OperatoreColumn" Header="Operatore" Binding="{Binding Operatore}" Width="120" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="ClienteColumn" Header="Ragione sociale" Binding="{Binding Cliente}" Width="260" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="TotaleColumn" Header="Totale" Binding="{Binding Totale, StringFormat={}{0:N2}}" Width="100" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="PagContantiColumn" Header="Pag. Contanti" Binding="{Binding PagContanti, StringFormat={}{0:N2}}" Width="100" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="PagCartaColumn" Header="Pag. Carta" Binding="{Binding PagCarta, StringFormat={}{0:N2}}" Width="100" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="CortesiaColumn" Header="Cortesia" Binding="{Binding TotaleContantiCortesiaONonScontrinato, StringFormat={}{0:N2}}" Width="100" IsReadOnly="True" Visibility="Collapsed" />
+                                <DataGridTextColumn x:Name="PagWebColumn" Header="Pag. Web" Binding="{Binding PagWeb, StringFormat={}{0:N2}}" Width="100" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="PagBuoniColumn" Header="Pag. Buoni" Binding="{Binding PagBuoni, StringFormat={}{0:N2}}" Width="100" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="PagSospesoColumn" Header="Pag. Sospeso" Binding="{Binding PagSospeso, StringFormat={}{0:N2}}" Width="100" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="ResiduoColumn" Header="Residuo" Binding="{Binding ResiduoPagamento, StringFormat={}{0:N2}}" Width="100" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="DaFiscalizzareColumn" Header="Da fiscalizzare" Binding="{Binding DaFiscalizzare, StringFormat={}{0:N2}}" Width="120" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="StatoColumn" Header="Stato documento" Binding="{Binding StatoDocumento}" Width="180" IsReadOnly="True" />
+                                <DataGridTextColumn x:Name="ScontrinoColumn" Header="Scontrino" Binding="{Binding ScontrinoLabel}" Width="100" IsReadOnly="True" />
+                                <DataGridTemplateColumn x:Name="ActionsColumn" Header="" Width="44" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="Del"
+                                                    Click="DeleteRowButton_OnClick"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{StaticResource DocumentListRowActionButtonStyle}"
+                                                    ToolTip="Cancella dal DB legacy il documento non scontrinato"
+                                                    Visibility="{Binding CanDeleteFromList, Converter={StaticResource BoolToVis}}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+
+                    <DataGrid x:Name="FooterGrid"
+                              Grid.Row="5"
+                              ItemsSource="{Binding UIFooterRows}"
+                              AutoGenerateColumns="False"
+                              HeadersVisibility="None"
+                              GridLinesVisibility="None"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              CanUserResizeColumns="False"
+                              CanUserResizeRows="False"
+                              CanUserReorderColumns="False"
+                              SelectionUnit="Cell"
+                              IsHitTestVisible="False"
+                              Focusable="False"
+                              RowHeaderWidth="0"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                              RowStyle="{StaticResource DocumentListFooterRowStyle}"
+                              CellStyle="{StaticResource DocumentListFooterCellStyle}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn x:Name="FooterStatusColumn" Binding="{Binding Status}" Width="56" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterOrigineColumn" Binding="{Binding Origine}" Width="90" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterOidColumn" Binding="{Binding Oid}" Width="80" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterDocumentoColumn" Binding="{Binding Documento}" Width="110" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterDataColumn" Binding="{Binding Data}" Width="110" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterOperatoreColumn" Binding="{Binding Operatore}" Width="120" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterClienteColumn" Binding="{Binding Cliente}" Width="260" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterTotaleColumn" Binding="{Binding Totale}" Width="100" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterPagContantiColumn" Binding="{Binding PagContanti}" Width="100" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterPagCartaColumn" Binding="{Binding PagCarta}" Width="100" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterCortesiaColumn" Binding="{Binding Cortesia}" Width="100" IsReadOnly="True" Visibility="Collapsed" />
+                            <DataGridTextColumn x:Name="FooterPagWebColumn" Binding="{Binding PagWeb}" Width="100" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterPagBuoniColumn" Binding="{Binding PagBuoni}" Width="100" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterPagSospesoColumn" Binding="{Binding PagSospeso}" Width="100" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterResiduoColumn" Binding="{Binding ResiduoPagamento}" Width="100" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterDaFiscalizzareColumn" Binding="{Binding DaFiscalizzare}" Width="120" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterStatoColumn" Binding="{Binding StatoDocumento}" Width="180" IsReadOnly="True" />
+                            <DataGridTextColumn x:Name="FooterScontrinoColumn" Binding="{Binding Scontrino}" Width="100" IsReadOnly="True" />
+                            <DataGridTemplateColumn x:Name="FooterActionsColumn" Width="44" IsReadOnly="True" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Grid.Row="7"
+                            x:Name="TotalsPanel"
+                            Padding="10"
+                            Background="{DynamicResource UIDocumentFooterBrush}"
+                            BorderBrush="{DynamicResource UIDocumentFooterBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="0,0,8,8"
+                            Focusable="True">
+                        <DockPanel LastChildFill="False">
+                            <TextBlock DockPanel.Dock="Right"
+                                       Margin="18,0,0,0"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="{Binding SelectionSummary}" />
+
+                            <WrapPanel VerticalAlignment="Center"
+                                       ItemHeight="40"
+                                       Orientation="Horizontal">
+                                <StackPanel Margin="0,0,18,0">
+                                    <TextBlock Text="Totale"
+                                               FontSize="11"
+                                               Foreground="{StaticResource TextMutedBrush}" />
+                                    <TextBlock Margin="0,3,0,0"
+                                               Text="{Binding UIFilteredTotale, StringFormat={}{0:N2}}"
+                                               FontSize="14"
+                                               FontWeight="Bold" />
+                                </StackPanel>
+
+                                <StackPanel Margin="0,0,18,0">
+                                    <TextBlock Text="Contanti"
+                                               FontSize="11"
+                                               Foreground="{StaticResource TextMutedBrush}" />
+                                    <TextBlock Margin="0,3,0,0"
+                                               Text="{Binding UIFilteredContanti, StringFormat={}{0:N2}}"
+                                               FontSize="14"
+                                               FontWeight="Bold" />
+                                </StackPanel>
+
+                                <StackPanel Margin="0,0,18,0"
+                                            Visibility="{Binding IsUICartaSummaryVisible, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="Carta"
+                                               FontSize="11"
+                                               Foreground="{StaticResource TextMutedBrush}" />
+                                    <TextBlock Margin="0,3,0,0"
+                                               Text="{Binding UIFilteredCarta, StringFormat={}{0:N2}}"
+                                               FontSize="14"
+                                               FontWeight="Bold" />
+                                </StackPanel>
+
+                                <StackPanel Margin="0,0,18,0"
+                                            Visibility="{Binding IsUICortesiaSummaryVisible, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="Cortesia"
+                                               FontSize="11"
+                                               Foreground="{StaticResource TextMutedBrush}" />
+                                    <TextBlock Margin="0,3,0,0"
+                                               Text="{Binding UIFilteredCortesia, StringFormat={}{0:N2}}"
+                                               FontSize="14"
+                                               FontWeight="Bold" />
+                                </StackPanel>
+
+                                <StackPanel Margin="0,0,18,0">
+                                    <TextBlock Text="Buono"
+                                               FontSize="11"
+                                               Foreground="{StaticResource TextMutedBrush}" />
+                                    <TextBlock Margin="0,3,0,0"
+                                               Text="{Binding UIFilteredBuoni, StringFormat={}{0:N2}}"
+                                               FontSize="14"
+                                               FontWeight="Bold" />
+                                </StackPanel>
+
+                                <StackPanel>
+                                    <TextBlock Text="Sospeso"
+                                               FontSize="11"
+                                               Foreground="{StaticResource TextMutedBrush}" />
+                                    <TextBlock Margin="0,3,0,0"
+                                               Text="{Binding UIFilteredSospeso, StringFormat={}{0:N2}}"
+                                               FontSize="14"
+                                               FontWeight="Bold" />
+                                </StackPanel>
+                            </WrapPanel>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1"
+                          Style="{StaticResource UIDocumentSplitterStyle}"
+                          DragCompleted="Splitter_OnDragCompleted" />
+
+            <Border Grid.Column="2"
+                    Style="{StaticResource UIDocumentCardStyle}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <Border Background="{DynamicResource UIDocumentMetricBrush}"
+                                BorderBrush="{DynamicResource UIDocumentPanelBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12">
+                            <StackPanel>
+                                <TextBlock Text="Documento selezionato"
+                                           FontSize="14"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Margin="0,8,0,0"
+                                           Text="{Binding SelectedDocumentDetail.DocumentoLabel, TargetNullValue=Nessun documento selezionato}"
+                                           FontSize="18"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                <TextBlock Margin="0,4,0,0"
+                                           Text="{Binding SelectedDocumentDetail.Cliente, TargetNullValue=Seleziona una riga per vedere il dettaglio}"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                <TextBlock Margin="0,4,0,0"
+                                           Text="{Binding SelectedDocumentDetail.StatoDocumento}"
+                                           Foreground="{StaticResource TextMutedBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0"
+                                    Style="{StaticResource UIDocumentMetricCardStyle}"
+                                    Margin="0">
+                                <StackPanel>
+                                    <TextBlock Text="Totale"
+                                               FontSize="11"
+                                               Foreground="{StaticResource TextMutedBrush}" />
+                                    <TextBlock Margin="0,3,0,0"
+                                               Text="{Binding SelectedDocumentDetail.Totale, StringFormat={}{0:N2}}"
+                                               FontSize="16"
+                                               FontWeight="Bold" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Column="2"
+                                    Style="{StaticResource UIDocumentMetricCardStyle}"
+                                    Margin="0">
+                                <StackPanel>
+                                    <TextBlock Text="Da fiscalizzare"
+                                               FontSize="11"
+                                               Foreground="{StaticResource TextMutedBrush}" />
+                                    <TextBlock Margin="0,3,0,0"
+                                               Text="{Binding SelectedDocumentDetail.DaFiscalizzare, StringFormat={}{0:N2}}"
+                                               FontSize="16"
+                                               FontWeight="Bold" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Border Margin="0,10,0,0"
+                                Padding="10"
+                                CornerRadius="8"
+                                Background="{StaticResource SurfaceAltBrush}"
+                                BorderThickness="1"
+                                BorderBrush="{StaticResource BorderBrushBase}">
+                            <StackPanel>
+                                <TextBlock Text="Righe documento"
+                                           FontSize="13"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Margin="0,3,0,0"
+                                           Text="Stesse righe reali e stesso dettaglio del modulo originale."
+                                           Foreground="{StaticResource TextMutedBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <DataGrid Margin="0,8,0,0"
+                                  ItemsSource="{Binding SelectedDocumentRows}"
+                                  AutoGenerateColumns="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="None"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  CanUserResizeRows="False"
+                                  IsReadOnly="True"
+                                  RowHeaderWidth="0"
+                                  AlternationCount="2"
+                                  MaxHeight="330"
+                                  Background="Transparent"
+                                  BorderBrush="{StaticResource BorderBrushBase}"
+                                  BorderThickness="1"
+                                  RowStyle="{StaticResource DocumentListDetailGridRowStyle}"
+                                  ColumnHeaderStyle="{StaticResource DocumentListGridHeaderStyle}"
+                                  CellStyle="{StaticResource DocumentListGridCellStyle}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Riga" Binding="{Binding OrdineRiga}" Width="42" />
+                                <DataGridTextColumn Header="Codice" Binding="{Binding CodiceArticolo}" Width="80" />
+                                <DataGridTextColumn Header="Descrizione" Binding="{Binding Descrizione}" Width="*" />
+                                <DataGridTextColumn Header="Qta`" Binding="{Binding Quantita, StringFormat={}{0:N2}}" Width="58" />
+                                <DataGridTextColumn Header="Prezzo" Binding="{Binding PrezzoUnitario, StringFormat={}{0:N2}}" Width="70" />
+                                <DataGridTextColumn Header="Sc.%" Binding="{Binding ScontoPercentuale, StringFormat={}{0:N2}}" Width="58" />
+                                <DataGridTextColumn Header="Importo" Binding="{Binding ImportoRiga, StringFormat={}{0:N2}}" Width="78" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <Border Margin="0,10,0,0"
+                                Padding="10"
+                                CornerRadius="8"
+                                Background="{DynamicResource UIDocumentPanelBrush}"
+                                BorderThickness="1"
+                                BorderBrush="{DynamicResource UIDocumentPanelBorderBrush}">
+                            <StackPanel>
+                                <TextBlock Text="Operatività"
+                                           FontSize="13"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Margin="0,4,0,0"
+                                           Text="{Binding OpenDocumentInBancoTooltip}"
+                                           Foreground="{StaticResource TextMutedBrush}" />
+                                <Button Margin="0,10,0,0"
+                                        Content="{Binding OpenDocumentInBancoLabel}"
+                                        ToolTip="{Binding OpenDocumentInBancoTooltip}"
+                                        Command="{Binding OpenDocumentInBancoCommand}"
+                                        Style="{StaticResource CompactPrimaryButtonStyle}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,330 @@
+<UserControl x:Class="Banco.Sidebar.Views.SidebarControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:Banco.Sidebar.Converters"
+             xmlns:vm="clr-namespace:Banco.Sidebar.ViewModels"
+             x:Name="Root">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <conv:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
+        <conv:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
+        <conv:ResourceKeyToGeometryConverter x:Key="ResourceKeyToGeometryConverter" />
+
+        <Style x:Key="RailButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Padding" Value="10,12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="RailBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="14"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="RailBorder" Property="Background" Value="#173D73C6" />
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter TargetName="RailBorder" Property="Background" Value="#204F86DC" />
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Stile TextBox ricerca con icona lente integrata -->
+        <Style x:Key="SearchBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="#FFFFFFFF" />
+            <Setter Property="BorderBrush" Value="#D8E4F0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="SearchBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="10,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Path Width="14" Height="14"
+                                      Margin="0,0,8,0"
+                                      VerticalAlignment="Center"
+                                      Stretch="Uniform"
+                                      Fill="#99A8BB"
+                                      Data="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" />
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                              Grid.Column="1"
+                                              VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="SearchBorder" Property="BorderBrush" Value="#4F86DC" />
+                                <Setter TargetName="SearchBorder" Property="Background" Value="#FAFCFF" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="SearchBorder" Property="BorderBrush" Value="#AABDD8" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ShortcutButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Card"
+                                Background="#FFFFFFFF"
+                                BorderBrush="#E2EAF4"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="4" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Background="{Binding AccentBrush}" CornerRadius="4" />
+                                <ContentPresenter Grid.Column="2" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Card" Property="Background" Value="#FFF7FAFE" />
+                                <Setter TargetName="Card" Property="BorderBrush" Value="#CCBFD2E8" />
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter TargetName="Card" Property="Background" Value="#FFF2F7FE" />
+                                <Setter TargetName="Card" Property="BorderBrush" Value="#FF4F86DC" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                                <Setter TargetName="Card" Property="BorderBrush" Value="#FF3FA06E" />
+                            </DataTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Card" Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Border Background="{StaticResource SidebarBackgroundBrush}">
+        <Border.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="Personalizza sidebar"
+                          Command="{Binding CustomizeSidebarCommand}" />
+                <MenuItem Header="Ripristina layout sidebar"
+                          Command="{Binding ResetCustomizationCommand}" />
+            </ContextMenu>
+        </Border.ContextMenu>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <!-- Larghezza rail: variabile, salvata e ripristinata dal code-behind -->
+                <ColumnDefinition x:Name="RailColumn" Width="116" MinWidth="90" MaxWidth="200" />
+                <!-- Splitter ridimensionamento rail -->
+                <ColumnDefinition Width="5" />
+                <!-- Pannello contestuale navigazione -->
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Rail moduli -->
+            <Border Background="#FF263955"
+                    BorderBrush="#243A5576"
+                    BorderThickness="0,0,1,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <ItemsControl Margin="8,14,8,0"
+                                  ItemsSource="{Binding MacroCategories}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:SidebarMacroCategoryViewModel}">
+                                <Button Style="{StaticResource RailButtonStyle}"
+                                        Command="{Binding ActivateCommand}">
+                                    <StackPanel>
+                                        <Border Width="42"
+                                                Height="42"
+                                                HorizontalAlignment="Center"
+                                                CornerRadius="12"
+                                                Background="{Binding AccentBrush}">
+                                            <Path Width="22"
+                                                  Height="22"
+                                                  Stretch="Uniform"
+                                                  Fill="White"
+                                                  Data="{Binding IconResourceKey, Converter={StaticResource ResourceKeyToGeometryConverter}}" />
+                                        </Border>
+                                        <TextBlock Margin="0,8,0,0"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="White"
+                                                   Text="{Binding Title}"
+                                                   TextAlignment="Center"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Icona impostazioni sidebar con tooltip -->
+                    <Button Grid.Row="1"
+                            Margin="0,0,0,14"
+                            HorizontalAlignment="Center"
+                            Width="36" Height="36"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            ToolTip="Tasto dx per personalizzare colori, link e posizioni."
+                            IsHitTestVisible="False">
+                        <Path Width="16" Height="16"
+                              Stretch="Uniform"
+                              Fill="#6A8BAF"
+                              Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- GridSplitter per ridimensionare il rail -->
+            <GridSplitter Grid.Column="1"
+                          x:Name="RailSplitter"
+                          Width="5"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          Background="#243A5576"
+                          Cursor="SizeWE"
+                          DragCompleted="RailSplitter_DragCompleted" />
+
+            <!-- Pannello contestuale navigazione -->
+            <Border Grid.Column="2"
+                    Background="#FFF2F6FB">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Margin="16,18,16,12">
+                        <TextBlock FontSize="11"
+                                   FontWeight="Bold"
+                                   Foreground="#6B7E99"
+                                   Text="NAVIGAZIONE RAPIDA" />
+                        <TextBox Margin="0,10,0,0"
+                                 Style="{StaticResource SearchBoxStyle}"
+                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+                        <Border Margin="0,8,0,0"
+                                Padding="10"
+                                Background="#FFFFFFFF"
+                                BorderBrush="#E2EAF4"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Visibility="{Binding SearchResults.Count, Converter={StaticResource CountToVisibilityConverter}}">
+                            <ItemsControl ItemsSource="{Binding SearchResults}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:SidebarSearchResultViewModel}">
+                                        <Button Click="SearchResultButton_OnClick"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource ShortcutButtonStyle}">
+                                            <StackPanel>
+                                                <TextBlock FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                                           Text="{Binding Title}" />
+                                                <TextBlock Margin="0,2,0,0"
+                                                           FontSize="11.5"
+                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                           Text="{Binding Subtitle}" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="16,0,16,12">
+                            <TextBlock FontSize="17"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Text="{Binding SelectedMacroCategory.Title, TargetNullValue=Navigazione}" />
+                            <ItemsControl Margin="0,14,0,0"
+                                          ItemsSource="{Binding SelectedGroups}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:SidebarSectionGroupViewModel}">
+                                        <StackPanel Margin="0,0,0,14">
+                                            <TextBlock Margin="0,0,0,8"
+                                                       FontSize="13"
+                                                       FontWeight="Bold"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                       Text="{Binding Title}" />
+                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="{x:Type vm:SidebarShortcutItemViewModel}">
+                                                        <Button Style="{StaticResource ShortcutButtonStyle}"
+                                                                Command="{Binding OpenCommand}"
+                                                                IsEnabled="{Binding IsEnabled}">
+                                                            <StackPanel>
+                                                                <TextBlock FontWeight="SemiBold"
+                                                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                                                           Text="{Binding DisplayTitle}" />
+                                                                <TextBlock Margin="0,2,0,0"
+                                                                           FontSize="11.5"
+                                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                                           Text="{Binding InfoText}"
+                                                                           TextWrapping="Wrap"
+                                                                           Visibility="{Binding IsInformational, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                            </StackPanel>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <Border Padding="14"
+                                    Background="#FFFFFFFF"
+                                    BorderBrush="#E2EAF4"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Visibility="{Binding HasSelectedGroups, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                                <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                           Text="{Binding EmptyCategoryMessage}"
+                                           TextWrapping="Wrap" />
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

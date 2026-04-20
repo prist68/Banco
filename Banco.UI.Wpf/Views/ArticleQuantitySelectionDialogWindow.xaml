@@ -1,0 +1,235 @@
+<Window x:Class="Banco.UI.Wpf.Views.ArticleQuantitySelectionDialogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
+        MinWidth="700"
+        MaxWidth="760"
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True">
+    <Border Background="{DynamicResource ModalOverlayBrush}">
+        <Border Width="700"
+                Margin="24"
+                Padding="22"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrushBase}"
+                BorderThickness="1"
+                CornerRadius="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" LastChildFill="True">
+                    <TextBlock Text="{Binding Eyebrow, RelativeSource={RelativeSource AncestorType=Window}}"
+                               FontSize="11"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               VerticalAlignment="Center" />
+                    <Button DockPanel.Dock="Right"
+                            Width="28"
+                            Height="28"
+                            Margin="12,0,0,0"
+                            Click="CloseButton_OnClick"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            ToolTip="Chiudi">
+                        <Border Background="{DynamicResource ModalChromeBrush}"
+                                BorderBrush="{StaticResource BorderBrushBase}"
+                                BorderThickness="1"
+                                CornerRadius="7">
+                            <TextBlock Text="✕"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
+                </DockPanel>
+
+                <Border Grid.Row="1"
+                        Margin="0,14,0,0"
+                        BorderBrush="{DynamicResource ModalAccentBorderBrush}"
+                        BorderThickness="4,0,0,0"
+                        Padding="14,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="{Binding DialogTitle, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   FontSize="19"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Margin="0,8,0,0"
+                                   Text="{Binding DialogMessage, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   FontSize="13"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="2"
+                        Margin="0,18,0,0"
+                        Padding="12"
+                        Background="{DynamicResource ModalInfoSurfaceBrush}"
+                        BorderBrush="{DynamicResource ModalInfoBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12">
+                    <StackPanel>
+                        <TextBlock x:Name="ArticleRulesTextBlock"
+                                   FontSize="12.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource ModalInfoForegroundBrush}"
+                                   TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220" />
+                                <ColumnDefinition Width="18" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0"
+                                    Padding="14"
+                                    Background="{DynamicResource ModalFieldSurfaceBrush}"
+                                    BorderBrush="{DynamicResource ModalInfoBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="10">
+                                <StackPanel>
+                                    <TextBlock Text="Quantita`"
+                                               FontSize="12.5"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextSecondaryBrush}" />
+                                    <TextBox x:Name="QuantityTextBox"
+                                             Margin="0,8,0,0"
+                                             MinHeight="42"
+                                             FontSize="24"
+                                             FontWeight="Bold"
+                                             HorizontalContentAlignment="Center"
+                                             TextAlignment="Center"
+                                             PreviewKeyDown="QuantityTextBox_OnPreviewKeyDown"
+                                             TextChanged="QuantityTextBox_OnTextChanged" />
+                                    <Border Margin="0,12,0,0"
+                                            Padding="10,8"
+                                            Background="{DynamicResource ModalInfoSurfaceBrush}"
+                                            BorderBrush="{DynamicResource ModalFieldBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="8">
+                                        <TextBlock x:Name="AppliedPriceTextBlock"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   TextWrapping="NoWrap"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Column="2"
+                                    Padding="14"
+                                    Background="{DynamicResource ModalFieldSurfaceBrush}"
+                                    BorderBrush="{DynamicResource ModalInfoBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="10">
+                                <StackPanel>
+                                    <TextBlock Text="Fasce prezzo disponibili"
+                                               FontSize="12.5"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextSecondaryBrush}" />
+                                    <ListBox x:Name="QuantityTiersListBox"
+                                             Margin="0,10,0,0"
+                                             BorderThickness="0"
+                                             Background="Transparent"
+                                             KeyboardNavigation.TabNavigation="Continue"
+                                             SelectionMode="Single"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                             PreviewKeyDown="QuantityTiersListBox_OnPreviewKeyDown"
+                                             SelectionChanged="QuantityTiersListBox_OnSelectionChanged"
+                                             MouseDoubleClick="QuantityTiersListBox_OnMouseDoubleClick">
+                                        <ListBox.ItemContainerStyle>
+                                            <Style TargetType="ListBoxItem">
+                                                <Setter Property="Margin" Value="0,0,0,8" />
+                                                <Setter Property="Padding" Value="0" />
+                                                <Setter Property="Focusable" Value="True" />
+                                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                <EventSetter Event="PreviewMouseLeftButtonDown"
+                                                             Handler="QuantityTiersListBoxItem_OnPreviewMouseLeftButtonDown" />
+                                            </Style>
+                                        </ListBox.ItemContainerStyle>
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Padding="12,10"
+                                                        Background="{DynamicResource ModalFieldAltSurfaceBrush}"
+                                                        BorderBrush="{DynamicResource ModalFieldBorderBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="10">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="18" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{Binding QuantitaLabel}"
+                                                                   FontSize="13.5"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   TextWrapping="NoWrap"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   VerticalAlignment="Center" />
+                                                        <TextBlock Grid.Column="2"
+                                                                   Text="{Binding PrezzoLabel}"
+                                                                   FontSize="13"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource ModalInfoForegroundBrush}"
+                                                                   TextWrapping="NoWrap"
+                                                                   VerticalAlignment="Center" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Grid.Row="3"
+                           Margin="0,14,0,0"
+                           Text="{Binding FooterHint, RelativeSource={RelativeSource AncestorType=Window}}"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           TextWrapping="NoWrap"
+                           TextTrimming="CharacterEllipsis" />
+
+                <StackPanel Grid.Row="4"
+                            Margin="0,22,0,0"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Content="Annulla"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            MinWidth="104"
+                            Margin="0,0,10,0"
+                            IsCancel="True"
+                            Click="SecondaryButton_OnClick" />
+                    <Button Content="Conferma"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            MinWidth="110"
+                            IsDefault="True"
+                            Click="PrimaryButton_OnClick" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</Window>

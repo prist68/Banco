@@ -1,0 +1,159 @@
+<UserControl x:Class="Banco.UI.Wpf.WinEcrModule.WinEcrConfigurationView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,0,18">
+            <TextBlock FontSize="22"
+                       FontWeight="SemiBold"
+                       Text="{Binding Titolo}" />
+            <TextBlock Margin="0,6,0,0"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       Text="{Binding Descrizione}" />
+
+            <WrapPanel Margin="0,16,0,0">
+                <Button Content="Salva configurazione fiscale"
+                        Command="{Binding SaveCommand}"
+                        Style="{StaticResource PrimaryButtonStyle}" />
+            </WrapPanel>
+
+            <Border Margin="0,18,0,0"
+                    Style="{StaticResource CardStyle}"
+                    Background="{StaticResource WindowBackgroundBrush}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource IconReceipt}"
+                              Fill="{StaticResource TextPrimaryBrush}"
+                              Width="18" Height="18" Stretch="Uniform"
+                              VerticalAlignment="Center" />
+                        <TextBlock Margin="10,0,0,0"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Text="Parametri WinEcr / Fiscal Suite" />
+                    </StackPanel>
+
+                    <CheckBox Margin="0,18,0,0"
+                              Content="Abilita integrazione fiscale"
+                              IsChecked="{Binding Enabled}" />
+
+                    <UniformGrid Margin="0,16,0,0" Columns="2">
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Registratore / driver" />
+                            <TextBox Text="{Binding DriverName, UpdateSourceTrigger=PropertyChanged}"
+                                     MinHeight="35"
+                                     VerticalContentAlignment="Center" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Matricola" />
+                            <TextBox Text="{Binding DeviceSerialNumber, UpdateSourceTrigger=PropertyChanged}"
+                                     MinHeight="35"
+                                     VerticalContentAlignment="Center" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="File scontrino XML" />
+                            <TextBox Text="{Binding ReceiptXmlPath, UpdateSourceTrigger=PropertyChanged}"
+                                     MinHeight="35"
+                                     VerticalContentAlignment="Center" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="File AutoRun da generare" />
+                            <TextBox Text="{Binding AutoRunCommandFilePath, UpdateSourceTrigger=PropertyChanged}"
+                                     MinHeight="35"
+                                     VerticalContentAlignment="Center" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="File errori AutoRun" />
+                            <TextBox Text="{Binding AutoRunErrorFilePath, UpdateSourceTrigger=PropertyChanged}"
+                                     MinHeight="35"
+                                     VerticalContentAlignment="Center" />
+                        </StackPanel>
+
+                        <StackPanel Margin="12,0,0,0">
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Tipo Ditron" />
+                            <TextBox Text="{Binding DitronType, UpdateSourceTrigger=PropertyChanged}"
+                                     MinHeight="35"
+                                     VerticalContentAlignment="Center" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Tipo driver" />
+                            <TextBox Text="{Binding DriverType, UpdateSourceTrigger=PropertyChanged}"
+                                     MinHeight="35"
+                                     VerticalContentAlignment="Center" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Numero caratteri riga" />
+                            <TextBox Text="{Binding StandardRowCharacters, UpdateSourceTrigger=PropertyChanged}"
+                                     MinHeight="35"
+                                     VerticalContentAlignment="Center" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Numero caratteri riga preconto" />
+                            <TextBox Text="{Binding PrecontoRowCharacters, UpdateSourceTrigger=PropertyChanged}"
+                                     MinHeight="35"
+                                     VerticalContentAlignment="Center" />
+
+                            <TextBlock FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Lettura file ogni (ms)" />
+                            <TextBox Text="{Binding AutoRunPollingMilliseconds, UpdateSourceTrigger=PropertyChanged}"
+                                     MinHeight="35"
+                                     VerticalContentAlignment="Center" />
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <TextBlock FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Testo finale scontrino" />
+                    <TextBox Text="{Binding ReceiptFooterText, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True"
+                             MinHeight="88"
+                             TextWrapping="Wrap" />
+
+                    <TextBlock FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Note operative" />
+                    <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True"
+                             MinHeight="88"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Margin="0,18,0,0">
+                <WrapPanel>
+                    <Button Content="Salva configurazione fiscale"
+                            Command="{Binding SaveCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}" />
+                </WrapPanel>
+
+                <TextBlock Margin="0,12,0,0"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="{Binding StatusMessage}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

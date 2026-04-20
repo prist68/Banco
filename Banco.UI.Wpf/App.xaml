@@ -1,0 +1,964 @@
+﻿<Application x:Class="Banco.UI.Wpf.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:posViewModels="clr-namespace:Banco.UI.Wpf.PosModule"
+             xmlns:posViews="clr-namespace:Banco.UI.Wpf.PosModule"
+             xmlns:magazzinoViewModels="clr-namespace:Banco.Magazzino.ViewModels;assembly=Banco.Magazzino"
+             xmlns:puntiViewModels="clr-namespace:Banco.Punti.ViewModels;assembly=Banco.Punti"
+             xmlns:puntiViews="clr-namespace:Banco.Punti.Views;assembly=Banco.Punti"
+             xmlns:winEcrViewModels="clr-namespace:Banco.UI.Wpf.WinEcrModule"
+             xmlns:winEcrViews="clr-namespace:Banco.UI.Wpf.WinEcrModule"
+             xmlns:viewModels="clr-namespace:Banco.UI.Wpf.ViewModels"
+             xmlns:views="clr-namespace:Banco.UI.Wpf.Views"
+             xmlns:sel="clr-namespace:Banco.UI.Wpf.Infrastructure.Selection">
+    <Application.Resources>
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- ICON GEOMETRIES (Material Design style)    -->
+        <!-- ═══════════════════════════════════════════ -->
+        <Geometry x:Key="IconBanco">M3,13H5V11H3V13M3,17H5V15H3V17M3,9H5V7H3V9M7,13H21V11H7V13M7,17H21V15H7V17M7,9V11H21V9H7Z</Geometry>
+        <Geometry x:Key="IconDocumenti">M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M12,19L8,15H10.5V12H13.5V15H16L12,19Z</Geometry>
+        <Geometry x:Key="IconSettings">M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.04 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.04 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z</Geometry>
+        <Geometry x:Key="IconDiagnostics">M22,21H2V3H4V19H6V10H10V19H12,6H16V19H18V13H22V21Z</Geometry>
+        <Geometry x:Key="IconSearch">M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z</Geometry>
+        <Geometry x:Key="IconMinimize">M20,14H4V10H20</Geometry>
+        <Geometry x:Key="IconMaximize">M4,4H20V20H4V4M6,8V18H18V8H6Z</Geometry>
+        <Geometry x:Key="IconClose">M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12Z</Geometry>
+        <Geometry x:Key="IconCart">M17,18A2,2 0 0,1 19,20A2,2 0 0,1 17,22A2,2 0 0,1 15,20A2,2 0 0,1 17,18M1,2H4.27L5.21,4H20A1,1 0 0,1 21,5C21,5.17 20.95,5.34 20.88,5.5L17.3,11.97C16.96,12.58 16.3,13 15.55,13H8.1L7.2,14.63L7.17,14.75A0.25,0.25 0 0,0 7.42,15H19V17H7C5.89,17 5,16.1 5,15C5,14.65 5.09,14.32 5.24,14.04L6.6,11.59L3,4H1V2M7,18A2,2 0 0,1 9,20A2,2 0 0,1 7,22A2,2 0 0,1 5,20A2,2 0 0,1 7,18M16,11L18.78,6H6.14L8.5,11H16Z</Geometry>
+        <Geometry x:Key="IconDatabase">M12,3C7.58,3 4,4.79 4,7C4,9.21 7.58,11 12,11C16.42,11 20,9.21 20,7C20,4.79 16.42,3 12,3M4,9V12C4,14.21 7.58,16 12,16C16.42,16 20,14.21 20,12V9C20,11.21 16.42,13 12,13C7.58,13 4,11.21 4,9M4,14V17C4,19.21 7.58,21 12,21C16.42,21 20,19.21 20,17V14C20,16.21 16.42,18 12,18C7.58,18 4,16.21 4,14Z</Geometry>
+        <Geometry x:Key="IconFolder">M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z</Geometry>
+        <Geometry x:Key="IconDocOpen">M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M6,4H13V9H18V20H6V4M8,12V14H16V12H8M8,16V18H13V16H8Z</Geometry>
+        <Geometry x:Key="IconDocCheck">M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H13.81C13.28,21.09 13,20.05 13,19C13,15.69 15.69,13 19,13C19.34,13 19.67,13.03 20,13.08V8L14,2M13,9V3.5L18.5,9H13M18,18L15,15L16.41,13.58L18,15.17L21.59,11.58L23,13L18,18Z</Geometry>
+        <Geometry x:Key="IconInfo">M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z</Geometry>
+        <Geometry x:Key="IconCash">M5,6H23V18H5V6M14,9A3,3 0 0,1 17,12A3,3 0 0,1 14,15A3,3 0 0,1 11,12A3,3 0 0,1 14,9M9,8A2,2 0 0,1 7,10V14A2,2 0 0,1 9,16H19A2,2 0 0,1 21,14V10A2,2 0 0,1 19,8H9M1,10H3V20H19V22H1V10Z</Geometry>
+        <Geometry x:Key="IconPos">M4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H16L12,22L8,18H4A2,2 0 0,1 2,16V4A2,2 0 0,1 4,2M4,4V16H8.83L12,19.17L15.17,16H20V4H4M6,7H18V9H6V7M6,11H16V13H6V11Z</Geometry>
+        <Geometry x:Key="IconPrint">M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z</Geometry>
+        <Geometry x:Key="IconReceipt">M3,22V3H21V22L18,20L15,22L12,20L9,22L6,20L3,22M17,9V7H15V9H17M13,9V7H11V9H13M9,9V7H7V9H9M7,15H17V13H7V15M7,11H17V9H7V11Z</Geometry>
+        <Geometry x:Key="IconPoints">M12,2L15,8H22L16.5,12L18.8,19L12,14.8L5.2,19L7.5,12L2,8H9Z</Geometry>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- BRUSHES                                     -->
+        <!-- ═══════════════════════════════════════════ -->
+        <LinearGradientBrush x:Key="WindowBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#FFF8FAFD" Offset="0" />
+            <GradientStop Color="#FFF1F5FB" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="TopBarBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#FF324A6D" Offset="0" />
+            <GradientStop Color="#FF50698E" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="SidebarBackgroundBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FF2E4466" Offset="0" />
+            <GradientStop Color="#FF24364F" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="PrimaryButtonBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FF3D73C6" Offset="0" />
+            <GradientStop Color="#FF2A5697" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="SidebarActiveBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#FF4F86DC" Offset="0" />
+            <GradientStop Color="#FF3A68B4" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="GreenButtonBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FF75B647" Offset="0" />
+            <GradientStop Color="#FF4A8930" Offset="1" />
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#FCFFFFFF" />
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFDFEFF" />
+        <SolidColorBrush x:Key="SurfaceAltBrush" Color="#FFF7F9FC" />
+        <SolidColorBrush x:Key="BorderBrushBase" Color="#FFDBE2ED" />
+        <SolidColorBrush x:Key="HairlineBrush" Color="#FFEAEFF5" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FF1F3250" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF4D627F" />
+        <SolidColorBrush x:Key="TextMutedBrush" Color="#FF71829A" />
+        <SolidColorBrush x:Key="SidebarTextBrush" Color="#FFF2F6FC" />
+        <SolidColorBrush x:Key="SemanticDangerBrush" Color="#FFD44343" />
+        <SolidColorBrush x:Key="SemanticSuccessBrush" Color="#FF2E8B57" />
+        <SolidColorBrush x:Key="ModalOverlayBrush" Color="#CC0E1725" />
+        <SolidColorBrush x:Key="ModalChromeBrush" Color="#FFF1F4F9" />
+        <SolidColorBrush x:Key="ModalAccentBorderBrush" Color="#FFE0E8F2" />
+        <SolidColorBrush x:Key="ModalInfoSurfaceBrush" Color="#FFF7FAFF" />
+        <SolidColorBrush x:Key="ModalInfoBorderBrush" Color="#FFD3E0F2" />
+        <SolidColorBrush x:Key="ModalInfoForegroundBrush" Color="#FF2F5EA5" />
+        <SolidColorBrush x:Key="ModalFieldSurfaceBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="ModalFieldAltSurfaceBrush" Color="#FFF8FBFF" />
+        <SolidColorBrush x:Key="ModalFieldBorderBrush" Color="#FFD8E4F2" />
+        <SolidColorBrush x:Key="BancoInputSurfaceBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="BancoInputBorderBrush" Color="#FFBFC9D8" />
+        <SolidColorBrush x:Key="BancoInputHoverBorderBrush" Color="#FF7A9EC9" />
+        <SolidColorBrush x:Key="BancoInputFocusBorderBrush" Color="#FF3D73C6" />
+        <SolidColorBrush x:Key="BancoSelectionBrush" Color="#FF3D73C6" />
+        <SolidColorBrush x:Key="BancoSelectionTextBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="BancoWarningForegroundBrush" Color="#FF8A7312" />
+        <SolidColorBrush x:Key="BancoWarningBorderBrush" Color="#FFD1C480" />
+        <SolidColorBrush x:Key="BancoInlineBorderBrush" Color="#30607890" />
+        <SolidColorBrush x:Key="BancoAccentSoftBrush" Color="#FFEAF2FF" />
+        <SolidColorBrush x:Key="BancoAccentSoftBorderBrush" Color="#FF9FB8E2" />
+        <SolidColorBrush x:Key="BancoAccentSoftForegroundBrush" Color="#FF315EA8" />
+        <SolidColorBrush x:Key="BancoActionPrimaryBrush" Color="#FF3C6BA8" />
+        <SolidColorBrush x:Key="BancoActionPrimaryBorderBrush" Color="#FF2F5687" />
+        <SolidColorBrush x:Key="BancoActionPrimaryHoverBrush" Color="#FF4B7BC0" />
+        <SolidColorBrush x:Key="BancoActionPrimaryPressedBrush" Color="#FF2C5183" />
+        <SolidColorBrush x:Key="BancoActionWarningBrush" Color="#FFF0A13A" />
+        <SolidColorBrush x:Key="BancoActionWarningForegroundBrush" Color="#FF3D2A0A" />
+        <SolidColorBrush x:Key="BancoActionWarningBorderBrush" Color="#FFD18722" />
+        <SolidColorBrush x:Key="BancoActionWarningHoverBrush" Color="#FFF7B458" />
+        <SolidColorBrush x:Key="BancoActionWarningPressedBrush" Color="#FFE19424" />
+        <SolidColorBrush x:Key="BancoActionSuccessBrush" Color="#FF2E9B84" />
+        <SolidColorBrush x:Key="BancoActionSuccessBorderBrush" Color="#FF267D6A" />
+        <SolidColorBrush x:Key="BancoActionSuccessHoverBrush" Color="#FF39B195" />
+        <SolidColorBrush x:Key="BancoActionSuccessPressedBrush" Color="#FF247965" />
+        <SolidColorBrush x:Key="BancoHeaderSurfaceBrush" Color="#FFF7FAFE" />
+        <SolidColorBrush x:Key="BancoHeaderBorderBrush" Color="#FFDCE5F0" />
+        <SolidColorBrush x:Key="BancoHeaderBadgeSurfaceBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="BancoHeaderBadgeBorderBrush" Color="#FFD8E3F1" />
+        <SolidColorBrush x:Key="BancoHeaderControlSurfaceBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="BancoHeaderControlBorderBrush" Color="#FFD9E4F0" />
+        <SolidColorBrush x:Key="BancoNotificationSurfaceBrush" Color="#FFF7FAFE" />
+        <SolidColorBrush x:Key="BancoNotificationBorderBrush" Color="#FFDCE5F0" />
+        <SolidColorBrush x:Key="BancoNotificationAlertSurfaceBrush" Color="#FFFFF4DB" />
+        <SolidColorBrush x:Key="BancoNotificationAlertBorderBrush" Color="#FFE6B974" />
+        <SolidColorBrush x:Key="BancoNotificationForegroundBrush" Color="#FF7A5411" />
+        <SolidColorBrush x:Key="BancoActionHighlightSurfaceBrush" Color="#FFFFF2CC" />
+        <SolidColorBrush x:Key="BancoActionSuccessSoftBrush" Color="#FFA3FFB1" />
+        <SolidColorBrush x:Key="BancoActionSuccessSoftForegroundBrush" Color="#FF0F1113" />
+        <SolidColorBrush x:Key="BancoActionDangerStrongBrush" Color="#FFF73737" />
+        <SolidColorBrush x:Key="BancoMetricSurfaceBrush" Color="#FFF8FBFE" />
+        <SolidColorBrush x:Key="BancoMetricBorderBrush" Color="#FFD9E4F0" />
+        <SolidColorBrush x:Key="BancoDividerBrush" Color="#FFE2E8F0" />
+        <SolidColorBrush x:Key="BancoPositiveForegroundBrush" Color="#FF1F8A3D" />
+        <SolidColorBrush x:Key="BancoQuietForegroundBrush" Color="#FF597091" />
+        <SolidColorBrush x:Key="BancoDangerForegroundBrush" Color="#FFE02F28" />
+        <SolidColorBrush x:Key="BancoPaymentLabelForegroundBrush" Color="#FF1B2433" />
+        <SolidColorBrush x:Key="BancoPaymentCashSurfaceBrush" Color="#FFE3ECF7" />
+        <SolidColorBrush x:Key="BancoPaymentCashBorderBrush" Color="#FFC4D3E8" />
+        <SolidColorBrush x:Key="BancoPaymentCashIconBrush" Color="#FF5E6B82" />
+        <SolidColorBrush x:Key="BancoPaymentCardSurfaceBrush" Color="#FFFFF3E5" />
+        <SolidColorBrush x:Key="BancoPaymentCardBorderBrush" Color="#FFF4C488" />
+        <SolidColorBrush x:Key="BancoPaymentCardIconBrush" Color="#FFBE7717" />
+        <SolidColorBrush x:Key="BancoPaymentSuspendedSurfaceBrush" Color="#FFFDF0F0" />
+        <SolidColorBrush x:Key="BancoPaymentSuspendedBorderBrush" Color="#FFF5C2C2" />
+        <SolidColorBrush x:Key="BancoPaymentSuspendedIconBrush" Color="#FFE24A3B" />
+
+        <LinearGradientBrush x:Key="ShellRailSurfaceBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FF2E4466" Offset="0" />
+            <GradientStop Color="#FF24364F" Offset="1" />
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="ShellRailBorderBrush" Color="#243A5576" />
+        <SolidColorBrush x:Key="ShellRailHoverBrush" Color="#173D73C6" />
+        <SolidColorBrush x:Key="ShellRailActiveBrush" Color="#204F86DC" />
+        <SolidColorBrush x:Key="ShellRailForegroundBrush" Color="#FFF2F6FC" />
+        <SolidColorBrush x:Key="ShellRailMutedBrush" Color="#A9BDD8" />
+        <SolidColorBrush x:Key="ShellRailIconBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="ShellRailFooterBrush" Color="#14334B6F" />
+        <SolidColorBrush x:Key="ShellRailFooterBorderBrush" Color="#30527393" />
+        <SolidColorBrush x:Key="ShellRailSearchBrush" Color="#1CFFFFFF" />
+        <SolidColorBrush x:Key="ShellRailSearchBorderBrush" Color="#3D86A7C7" />
+        <SolidColorBrush x:Key="ShellRailSearchHoverBorderBrush" Color="#5CAFD1F0" />
+
+        <SolidColorBrush x:Key="ShellContextPanelBrush" Color="#FFF4F8FC" />
+        <SolidColorBrush x:Key="ShellContextPanelBorderBrush" Color="#FFD7E1EE" />
+        <SolidColorBrush x:Key="ShellContextMutedBrush" Color="#6B7E99" />
+        <SolidColorBrush x:Key="ShellContextSearchSurfaceBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="ShellContextSearchBorderBrush" Color="#D8E4F0" />
+        <SolidColorBrush x:Key="ShellContextSearchHoverBorderBrush" Color="#AABDD8" />
+        <SolidColorBrush x:Key="ShellContextCardBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="ShellContextCardBorderBrush" Color="#E2EAF4" />
+        <SolidColorBrush x:Key="ShellContextCardHoverBrush" Color="#FFF7FAFE" />
+        <SolidColorBrush x:Key="ShellContextCardHoverBorderBrush" Color="#CCBFD2E8" />
+        <SolidColorBrush x:Key="ShellContextCardActiveBrush" Color="#FFF2F7FE" />
+        <SolidColorBrush x:Key="ShellContextEmptyStateBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="ShellContextOverlayBrush" Color="#F2F7FBFF" />
+        <SolidColorBrush x:Key="ShellContextOverlayBorderBrush" Color="#BFD7E5F4" />
+
+        <SolidColorBrush x:Key="ShellAccentBrush" Color="#FF4F86DC" />
+        <SolidColorBrush x:Key="ShellAccentStrongBrush" Color="#FF1358A5" />
+        <SolidColorBrush x:Key="ShellHighlightBrush" Color="#FF3FA06E" />
+        <SolidColorBrush x:Key="ShellDesktopBackdropBrush" Color="#FFF3F7FC" />
+        <SolidColorBrush x:Key="ShellDesktopGridBrush" Color="#0F446C96" />
+        <SolidColorBrush x:Key="ShellWorkspaceFrameBrush" Color="#FFF0F5FB" />
+        <SolidColorBrush x:Key="ShellWorkspaceFrameBorderBrush" Color="#C8D6E5" />
+        <SolidColorBrush x:Key="ShellWorkspaceSurfaceBrush" Color="#FFFDFEFF" />
+        <SolidColorBrush x:Key="ShellWorkspaceSurfaceBorderBrush" Color="#CCD9E8" />
+        <SolidColorBrush x:Key="ShellWorkspaceChromeBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="ShellWorkspaceChromeBorderBrush" Color="#D7E3F1" />
+        <SolidColorBrush x:Key="ShellWorkspaceTabBrush" Color="#DDE6F0" />
+        <SolidColorBrush x:Key="ShellWorkspaceTabBorderBrush" Color="#9CB2C8" />
+        <SolidColorBrush x:Key="ShellWorkspaceTabHoverBrush" Color="#EEF3FA" />
+        <SolidColorBrush x:Key="ShellWorkspaceTabHoverBorderBrush" Color="#7A9FC0" />
+        <SolidColorBrush x:Key="ShellWorkspaceStatusBrush" Color="#FF4ADE80" />
+
+        <!-- Colori righe griglia Banco - modificare qui per cambiarli (override runtime da BancoGrigliaColoriService) -->
+        <SolidColorBrush x:Key="GrigliaBancoRigaBrush"    Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="GrigliaBancoRigaAltBrush" Color="#FFEEF5FC" />
+        <SolidColorBrush x:Key="BancoGridHeaderBrush" Color="#FFEAF3FF" />
+        <SolidColorBrush x:Key="BancoGridHeaderForegroundBrush" Color="#FF1F3250" />
+        <SolidColorBrush x:Key="DocumentListGridHeaderBrush" Color="#FFEAF3FF" />
+        <SolidColorBrush x:Key="DocumentListGridHeaderForegroundBrush" Color="#FF1F3250" />
+        <SolidColorBrush x:Key="UIDocumentCardBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="UIDocumentCardBorderBrush" Color="#FFD6E1ED" />
+        <SolidColorBrush x:Key="UIDocumentMetricBrush" Color="#FFF8FBFF" />
+        <SolidColorBrush x:Key="UIDocumentMetricBorderBrush" Color="#FFDCE7F3" />
+        <SolidColorBrush x:Key="UIDocumentStatusBrush" Color="#FFF7FAFE" />
+        <SolidColorBrush x:Key="UIDocumentPanelBrush" Color="#FFF7FAFE" />
+        <SolidColorBrush x:Key="UIDocumentPanelBorderBrush" Color="#FFD8E3F0" />
+        <SolidColorBrush x:Key="UIDocumentFooterBrush" Color="#FFE7EEF8" />
+        <SolidColorBrush x:Key="UIDocumentFooterBorderBrush" Color="#FFD5E0ED" />
+        <SolidColorBrush x:Key="UIDocumentFooterRowBrush" Color="#FFE9F0F8" />
+        <SolidColorBrush x:Key="UIDocumentRowSospesoBrush" Color="#FFFFF0F0" />
+        <SolidColorBrush x:Key="UIDocumentRowPublishedBrush" Color="#FFF3F8EF" />
+        <SolidColorBrush x:Key="UIDocumentRowNonScontrinatoBrush" Color="#FFEAF6E4" />
+        <SolidColorBrush x:Key="UIDocumentDangerForegroundBrush" Color="#FFD44343" />
+        <SolidColorBrush x:Key="UIDocumentDangerBorderBrush" Color="#FFF1C7C7" />
+        <SolidColorBrush x:Key="UIDocumentDangerBackgroundBrush" Color="#FFFFF5F5" />
+        <SolidColorBrush x:Key="UIDocumentSplitterBrush" Color="#FFD8E3F0" />
+        <SolidColorBrush x:Key="UIDocumentCalendarPopupBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="UIDocumentCalendarPopupBorderBrush" Color="#FFDBE2ED" />
+        <SolidColorBrush x:Key="GridHeaderBrush_Riordino" Color="#FFEAF3FF" />
+        <SolidColorBrush x:Key="GridHeaderForegroundBrush_Riordino" Color="#FF1F3250" />
+
+        <!-- Effetto selezione riga griglia con luce corsa (SelezioneLuceCorsaService) -->
+        <SolidColorBrush x:Key="GrigliaSelezioneLuceBrush"       Color="#FF3D73C6" />
+        <SolidColorBrush x:Key="GrigliaSelezioneSfondoBrush"     Color="#183D73C6" />
+        <SolidColorBrush x:Key="GrigliaSelezioneBordoBrush"      Color="#4D3D73C6" />
+        <SolidColorBrush x:Key="GrigliaSelezioneForegroundBrush" Color="#FF1F3250" />
+        <SolidColorBrush x:Key="ContextMenuSurfaceBrush"         Color="#FFFDFEFF" />
+        <SolidColorBrush x:Key="ContextMenuBorderBrush"          Color="#FFD6E1ED" />
+        <SolidColorBrush x:Key="ContextMenuHoverBrush"           Color="#FFEBF3FF" />
+        <SolidColorBrush x:Key="ContextMenuHoverBorderBrush"     Color="#FF9EBBE6" />
+        <SolidColorBrush x:Key="ContextMenuDisabledBrush"        Color="#FF8A97A8" />
+
+        <!-- Hover/Pressed brushes -->
+        <SolidColorBrush x:Key="PrimaryButtonHoverBrush" Color="#FF4A83D6" />
+        <SolidColorBrush x:Key="PrimaryButtonPressedBrush" Color="#FF234F87" />
+        <SolidColorBrush x:Key="GreenButtonHoverBrush" Color="#FF85C657" />
+        <SolidColorBrush x:Key="GreenButtonPressedBrush" Color="#FF3A7920" />
+        <SolidColorBrush x:Key="SecondaryButtonHoverBrush" Color="#FFF0F4FA" />
+        <SolidColorBrush x:Key="SecondaryButtonPressedBrush" Color="#FFE2E8F0" />
+        <SolidColorBrush x:Key="CompactToolbarToggleActiveBrush" Color="#FFDCEAFF" />
+        <SolidColorBrush x:Key="CompactToolbarToggleActiveBorderBrush" Color="#FF82A9E3" />
+        <SolidColorBrush x:Key="CompactToolbarToggleActiveForegroundBrush" Color="#FF204B84" />
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- SHADOW EFFECTS                              -->
+        <!-- ═══════════════════════════════════════════ -->
+        <DropShadowEffect x:Key="CardShadow" BlurRadius="16" ShadowDepth="2" Direction="270" Color="#2E4466" Opacity="0.10" RenderingBias="Performance" />
+        <DropShadowEffect x:Key="CardShadowHover" BlurRadius="20" ShadowDepth="5" Direction="270" Color="#2E4466" Opacity="0.28" RenderingBias="Performance" />
+        <DropShadowEffect x:Key="TopBarShadow" BlurRadius="10" ShadowDepth="3" Direction="270" Color="#000000" Opacity="0.2" RenderingBias="Performance" />
+        <DropShadowEffect x:Key="SubtleShadow" BlurRadius="10" ShadowDepth="1" Direction="270" Color="#2E4466" Opacity="0.08" RenderingBias="Performance" />
+        <SolidColorBrush x:Key="ButtonDisabledBackgroundBrush" Color="#FFF2F5F8" />
+        <SolidColorBrush x:Key="ButtonDisabledBorderBrush" Color="#FFD5DDE7" />
+        <SolidColorBrush x:Key="ButtonDisabledForegroundBrush" Color="#FF8A97A8" />
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- GLOBAL STYLES                               -->
+        <!-- ═══════════════════════════════════════════ -->
+        <Style TargetType="Window">
+            <Setter Property="Background" Value="{StaticResource WindowBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+        </Style>
+
+        <!-- Primary Button with hover/pressed -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource PrimaryButtonBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Padding" Value="16,11" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="#443C5A86"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Effect="{StaticResource SubtleShadow}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource PrimaryButtonHoverBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{StaticResource CardShadow}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource PrimaryButtonPressedBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{x:Null}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{StaticResource ButtonDisabledForegroundBrush}" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource ButtonDisabledBackgroundBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{StaticResource ButtonDisabledBorderBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{x:Null}" />
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="1" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Secondary Button with hover/pressed -->
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Padding" Value="16,11" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{StaticResource BorderBrushBase}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Effect="{StaticResource SubtleShadow}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource SecondaryButtonHoverBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{StaticResource CardShadow}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource SecondaryButtonPressedBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{x:Null}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{StaticResource ButtonDisabledForegroundBrush}" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource ButtonDisabledBackgroundBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{StaticResource ButtonDisabledBorderBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{x:Null}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Bottone secondario con stato attivo (toggle) -->
+        <Style x:Key="ActiveSecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#FFEBF1FA" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Padding" Value="16,11" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="#FF3D73C6"
+                                BorderThickness="1.5"
+                                CornerRadius="8"
+                                Effect="{StaticResource SubtleShadow}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#FFD8E6F8" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{StaticResource CardShadow}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#FFC5D9F2" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{x:Null}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{StaticResource ButtonDisabledForegroundBrush}" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource ButtonDisabledBackgroundBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{StaticResource ButtonDisabledBorderBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{x:Null}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Green Button Style -->
+        <Style x:Key="GreenButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource GreenButtonBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Padding" Value="16,11" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="#44488A30"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Effect="{StaticResource SubtleShadow}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource GreenButtonHoverBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{StaticResource CardShadow}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource GreenButtonPressedBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{x:Null}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{StaticResource ButtonDisabledForegroundBrush}" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource ButtonDisabledBackgroundBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{StaticResource ButtonDisabledBorderBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Effect" Value="{x:Null}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Sidebar Button with hover -->
+        <Style x:Key="SidebarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource SidebarTextBrush}" />
+            <Setter Property="Padding" Value="14,12" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              HorizontalAlignment="Left" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#2A3D73C6" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#3A3D73C6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SidebarButtonActiveStyle" TargetType="Button" BasedOn="{StaticResource SidebarButtonStyle}">
+            <Setter Property="Background" Value="{StaticResource SidebarActiveBrush}" />
+        </Style>
+
+        <Style x:Key="CompactPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style x:Key="CompactSecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style x:Key="CompactActiveSecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ActiveSecondaryButtonStyle}">
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style x:Key="CompactGreenButtonStyle" TargetType="Button" BasedOn="{StaticResource GreenButtonStyle}">
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style x:Key="CompactToolbarToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="MinWidth" Value="108" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderBrush" Value="#FFD0D9E7" />
+            <Setter Property="Background" Value="#FFF7FAFE" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Background" Value="{StaticResource CompactToolbarToggleActiveBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource CompactToolbarToggleActiveBorderBrush}" />
+                    <Setter Property="Foreground" Value="{StaticResource CompactToolbarToggleActiveForegroundBrush}" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.6" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Window Control Buttons -->
+        <Style x:Key="WindowControlButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#CCFFFFFF" />
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="BtnBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="BtnBorder" Property="Background" Value="#33FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="BtnBorder" Property="Background" Value="#55FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="WindowCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource WindowControlButtonStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="BtnBorder"
+                                Background="Transparent"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="BtnBorder" Property="Background" Value="#FFE04343" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="BtnBorder" Property="Background" Value="#FFC93535" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- TextBox with focus glow -->
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="0,4,0,12" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushBase}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="#FFFFFFFF" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="CaretBrush" Value="#FF3D73C6" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="OuterBorder"
+                                BorderBrush="Transparent"
+                                BorderThickness="2"
+                                CornerRadius="6"
+                                SnapsToDevicePixels="True">
+                            <Border x:Name="InnerBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="5"
+                                    SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                              TextElement.FontFamily="{TemplateBinding FontFamily}"
+                                              TextElement.FontSize="{TemplateBinding FontSize}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"
+                                              VerticalScrollBarVisibility="Hidden"
+                                              Margin="{TemplateBinding Padding}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                            </Border>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="InnerBorder" Property="BorderBrush" Value="#FF7A9EC9" />
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="InnerBorder" Property="BorderBrush" Value="#FF3D73C6" />
+                                <Setter TargetName="OuterBorder" Property="BorderBrush" Value="#333D73C6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CompactTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinHeight" Value="28" />
+        </Style>
+
+        <Style x:Key="CompactCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        </Style>
+
+        <Style x:Key="CompactDatePickerStyle" TargetType="DatePicker">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Background" Value="#FFFFFFFF" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushBase}" />
+        </Style>
+
+        <Style x:Key="CompactComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Background" Value="#FFFFFFFF" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="#C6D6E8" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="ComboBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="7"
+                                    SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="26" />
+                                    </Grid.ColumnDefinitions>
+                                    <ContentPresenter Margin="8,0,4,0"
+                                                      VerticalAlignment="Center"
+                                                      HorizontalAlignment="Stretch"
+                                                      Content="{TemplateBinding SelectionBoxItem}"
+                                                      ContentTemplate="{TemplateBinding ItemTemplate}"
+                                                      ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
+                                    <Border Grid.Column="1"
+                                            Background="#F3F7FB"
+                                            BorderBrush="#D7E3F0"
+                                            BorderThickness="1,0,0,0"
+                                            CornerRadius="0,7,7,0">
+                                        <Path Width="9"
+                                              Height="5"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Fill="#4F6782"
+                                              Data="M 0 0 L 9 0 L 4.5 5 Z" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                            <ToggleButton Background="Transparent"
+                                          BorderThickness="0"
+                                          Focusable="False"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="Transparent"
+                                                BorderThickness="0"
+                                                SnapsToDevicePixels="True" />
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <Popup x:Name="Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Fade">
+                                <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                        MaxHeight="320"
+                                        Background="#FFFFFFFF"
+                                        BorderBrush="#C6D6E8"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        SnapsToDevicePixels="True">
+                                    <ScrollViewer Margin="4"
+                                                  SnapsToDevicePixels="True">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="ComboBorder" Property="BorderBrush" Value="#4F86DC" />
+                                <Setter TargetName="ComboBorder" Property="Background" Value="#FAFCFF" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ComboBorder" Property="BorderBrush" Value="#9BB8D8" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ComboBorder" Property="Opacity" Value="0.6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ThemedContextMenuStyle" TargetType="ContextMenu">
+            <Setter Property="Background" Value="{StaticResource ContextMenuSurfaceBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource ContextMenuBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="HasDropShadow" Value="True" />
+        </Style>
+
+        <Style x:Key="ThemedContextMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="FontSize" Value="12" />
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="{StaticResource ContextMenuHoverBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource ContextMenuHoverBorderBrush}" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource ContextMenuDisabledBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ThemedContextMenuSeparatorStyle" TargetType="Separator">
+            <Setter Property="Margin" Value="6,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Border Height="1"
+                                Background="{StaticResource BorderBrushBase}"
+                                SnapsToDevicePixels="True" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Card Border Style -->
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="#FFFFFFFF" />
+            <Setter Property="BorderBrush" Value="{StaticResource HairlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Effect" Value="{StaticResource CardShadow}" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+
+        <Style x:Key="CompactCardStyle" TargetType="Border" BasedOn="{StaticResource CardStyle}">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="Effect" Value="{StaticResource SubtleShadow}" />
+        </Style>
+
+        <Style x:Key="CompactDataGridRowStyle" TargetType="DataGridRow">
+            <Setter Property="sel:SelezioneLuceCorsaService.IsAbilitato" Value="True" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Background" Value="{DynamicResource GrigliaBancoRigaBrush}" />
+            <Setter Property="BorderBrush" Value="#FFEDF1F7" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Style.Triggers>
+                <Trigger Property="AlternationIndex" Value="1">
+                    <Setter Property="Background" Value="{DynamicResource GrigliaBancoRigaAltBrush}" />
+                </Trigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsMouseOver" Value="True" />
+                        <Condition Property="IsSelected" Value="False" />
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="#FFEBF1FA" />
+                </MultiTrigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource GrigliaSelezioneSfondoBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource GrigliaSelezioneForegroundBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CompactDataGridHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushBase}" />
+            <Setter Property="BorderThickness" Value="0,0,1,1" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+        </Style>
+
+        <Style x:Key="CompactDataGridCellStyle" TargetType="DataGridCell">
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Border Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Foreground" Value="{DynamicResource GrigliaSelezioneForegroundBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CompactFooterRowStyle" TargetType="DataGridRow">
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Background" Value="#FFEDF2F8" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+        </Style>
+
+        <Style x:Key="CompactFooterCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource CompactDataGridCellStyle}">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="DocumentListGridRowStyle" TargetType="DataGridRow" BasedOn="{StaticResource CompactDataGridRowStyle}" />
+
+        <Style x:Key="DocumentListDetailGridRowStyle" TargetType="DataGridRow" BasedOn="{StaticResource CompactDataGridRowStyle}" />
+
+        <Style x:Key="DocumentListGridHeaderStyle" TargetType="DataGridColumnHeader" BasedOn="{StaticResource CompactDataGridHeaderStyle}">
+            <Setter Property="Background" Value="{DynamicResource DocumentListGridHeaderBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DocumentListGridHeaderForegroundBrush}" />
+            <Setter Property="Padding" Value="8,7" />
+        </Style>
+
+        <Style x:Key="DocumentListGridCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource CompactDataGridCellStyle}">
+            <Setter Property="Padding" Value="6,5" />
+        </Style>
+
+        <Style x:Key="DocumentListFooterRowStyle" TargetType="DataGridRow" BasedOn="{StaticResource CompactFooterRowStyle}" />
+
+        <Style x:Key="DocumentListFooterCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource CompactFooterCellStyle}" />
+
+        <Style x:Key="DocumentListRowActionButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Padding" Value="4,1" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="#FFD44343" />
+            <Setter Property="BorderBrush" Value="#FFF1C7C7" />
+            <Setter Property="Background" Value="#FFFFF4F4" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- DATA TEMPLATES                              -->
+        <!-- ═══════════════════════════════════════════ -->
+        <DataTemplate DataType="{x:Type viewModels:BancoViewModel}">
+            <views:BancoView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:UIDocumentListHostViewModel}">
+            <views:UIDocumentListView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:ReorderListViewModel}">
+            <views:ReorderListControl />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type magazzinoViewModels:MagazzinoArticleViewModel}">
+            <views:MagazzinoArticleView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:SettingsViewModel}">
+            <views:SettingsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:FastReportStudioViewModel}">
+            <views:FastReportStudioView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type posViewModels:PosConfigurationViewModel}">
+            <posViews:PosConfigurationView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type winEcrViewModels:WinEcrConfigurationViewModel}">
+            <winEcrViews:WinEcrConfigurationView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:DiagnosticsViewModel}">
+            <views:DiagnosticsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:BackupImportViewModel}">
+            <views:BackupImportView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:ThemeManagementViewModel}">
+            <views:ThemeManagementView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type puntiViewModels:PuntiViewModel}">
+            <puntiViews:PuntiView />
+        </DataTemplate>
+    </Application.Resources>
+</Application>

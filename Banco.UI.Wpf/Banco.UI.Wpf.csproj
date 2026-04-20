@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Banco.Magazzino\Banco.Magazzino.csproj" />
+    <ProjectReference Include="..\Banco.Riordino\Banco.Riordino.csproj" />
+    <ProjectReference Include="..\Banco.Vendita\Banco.Vendita.csproj" />
+    <ProjectReference Include="..\Banco.Punti\Banco.Punti.csproj" />
+    <ProjectReference Include="..\Banco.Core.Contracts\Banco.Core.Contracts.csproj" />
+    <ProjectReference Include="..\Banco.Core.Infrastructure\Banco.Core.Infrastructure.csproj" />
+    <ProjectReference Include="..\Banco.Core.LocalStore\Banco.Core.LocalStore.csproj" />
+    <ProjectReference Include="..\Banco.Stampa\Banco.Stampa.csproj" />
+    <ProjectReference Include="..\Banco.Sidebar\Banco.Sidebar.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\appsettings.user.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Resource Include="Immagini\Banco.ico" />
+    <Resource Include="Immagini\Banco-16.png" />
+    <Resource Include="Immagini\Banco-32.png" />
+    <Resource Include="Immagini\Banco-64.png" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AssemblyName>Banco</AssemblyName>
+    <ApplicationIcon>Immagini\Banco.ico</ApplicationIcon>
+    <ApplicationManifest Condition="'$(Configuration)' == 'Debug'">app.debug.manifest</ApplicationManifest>
+    <ApplicationManifest Condition="'$(Configuration)' != 'Debug'">app.manifest</ApplicationManifest>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <Target Name="BancoCleanPublishArtifacts" AfterTargets="Publish">
+    <ItemGroup>
+      <BancoPublishPdb Include="$(PublishDir)*.pdb" />
+    </ItemGroup>
+    <Delete Files="@(BancoPublishPdb)" TreatErrorsAsWarnings="true" />
+  </Target>
+</Project>
