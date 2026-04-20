@@ -48,3 +48,6 @@ _diag_mysql_query/
 *.cache
 Thumbs.db
 Desktop.ini
+
+# Project-local documentation
+Doc/
