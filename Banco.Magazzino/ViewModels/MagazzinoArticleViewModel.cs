@@ -1,10 +1,12 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Windows;
 using Banco.Core.Infrastructure;
 using Banco.Riordino;
+using Banco.Vendita.Documents;
 using Banco.Vendita.Abstractions;
 using Banco.Vendita.Articles;
 
@@ -27,6 +29,7 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
     private string _codiceArticolo = string.Empty;
     private string _descrizioneArticolo = string.Empty;
     private string _giacenzaLabel = "-";
+    private string _listinoLegacyLabel = "-";
     private string _prezzoVenditaLabel = "-";
     private string _unitaPrincipaleLabel = "PZ";
     private string _unitaSecondariaLabel = "-";
@@ -38,17 +41,34 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
     private string _unitaPrincipaleLegacyText = "PZ";
     private string _unitaSecondariaLegacyText = string.Empty;
     private string _rapportoUnitaLegacyText = string.Empty;
+    private bool _unitLookupsLoaded;
+    private bool _isPrimaryUnitPickerOpen;
+    private bool _isSecondaryUnitPickerOpen;
+    private string _primaryUnitPickerSearchText = string.Empty;
+    private string _secondaryUnitPickerSearchText = string.Empty;
+    private GestionaleLookupOption? _selectedPrimaryUnitOption;
+    private GestionaleLookupOption? _selectedSecondaryUnitOption;
     private string _quantitaMinimaVenditaLegacyText = "1";
     private string _quantitaMultiplaVenditaLegacyText = "1";
     private string _ultimoAcquistoLabel = "Nessun ultimo acquisto trovato.";
+    private decimal _ultimoCostoAcquisto;
     private bool _acquistoAConfezione;
     private bool _venditaAPezzoSingolo;
     private string _pezziPerConfezioneText = string.Empty;
     private string _multiploOrdineText = string.Empty;
     private string _lottoMinimoText = string.Empty;
     private string _giorniCoperturaText = string.Empty;
+    private string _prezzoConfezioneText = string.Empty;
+    private string _prezzoSingoloText = string.Empty;
+    private string _prezzoVenditaLocaleText = string.Empty;
+    private string _quantitaPromoLocaleText = string.Empty;
+    private string _prezzoPromoLocaleText = string.Empty;
     private string _note = string.Empty;
     private string _localSettingsInfo = "Nessun parametro locale salvato.";
+    private string _legacyStatusInfo = "Legacy non ancora salvato in questa sessione.";
+    private string _localStatusLabel = "Locale non ancora salvato in questa sessione.";
+    private LegacyOfferRowViewModel? _selectedLegacyOfferRow;
+    private string _defaultLegacyOfferExpiryText = string.Empty;
 
     public MagazzinoArticleViewModel(
         IGestionaleArticleReadService articleReadService,
@@ -64,6 +84,11 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         _logService = logService;
 
         SearchRows = [];
+        LegacyOfferRows = [];
+        UnitOptions = [];
+        SecondaryUnitOptions = [];
+        FilteredPrimaryUnitOptions = [];
+        FilteredSecondaryUnitOptions = [];
         SearchCommand = new RelayCommand(async () => await SearchAsync(), () => !IsLoading && !string.IsNullOrWhiteSpace(SearchText));
         RefreshCurrentArticleCommand = new RelayCommand(async () => await ReloadCurrentArticleAsync(), () => !IsLoading && SelectedSearchResult is not null);
         SaveLegacyCommand = new RelayCommand(async () => await SaveLegacyAsync(), () => !IsLoading && ArticoloOid > 0);
@@ -71,11 +96,24 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         ApplyLocalSettingsToChildrenCommand = new RelayCommand(async () => await ApplyLocalSettingsToChildrenAsync(), () => !IsLoading && CanApplyLocalSettingsToChildren);
         CopyLocalSettingsCommand = new RelayCommand(CopyLocalSettings, () => ArticoloOid > 0);
         PasteLocalSettingsCommand = new RelayCommand(PasteLocalSettings, () => ArticoloOid > 0);
+        AddLegacyOfferRowCommand = new RelayCommand(AddLegacyOfferRow, () => !IsLoading && SelectedSearchResult is not null);
+        RemoveLegacyOfferRowCommand = new RelayCommand(RemoveSelectedLegacyOfferRow, () => !IsLoading && SelectedLegacyOfferRow is not null && SelectedLegacyOfferRow.CanEditTierValues);
+        PropagateLegacyOfferRowCommand = new RelayCommand(async () => await PropagateSelectedLegacyOfferRowAsync(), () => !IsLoading && CanPropagateLegacyOfferRow);
     }
 
     public string Titolo => "Articolo magazzino";
 
     public ObservableCollection<MagazzinoArticleSearchRowViewModel> SearchRows { get; }
+
+    public ObservableCollection<LegacyOfferRowViewModel> LegacyOfferRows { get; }
+
+    public ObservableCollection<GestionaleLookupOption> UnitOptions { get; }
+
+    public ObservableCollection<GestionaleLookupOption> SecondaryUnitOptions { get; }
+
+    public ObservableCollection<GestionaleLookupOption> FilteredPrimaryUnitOptions { get; }
+
+    public ObservableCollection<GestionaleLookupOption> FilteredSecondaryUnitOptions { get; }
 
     public RelayCommand SearchCommand { get; }
 
@@ -90,6 +128,12 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
     public RelayCommand CopyLocalSettingsCommand { get; }
 
     public RelayCommand PasteLocalSettingsCommand { get; }
+
+    public RelayCommand AddLegacyOfferRowCommand { get; }
+
+    public RelayCommand RemoveLegacyOfferRowCommand { get; }
+
+    public RelayCommand PropagateLegacyOfferRowCommand { get; }
 
     public string SearchText
     {
@@ -124,6 +168,9 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
                 ApplyLocalSettingsToChildrenCommand.RaiseCanExecuteChanged();
                 CopyLocalSettingsCommand.RaiseCanExecuteChanged();
                 PasteLocalSettingsCommand.RaiseCanExecuteChanged();
+                AddLegacyOfferRowCommand.RaiseCanExecuteChanged();
+                RemoveLegacyOfferRowCommand.RaiseCanExecuteChanged();
+                PropagateLegacyOfferRowCommand.RaiseCanExecuteChanged();
             }
         }
     }
@@ -157,8 +204,13 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
                 ApplyLocalSettingsToChildrenCommand.RaiseCanExecuteChanged();
                 CopyLocalSettingsCommand.RaiseCanExecuteChanged();
                 PasteLocalSettingsCommand.RaiseCanExecuteChanged();
+                AddLegacyOfferRowCommand.RaiseCanExecuteChanged();
+                RemoveLegacyOfferRowCommand.RaiseCanExecuteChanged();
+                PropagateLegacyOfferRowCommand.RaiseCanExecuteChanged();
                 NotifyPropertyChanged(nameof(LocalSettingsScopeInfo));
                 NotifyPropertyChanged(nameof(CanApplyLocalSettingsToChildren));
+                NotifyPropertyChanged(nameof(CurrentVariantLegacyLabel));
+                NotifyPropertyChanged(nameof(LegacyOfferSectionInfo));
                 if (value is not null)
                 {
                     _ = LoadSelectedArticleAsync(value);
@@ -208,6 +260,12 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         private set => SetProperty(ref _giacenzaLabel, value);
     }
 
+    public string ListinoLegacyLabel
+    {
+        get => _listinoLegacyLabel;
+        private set => SetProperty(ref _listinoLegacyLabel, value);
+    }
+
     public string PrezzoVenditaLabel
     {
         get => _prezzoVenditaLabel;
@@ -250,6 +308,19 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         private set => SetProperty(ref _ultimoAcquistoLabel, value);
     }
 
+    public LegacyOfferRowViewModel? SelectedLegacyOfferRow
+    {
+        get => _selectedLegacyOfferRow;
+        set
+        {
+            if (SetProperty(ref _selectedLegacyOfferRow, value))
+            {
+                RemoveLegacyOfferRowCommand.RaiseCanExecuteChanged();
+                PropagateLegacyOfferRowCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
     public string DescrizioneLegacyText
     {
         get => _descrizioneLegacyText;
@@ -265,19 +336,115 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
     public string UnitaPrincipaleLegacyText
     {
         get => _unitaPrincipaleLegacyText;
-        set => SetProperty(ref _unitaPrincipaleLegacyText, value);
+        set
+        {
+            if (SetProperty(ref _unitaPrincipaleLegacyText, value))
+            {
+                SyncSelectedPrimaryUnitOption();
+            }
+        }
     }
 
     public string UnitaSecondariaLegacyText
     {
         get => _unitaSecondariaLegacyText;
-        set => SetProperty(ref _unitaSecondariaLegacyText, value);
+        set
+        {
+            if (SetProperty(ref _unitaSecondariaLegacyText, value))
+            {
+                SyncSelectedSecondaryUnitOption();
+            }
+        }
     }
 
     public string RapportoUnitaLegacyText
     {
         get => _rapportoUnitaLegacyText;
         set => SetProperty(ref _rapportoUnitaLegacyText, value);
+    }
+
+    public bool IsPrimaryUnitPickerOpen
+    {
+        get => _isPrimaryUnitPickerOpen;
+        set => SetProperty(ref _isPrimaryUnitPickerOpen, value);
+    }
+
+    public bool IsSecondaryUnitPickerOpen
+    {
+        get => _isSecondaryUnitPickerOpen;
+        set => SetProperty(ref _isSecondaryUnitPickerOpen, value);
+    }
+
+    public string PrimaryUnitPickerSearchText
+    {
+        get => _primaryUnitPickerSearchText;
+        set
+        {
+            if (SetProperty(ref _primaryUnitPickerSearchText, value))
+            {
+                RefreshFilteredPrimaryUnitOptions();
+            }
+        }
+    }
+
+    public string SecondaryUnitPickerSearchText
+    {
+        get => _secondaryUnitPickerSearchText;
+        set
+        {
+            if (SetProperty(ref _secondaryUnitPickerSearchText, value))
+            {
+                RefreshFilteredSecondaryUnitOptions();
+            }
+        }
+    }
+
+    public GestionaleLookupOption? SelectedPrimaryUnitOption
+    {
+        get => _selectedPrimaryUnitOption;
+        set
+        {
+            if (!SetProperty(ref _selectedPrimaryUnitOption, value))
+            {
+                return;
+            }
+
+            if (value is not null)
+            {
+                UnitaPrincipaleLegacyText = value.Label;
+                IsPrimaryUnitPickerOpen = false;
+                if (!string.IsNullOrWhiteSpace(_primaryUnitPickerSearchText))
+                {
+                    _primaryUnitPickerSearchText = string.Empty;
+                    NotifyPropertyChanged(nameof(PrimaryUnitPickerSearchText));
+                    RefreshFilteredPrimaryUnitOptions();
+                }
+            }
+        }
+    }
+
+    public GestionaleLookupOption? SelectedSecondaryUnitOption
+    {
+        get => _selectedSecondaryUnitOption;
+        set
+        {
+            if (!SetProperty(ref _selectedSecondaryUnitOption, value))
+            {
+                return;
+            }
+
+            if (value is not null)
+            {
+                UnitaSecondariaLegacyText = value.Oid == 0 ? string.Empty : value.Label;
+                IsSecondaryUnitPickerOpen = false;
+                if (!string.IsNullOrWhiteSpace(_secondaryUnitPickerSearchText))
+                {
+                    _secondaryUnitPickerSearchText = string.Empty;
+                    NotifyPropertyChanged(nameof(SecondaryUnitPickerSearchText));
+                    RefreshFilteredSecondaryUnitOptions();
+                }
+            }
+        }
     }
 
     public string QuantitaMinimaVenditaLegacyText
@@ -328,6 +495,36 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         set => SetProperty(ref _giorniCoperturaText, value);
     }
 
+    public string PrezzoConfezioneText
+    {
+        get => _prezzoConfezioneText;
+        set => SetProperty(ref _prezzoConfezioneText, value);
+    }
+
+    public string PrezzoSingoloText
+    {
+        get => _prezzoSingoloText;
+        set => SetProperty(ref _prezzoSingoloText, value);
+    }
+
+    public string PrezzoVenditaLocaleText
+    {
+        get => _prezzoVenditaLocaleText;
+        set => SetProperty(ref _prezzoVenditaLocaleText, value);
+    }
+
+    public string QuantitaPromoLocaleText
+    {
+        get => _quantitaPromoLocaleText;
+        set => SetProperty(ref _quantitaPromoLocaleText, value);
+    }
+
+    public string PrezzoPromoLocaleText
+    {
+        get => _prezzoPromoLocaleText;
+        set => SetProperty(ref _prezzoPromoLocaleText, value);
+    }
+
     public string Note
     {
         get => _note;
@@ -340,17 +537,55 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         private set => SetProperty(ref _localSettingsInfo, value);
     }
 
+    public string LegacyStatusInfo
+    {
+        get => _legacyStatusInfo;
+        private set => SetProperty(ref _legacyStatusInfo, value);
+    }
+
+    public string LocalStatusLabel
+    {
+        get => _localStatusLabel;
+        private set => SetProperty(ref _localStatusLabel, value);
+    }
+
     public string LocalSettingsScopeInfo =>
         SelectedSearchResult is null
             ? string.Empty
             : IsParentSelection(SelectedSearchResult)
-                ? "I valori salvati sul padre diventano il default di tutte le varianti senza override locale, comprese quelle future."
-                : "Questa variante puo` avere un override proprio. Se non salvi qui, continua a usare i valori ereditati dal padre.";
+                ? "Salva sul padre per il default delle varianti senza override."
+                : "Override variante: se non salvi qui resta l'eredita` del padre.";
 
     public bool CanApplyLocalSettingsToChildren =>
         SelectedSearchResult is not null &&
         IsParentSelection(SelectedSearchResult) &&
         SearchRows.Any(row => row.IsChild && row.Article is not null && row.FamilyOid == SelectedSearchRow?.FamilyOid);
+
+    public bool HasLegacyOfferRows => LegacyOfferRows.Count > 0;
+
+    public string LegacyOfferSectionInfo =>
+        SelectedSearchResult is null
+            ? "Seleziona un articolo o una variante per leggere i listini legacy reali."
+            : HasLegacyOfferRows
+                ? $"{LegacyOfferRows.Count} righe | {ListinoLegacyLabel} | {CurrentVariantLegacyLabel}"
+                : $"Nessuna riga | {ListinoLegacyLabel} | {CurrentVariantLegacyLabel}";
+
+    public string CurrentVariantLegacyLabel =>
+        SelectedSearchResult is null
+            ? "variante"
+            : string.IsNullOrWhiteSpace(SelectedSearchResult.VarianteLabel)
+                ? "articolo base"
+                : SelectedSearchResult.VarianteLabel;
+
+    public bool CanPropagateLegacyOfferRow =>
+        SelectedSearchResult is not null &&
+        SelectedLegacyOfferRow is not null &&
+        SelectedLegacyOfferRow.CanEditTierValues &&
+        SearchRows.Any(row =>
+            row.IsChild &&
+            row.Article is not null &&
+            row.FamilyOid == SelectedSearchRow?.FamilyOid &&
+            !ReferenceEquals(row.Article, SelectedSearchResult));
 
     private async Task SearchAsync()
     {
@@ -388,8 +623,8 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             StatusMessage = SearchRows.Count == 0
                 ? "Nessun articolo trovato con i criteri inseriti."
                 : bestMatch is not null
-                    ? $"Articolo {bestMatch.CodiceArticolo} aperto automaticamente."
-                    : $"{SearchRows.Count} righe disponibili. Il padre riepiloga i totali, sotto trovi le varianti.";
+                    ? $"Scheda {bestMatch.CodiceArticolo} caricata."
+                    : $"{SearchRows.Count} righe disponibili.";
         }
         catch (Exception ex)
         {
@@ -417,9 +652,14 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         try
         {
             IsLoading = true;
-            StatusMessage = $"Apro la scheda articolo {article.CodiceArticolo} dal legacy...";
+
+            if (!_unitLookupsLoaded)
+            {
+                await EnsureUnitOptionsAsync();
+            }
 
             var pricing = await _articleReadService.GetArticlePricingDetailAsync(article);
+            var legacyListinoRows = await _articleReadService.GetArticleLegacyListinoRowsAsync(article);
             var latestPurchase = await _documentReadService.GetLatestArticlePurchaseAsync(article.Oid);
             var localSettings = await _settingsRepository.GetByArticleAsync(
                 article.Oid,
@@ -431,6 +671,7 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             CodiceArticolo = article.CodiceArticolo;
             DescrizioneArticolo = article.DisplayLabel;
             GiacenzaLabel = article.Giacenza.ToString("0.##", CultureInfo.GetCultureInfo("it-IT"));
+            ListinoLegacyLabel = string.IsNullOrWhiteSpace(pricing?.ListinoNome) ? "-" : pricing.ListinoNome;
             PrezzoVenditaLabel = ResolveDisplayedSalePrice(article, pricing).ToString("0.00", CultureInfo.GetCultureInfo("it-IT"));
 
             UnitaPrincipaleLabel = pricing?.UnitaMisuraPrincipale ?? "PZ";
@@ -444,18 +685,27 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             UltimoAcquistoLabel = latestPurchase is null
                 ? "Nessun ultimo acquisto trovato."
                 : $"{latestPurchase.FornitoreNominativo} - {latestPurchase.DataUltimoAcquisto:dd/MM/yyyy} - {latestPurchase.PrezzoUnitario.ToString("0.00", CultureInfo.GetCultureInfo("it-IT"))}";
+            _ultimoCostoAcquisto = latestPurchase?.PrezzoUnitario ?? 0m;
 
             DescrizioneLegacyText = article.Descrizione;
             PrezzoVenditaLegacyText = PrezzoVenditaLabel;
             UnitaPrincipaleLegacyText = UnitaPrincipaleLabel;
             UnitaSecondariaLegacyText = UnitaSecondariaLabel == "-" ? string.Empty : UnitaSecondariaLabel;
             RapportoUnitaLegacyText = RapportoUnitaLabel == "-" ? string.Empty : RapportoUnitaLabel;
+            SyncSelectedPrimaryUnitOption();
+            SyncSelectedSecondaryUnitOption();
             QuantitaMinimaVenditaLegacyText = QuantitaMinimaVenditaLabel;
             QuantitaMultiplaVenditaLegacyText = QuantitaMultiplaVenditaLabel;
-
             LoadLocalFields(localSettings, pricing);
+            PopulateLegacyOfferRows(article, legacyListinoRows, latestPurchase);
 
             StatusMessage = $"Scheda articolo {article.CodiceArticolo} caricata. Legacy e parametri locali sono allineati sullo stesso articolo.";
+            LegacyStatusInfo = $"Legacy riletto da db_diltech alle {DateTime.Now:HH:mm}.";
+            LocalStatusLabel = localSettings is null
+                ? "Nessun salvataggio locale presente."
+                : $"Locale pronto. Ultimo salvataggio {localSettings.UpdatedAt.LocalDateTime:dd/MM HH:mm}.";
+            NotifyPropertyChanged(nameof(CurrentVariantLegacyLabel));
+            NotifyPropertyChanged(nameof(LegacyOfferSectionInfo));
         }
         catch (Exception ex)
         {
@@ -468,14 +718,46 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         }
     }
 
+    private async Task EnsureUnitOptionsAsync(CancellationToken cancellationToken = default)
+    {
+        var unitOptions = await _articleReadService.GetUnitOptionsAsync(cancellationToken);
+
+        ReplaceCollection(UnitOptions, unitOptions);
+
+        var secondaryUnitOptions = new List<GestionaleLookupOption>
+        {
+            new() { Oid = 0, Label = "-" }
+        };
+        secondaryUnitOptions.AddRange(unitOptions);
+
+        ReplaceCollection(SecondaryUnitOptions, secondaryUnitOptions);
+        RefreshFilteredPrimaryUnitOptions();
+        RefreshFilteredSecondaryUnitOptions();
+        _unitLookupsLoaded = true;
+    }
+
     private void LoadLocalFields(ReorderArticleSettings? localSettings, GestionaleArticlePricingDetail? pricing)
     {
+        var prezzoVenditaRiferimento = ResolveDisplayedSalePrice(SelectedSearchResult!, pricing);
+        var promoTier = pricing?.FascePrezzoQuantita
+            .Where(item => item.QuantitaMinima > 1 && item.PrezzoUnitario > 0)
+            .OrderBy(item => item.QuantitaMinima)
+            .FirstOrDefault();
+        var pezziPerConfezioneDefault = localSettings?.PezziPerConfezione ?? (pricing?.HasSecondaryUnit == true ? pricing.MoltiplicatoreUnitaSecondaria : null);
+        var prezzoSingoloDefault = prezzoVenditaRiferimento > 0 ? prezzoVenditaRiferimento : (decimal?)null;
+        var prezzoConfezioneDefault = ResolvePackagePrice(pezziPerConfezioneDefault, prezzoSingoloDefault);
+
         AcquistoAConfezione = localSettings?.AcquistoAConfezione ?? pricing?.HasSecondaryUnit == true;
         VenditaAPezzoSingolo = localSettings?.VenditaAPezzoSingolo ?? pricing?.HasSecondaryUnit == true;
-        PezziPerConfezioneText = FormatDecimal(localSettings?.PezziPerConfezione ?? (pricing?.HasSecondaryUnit == true ? pricing.MoltiplicatoreUnitaSecondaria : null));
+        PezziPerConfezioneText = FormatDecimal(pezziPerConfezioneDefault);
         MultiploOrdineText = FormatDecimal(localSettings?.MultiploOrdine);
         LottoMinimoText = FormatDecimal(localSettings?.LottoMinimoOrdine);
         GiorniCoperturaText = localSettings?.GiorniCopertura?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        PrezzoConfezioneText = FormatPrice(localSettings?.PrezzoConfezione ?? prezzoConfezioneDefault);
+        PrezzoSingoloText = FormatPrice(localSettings?.PrezzoSingolo ?? prezzoSingoloDefault);
+        PrezzoVenditaLocaleText = FormatPrice(localSettings?.PrezzoVenditaRiferimento ?? prezzoVenditaRiferimento);
+        QuantitaPromoLocaleText = FormatDecimal(localSettings?.QuantitaPromo ?? promoTier?.QuantitaMinima);
+        PrezzoPromoLocaleText = FormatPrice(localSettings?.PrezzoPromo ?? promoTier?.PrezzoUnitario);
         Note = localSettings?.Note ?? string.Empty;
         LocalSettingsInfo = localSettings is null
             ? IsParentSelection(SelectedSearchResult)
@@ -484,8 +766,11 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             : localSettings.InheritedFromParent
                 ? $"Parametri locali ereditati dall'articolo padre, aggiornati il {localSettings.UpdatedAt.LocalDateTime:dd/MM/yyyy HH:mm}. Salva qui solo se vuoi un override per questa variante."
                 : IsParentSelection(SelectedSearchResult)
-                    ? $"Parametri locali padre aggiornati il {localSettings.UpdatedAt.LocalDateTime:dd/MM/yyyy HH:mm}. Restano il default di tutte le varianti senza override."
-                    : $"Override locale variante aggiornato il {localSettings.UpdatedAt.LocalDateTime:dd/MM/yyyy HH:mm}.";
+                ? $"Parametri locali padre aggiornati il {localSettings.UpdatedAt.LocalDateTime:dd/MM/yyyy HH:mm}. Restano il default di tutte le varianti senza override."
+                : $"Override locale variante aggiornato il {localSettings.UpdatedAt.LocalDateTime:dd/MM/yyyy HH:mm}.";
+        LocalStatusLabel = localSettings is null
+            ? "Nessun salvataggio locale presente."
+            : $"Locale pronto. Ultimo salvataggio {localSettings.UpdatedAt.LocalDateTime:dd/MM HH:mm}.";
     }
 
     private void CopyLocalSettings()
@@ -498,6 +783,11 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         if (!TryParseOptionalDecimal(PezziPerConfezioneText, out var pezziPerConfezione)
             || !TryParseOptionalDecimal(MultiploOrdineText, out var multiploOrdine)
             || !TryParseOptionalDecimal(LottoMinimoText, out var lottoMinimo)
+            || !TryParseOptionalDecimal(PrezzoConfezioneText, out var prezzoConfezione)
+            || !TryParseOptionalDecimal(PrezzoSingoloText, out var prezzoSingolo)
+            || !TryParseOptionalDecimal(PrezzoVenditaLocaleText, out var prezzoVenditaRiferimento)
+            || !TryParseOptionalDecimal(QuantitaPromoLocaleText, out var quantitaPromo)
+            || !TryParseOptionalDecimal(PrezzoPromoLocaleText, out var prezzoPromo)
             || !TryParseOptionalInt(GiorniCoperturaText, out var giorniCopertura))
         {
             StatusMessage = "Parametri locali non copiati: controlla prima i valori numerici.";
@@ -524,6 +814,11 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             MultiploOrdine = multiploOrdine,
             LottoMinimoOrdine = lottoMinimo,
             GiorniCopertura = giorniCopertura,
+            PrezzoConfezione = prezzoConfezione,
+            PrezzoSingolo = prezzoSingolo,
+            PrezzoVenditaRiferimento = prezzoVenditaRiferimento,
+            QuantitaPromo = quantitaPromo,
+            PrezzoPromo = prezzoPromo,
             Note = Note?.Trim() ?? string.Empty
         };
 
@@ -554,6 +849,11 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             MultiploOrdineText = FormatDecimal(payload.MultiploOrdine);
             LottoMinimoText = FormatDecimal(payload.LottoMinimoOrdine);
             GiorniCoperturaText = payload.GiorniCopertura?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+            PrezzoConfezioneText = FormatPrice(payload.PrezzoConfezione);
+            PrezzoSingoloText = FormatPrice(payload.PrezzoSingolo);
+            PrezzoVenditaLocaleText = FormatPrice(payload.PrezzoVenditaRiferimento);
+            QuantitaPromoLocaleText = FormatDecimal(payload.QuantitaPromo);
+            PrezzoPromoLocaleText = FormatPrice(payload.PrezzoPromo);
             Note = payload.Note ?? string.Empty;
             StatusMessage = "Parametri locali incollati dagli appunti. Controlla e salva.";
         }
@@ -570,25 +870,33 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             return;
         }
 
+        var selectedArticle = SelectedSearchResult;
+        if (selectedArticle is null)
+        {
+            return;
+        }
+
         try
         {
             IsLoading = true;
             await _settingsRepository.SaveAsync(settings);
-            if (IsParentSelection(SelectedSearchResult))
+            if (IsParentSelection(selectedArticle))
             {
                 LocalSettingsInfo = $"Parametri locali padre aggiornati il {settings.UpdatedAt.LocalDateTime:dd/MM/yyyy HH:mm}. Restano il default di tutte le varianti senza override.";
-                StatusMessage = $"Parametri locali padre salvati per {SelectedSearchResult.CodiceArticolo}: le varianti senza override, anche future, useranno questi valori.";
+                LocalStatusLabel = $"Locale salvato alle {DateTime.Now:HH:mm}.";
+                StatusMessage = $"Parametri locali padre salvati per {selectedArticle.CodiceArticolo}: le varianti senza override, anche future, useranno questi valori.";
             }
             else
             {
                 LocalSettingsInfo = $"Override locale variante aggiornato il {settings.UpdatedAt.LocalDateTime:dd/MM/yyyy HH:mm}.";
-                StatusMessage = $"Override locale salvato solo per la variante {SelectedSearchResult.CodiceArticolo}.";
+                LocalStatusLabel = $"Locale salvato alle {DateTime.Now:HH:mm}.";
+                StatusMessage = $"Override locale salvato solo per la variante {selectedArticle.CodiceArticolo}.";
             }
         }
         catch (Exception ex)
         {
             StatusMessage = $"Errore salvataggio parametri locali: {ex.Message}";
-            _logService.Error(nameof(MagazzinoArticleViewModel), $"Errore durante il salvataggio parametri locali dell'articolo {SelectedSearchResult.CodiceArticolo}.", ex);
+            _logService.Error(nameof(MagazzinoArticleViewModel), $"Errore durante il salvataggio parametri locali dell'articolo {selectedArticle.CodiceArticolo}.", ex);
         }
         finally
         {
@@ -633,6 +941,7 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             }
 
             LocalSettingsInfo = $"Parametri locali padre aggiornati il {parentSettings.UpdatedAt.LocalDateTime:dd/MM/yyyy HH:mm}. Propagati anche a {children.Count} varianti correnti; le future continuano a ereditare dal padre.";
+            LocalStatusLabel = $"Locale salvato alle {DateTime.Now:HH:mm}.";
             StatusMessage = $"Parametri locali salvati sul padre e propagati automaticamente a {children.Count} varianti.";
         }
         catch (Exception ex)
@@ -668,6 +977,12 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             return;
         }
 
+        if (LegacyOfferRows.Any(row => row.CanEditTierValues && !row.IsValid))
+        {
+            StatusMessage = "Le fasce legacy devono avere quantita` maggiore di 1 e prezzo valido.";
+            return;
+        }
+
         try
         {
             IsLoading = true;
@@ -685,6 +1000,26 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
                 PrezzoVendita = prezzoVendita
             });
 
+            await _articleWriteService.SaveQuantityPriceTiersAsync(new GestionaleArticleLegacyOffersUpdate
+            {
+                ArticoloOid = ArticoloOid,
+                VarianteDettaglioOid1 = SelectedSearchResult.VarianteDettaglioOid1,
+                VarianteDettaglioOid2 = SelectedSearchResult.VarianteDettaglioOid2,
+                AliquotaIva = SelectedSearchResult.AliquotaIva,
+                PriceTiers = LegacyOfferRows
+                    .Where(row => row.CanEditTierValues)
+                    .OrderBy(row => row.QuantitaMinima)
+                    .Select(row => new GestionaleArticleLegacyPriceTierUpdate
+                    {
+                        QuantitaMinima = row.QuantitaMinima,
+                        PrezzoNetto = row.PrezzoNetto,
+                        PrezzoIvato = row.PrezzoIvato,
+                        DataFine = row.DataFine
+                    })
+                    .ToList()
+            });
+
+            LegacyStatusInfo = $"Legacy salvato alle {DateTime.Now:HH:mm}.";
             StatusMessage = $"Dati legacy salvati per l'articolo {SelectedSearchResult.CodiceArticolo}.";
             await ReloadCurrentArticleAsync();
         }
@@ -705,6 +1040,7 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         CodiceArticolo = string.Empty;
         DescrizioneArticolo = string.Empty;
         GiacenzaLabel = "-";
+        ListinoLegacyLabel = "-";
         PrezzoVenditaLabel = "-";
         UnitaPrincipaleLabel = "PZ";
         UnitaSecondariaLabel = "-";
@@ -719,15 +1055,29 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         RapportoUnitaLegacyText = string.Empty;
         QuantitaMinimaVenditaLegacyText = "1";
         QuantitaMultiplaVenditaLegacyText = "1";
+        _ultimoCostoAcquisto = 0m;
+        _defaultLegacyOfferExpiryText = string.Empty;
+        LegacyOfferRows.Clear();
+        SelectedLegacyOfferRow = null;
         AcquistoAConfezione = false;
         VenditaAPezzoSingolo = false;
         PezziPerConfezioneText = string.Empty;
         MultiploOrdineText = string.Empty;
         LottoMinimoText = string.Empty;
         GiorniCoperturaText = string.Empty;
+        PrezzoConfezioneText = string.Empty;
+        PrezzoSingoloText = string.Empty;
+        PrezzoVenditaLocaleText = string.Empty;
+        QuantitaPromoLocaleText = string.Empty;
+        PrezzoPromoLocaleText = string.Empty;
         Note = string.Empty;
         LocalSettingsInfo = "Nessun parametro locale salvato.";
+        LegacyStatusInfo = "Legacy non ancora salvato in questa sessione.";
+        LocalStatusLabel = "Locale non ancora salvato in questa sessione.";
         NotifyPropertyChanged(nameof(LocalSettingsScopeInfo));
+        NotifyPropertyChanged(nameof(CurrentVariantLegacyLabel));
+        NotifyPropertyChanged(nameof(LegacyOfferSectionInfo));
+        NotifyPropertyChanged(nameof(HasLegacyOfferRows));
     }
 
     private void ScheduleAutoSearch()
@@ -764,6 +1114,9 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
 
     private static string FormatDecimal(decimal? value) =>
         value.HasValue ? value.Value.ToString("0.##", CultureInfo.GetCultureInfo("it-IT")) : string.Empty;
+
+    private static string FormatPrice(decimal? value) =>
+        value.HasValue ? value.Value.ToString("0.00", CultureInfo.GetCultureInfo("it-IT")) : string.Empty;
 
     private static GestionaleArticleSearchResult? ResolveBestAutoSelection(string input, IReadOnlyList<GestionaleArticleSearchResult> results)
     {
@@ -861,6 +1214,259 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         return article.PrezzoVendita;
     }
 
+    private void PopulateLegacyOfferRows(
+        GestionaleArticleSearchResult article,
+        IReadOnlyList<GestionaleArticleLegacyListinoRow> legacyListinoRows,
+        GestionaleArticlePurchaseQuickInfo? latestPurchase)
+    {
+        LegacyOfferRows.Clear();
+
+        var hasVariantSelection = article.VarianteDettaglioOid1.HasValue || article.VarianteDettaglioOid2.HasValue;
+
+        foreach (var row in legacyListinoRows)
+        {
+            var isGenericRow = !row.IsVariantSpecific;
+            var matchesCurrentVariant = row.MatchesVariantScope(article.VarianteDettaglioOid1, article.VarianteDettaglioOid2);
+            var canEditTierValues = row.QuantitaMinima > 1 && (isGenericRow || matchesCurrentVariant);
+
+            LegacyOfferRows.Add(new LegacyOfferRowViewModel(row.ListinoNome, row.VarianteLabel)
+            {
+                TipoRigaLabel = BuildLegacyRowKindLabel(row.RowKind),
+                ScopeLabel = ResolveLegacyRowScopeLabel(hasVariantSelection, isGenericRow, matchesCurrentVariant),
+                UltimoCostoLegacy = row.UltimoCostoLegacy,
+                IsBasePriceRow = row.IsBaseRow,
+                CanEditTierValues = canEditTierValues,
+                MatchesCurrentVariantScope = matchesCurrentVariant,
+                VarianteDettaglioOid1 = row.VarianteDettaglioOid1,
+                VarianteDettaglioOid2 = row.VarianteDettaglioOid2,
+                QuantitaMinimaText = row.QuantitaMinima.ToString("0.##", CultureInfo.GetCultureInfo("it-IT")),
+                PrezzoNettoText = row.PrezzoNetto.ToString("0.0000", CultureInfo.GetCultureInfo("it-IT")),
+                PrezzoIvatoText = row.PrezzoIvato.ToString("0.00", CultureInfo.GetCultureInfo("it-IT")),
+                DataFineText = row.DataFine?.ToString("dd/MM/yyyy", CultureInfo.GetCultureInfo("it-IT")) ?? string.Empty
+            });
+        }
+
+        _defaultLegacyOfferExpiryText = legacyListinoRows
+            .Select(item => item.DataFine)
+            .Where(item => item.HasValue)
+            .OrderBy(item => item)
+            .Select(item => item!.Value.ToString("dd/MM/yyyy", CultureInfo.GetCultureInfo("it-IT")))
+            .FirstOrDefault() ?? string.Empty;
+
+        SelectedLegacyOfferRow = LegacyOfferRows.FirstOrDefault();
+        NotifyPropertyChanged(nameof(HasLegacyOfferRows));
+        NotifyPropertyChanged(nameof(LegacyOfferSectionInfo));
+        AddLegacyOfferRowCommand.RaiseCanExecuteChanged();
+        RemoveLegacyOfferRowCommand.RaiseCanExecuteChanged();
+        PropagateLegacyOfferRowCommand.RaiseCanExecuteChanged();
+    }
+
+    private void AddLegacyOfferRow()
+    {
+        if (SelectedSearchResult is null)
+        {
+            return;
+        }
+
+        var suggestedQuantity = ResolveSuggestedLegacyOfferQuantity();
+        var suggestedPrice = LegacyOfferRows.LastOrDefault()?.PrezzoIvato
+            ?? ParseDecimalOrDefault(PrezzoVenditaLegacyText, SelectedSearchResult.PrezzoVendita);
+
+        var row = new LegacyOfferRowViewModel(
+            ListinoLegacyLabel == "-" ? "Legacy" : ListinoLegacyLabel,
+            string.IsNullOrWhiteSpace(SelectedSearchResult.VarianteLabel) ? "Articolo base" : SelectedSearchResult.VarianteLabel)
+        {
+            TipoRigaLabel = ">> Q.tà",
+            ScopeLabel = IsParentSelection(SelectedSearchResult) ? "Modifica padre" : "Nuovo override variante",
+            UltimoCostoLegacy = LegacyOfferRows.FirstOrDefault(item => item.MatchesCurrentVariantScope)?.UltimoCostoLegacy ?? 0m,
+            CanEditTierValues = true,
+            QuantitaMinimaText = suggestedQuantity.ToString("0.##", CultureInfo.GetCultureInfo("it-IT")),
+            PrezzoNettoText = CalculateLegacyNetPriceText(suggestedPrice, SelectedSearchResult.AliquotaIva),
+            PrezzoIvatoText = suggestedPrice > 0 ? suggestedPrice.ToString("0.00", CultureInfo.GetCultureInfo("it-IT")) : string.Empty,
+            DataFineText = ResolveDefaultLegacyOfferExpiryText(),
+            VarianteDettaglioOid1 = SelectedSearchResult.VarianteDettaglioOid1,
+            VarianteDettaglioOid2 = SelectedSearchResult.VarianteDettaglioOid2,
+            MatchesCurrentVariantScope = true
+        };
+
+        LegacyOfferRows.Add(row);
+        SelectedLegacyOfferRow = row;
+        NotifyPropertyChanged(nameof(HasLegacyOfferRows));
+        NotifyPropertyChanged(nameof(LegacyOfferSectionInfo));
+        LegacyStatusInfo = "Legacy modificato localmente: salva per confermare sul DB.";
+        StatusMessage = $"Nuova riga listino pronta per {CurrentVariantLegacyLabel}. Completa Q.tà e prezzo, poi salva.";
+    }
+
+    private void RemoveSelectedLegacyOfferRow()
+    {
+        if (SelectedLegacyOfferRow is null || !SelectedLegacyOfferRow.CanEditTierValues)
+        {
+            return;
+        }
+
+        var rowToRemove = SelectedLegacyOfferRow;
+        var removedQuantity = rowToRemove.QuantitaMinimaText;
+        LegacyOfferRows.Remove(rowToRemove);
+        SelectedLegacyOfferRow = LegacyOfferRows.LastOrDefault();
+        NotifyPropertyChanged(nameof(HasLegacyOfferRows));
+        NotifyPropertyChanged(nameof(LegacyOfferSectionInfo));
+        LegacyStatusInfo = "Legacy modificato localmente: salva per confermare sul DB.";
+        StatusMessage = $"Riga listino {removedQuantity} rimossa dalla bozza corrente. Salva per confermare sul DB legacy.";
+    }
+
+    private async Task PropagateSelectedLegacyOfferRowAsync()
+    {
+        if (SelectedSearchResult is null || SelectedSearchRow is null || SelectedLegacyOfferRow is null)
+        {
+            return;
+        }
+
+        var sourceArticle = SelectedSearchResult;
+        var selectedTier = SelectedLegacyOfferRow;
+        if (!selectedTier.IsValid)
+        {
+            StatusMessage = "La fascia selezionata non e` valida: controlla Q.tà e prezzo prima di propagare.";
+            return;
+        }
+
+        var targets = SearchRows
+            .Where(row =>
+                row.IsChild &&
+                row.Article is not null &&
+                row.FamilyOid == SelectedSearchRow.FamilyOid &&
+                !ReferenceEquals(row.Article, sourceArticle))
+            .Select(row => row.Article!)
+            .GroupBy(article => $"{article.VarianteDettaglioOid1 ?? 0}-{article.VarianteDettaglioOid2 ?? 0}")
+            .Select(group => group.First())
+            .Select(article => new GestionaleArticleLegacyOfferPropagationTarget
+            {
+                VarianteDettaglioOid1 = article.VarianteDettaglioOid1,
+                VarianteDettaglioOid2 = article.VarianteDettaglioOid2
+            })
+            .ToList();
+
+        if (targets.Count == 0)
+        {
+            StatusMessage = "Nessuna variante sorella disponibile per la propagazione della fascia legacy.";
+            return;
+        }
+
+        try
+        {
+            IsLoading = true;
+            await _articleWriteService.PropagateQuantityPriceTierAsync(new GestionaleArticleLegacyOfferPropagationRequest
+            {
+                ArticoloOid = sourceArticle.Oid,
+                AliquotaIva = sourceArticle.AliquotaIva,
+                PriceTier = new GestionaleArticleLegacyPriceTierUpdate
+                {
+                    QuantitaMinima = selectedTier.QuantitaMinima,
+                    PrezzoNetto = selectedTier.PrezzoNetto,
+                    PrezzoIvato = selectedTier.PrezzoIvato,
+                    DataFine = selectedTier.DataFine
+                },
+                Targets = targets
+            });
+
+            StatusMessage = $"Fascia {selectedTier.QuantitaMinima:0.##} propagata a {targets.Count} varianti legacy collegate.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Errore propagazione fascia legacy: {ex.Message}";
+            _logService.Error(nameof(MagazzinoArticleViewModel), "Errore durante la propagazione fascia legacy alle varianti.", ex);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private decimal ResolveSuggestedLegacyOfferQuantity()
+    {
+        if (TryParseOptionalDecimal(PezziPerConfezioneText, out var pezziPerConfezione) && pezziPerConfezione.HasValue && pezziPerConfezione.Value > 1)
+        {
+            return pezziPerConfezione.Value;
+        }
+
+        var maxExisting = LegacyOfferRows
+            .Select(row => row.QuantitaMinima)
+            .DefaultIfEmpty(1m)
+            .Max();
+
+        return maxExisting > 1 ? maxExisting + 1 : 5m;
+    }
+
+    private string ResolveDefaultLegacyOfferExpiryText()
+    {
+        var existing = LegacyOfferRows
+            .Select(row => row.DataFineText)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+
+        if (!string.IsNullOrWhiteSpace(existing))
+        {
+            return existing;
+        }
+
+        return _defaultLegacyOfferExpiryText;
+    }
+
+    private static string BuildLegacyRowKindLabel(GestionaleArticleLegacyListinoRowKind rowKind) =>
+        rowKind switch
+        {
+            GestionaleArticleLegacyListinoRowKind.Base => "Listino base",
+            GestionaleArticleLegacyListinoRowKind.Quantity => ">> Q.tà",
+            GestionaleArticleLegacyListinoRowKind.Variant => ">> Variante",
+            GestionaleArticleLegacyListinoRowKind.VariantQuantity => ">> Variante + q.tà",
+            _ => "Legacy"
+        };
+
+    private static string ResolveLegacyRowScopeLabel(bool hasVariantSelection, bool isGenericRow, bool matchesCurrentVariant)
+    {
+        if (!hasVariantSelection)
+        {
+            return isGenericRow ? "Modifica padre" : "Seleziona la variante per modificare l'override";
+        }
+
+        if (matchesCurrentVariant)
+        {
+            return "Override variante corrente";
+        }
+
+        return isGenericRow ? "Ereditato dal padre" : "Riga variante non corrente";
+    }
+
+    private static decimal ParseDecimalOrDefault(string? value, decimal fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return fallback;
+        }
+
+        var normalized = value.Trim().Replace(',', '.');
+        return decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : fallback;
+    }
+
+    private static string CalculateLegacyNetPriceText(decimal prezzoIvato, decimal aliquotaIva)
+    {
+        if (prezzoIvato <= 0)
+        {
+            return string.Empty;
+        }
+
+        if (aliquotaIva <= 0)
+        {
+            return prezzoIvato.ToString("0.0000", CultureInfo.GetCultureInfo("it-IT"));
+        }
+
+        var divisore = 1m + (aliquotaIva / 100m);
+        var prezzoNetto = divisore <= 0
+            ? prezzoIvato
+            : decimal.Round(prezzoIvato / divisore, 4, MidpointRounding.AwayFromZero);
+        return prezzoNetto.ToString("0.0000", CultureInfo.GetCultureInfo("it-IT"));
+    }
+
     private static bool TryParseOptionalDecimal(string? value, out decimal? result)
     {
         result = null;
@@ -927,6 +1533,11 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         if (!TryParseOptionalDecimal(PezziPerConfezioneText, out var pezziPerConfezione)
             || !TryParseOptionalDecimal(MultiploOrdineText, out var multiploOrdine)
             || !TryParseOptionalDecimal(LottoMinimoText, out var lottoMinimo)
+            || !TryParseOptionalDecimal(PrezzoConfezioneText, out var prezzoConfezione)
+            || !TryParseOptionalDecimal(PrezzoSingoloText, out var prezzoSingolo)
+            || !TryParseOptionalDecimal(PrezzoVenditaLocaleText, out var prezzoVenditaRiferimento)
+            || !TryParseOptionalDecimal(QuantitaPromoLocaleText, out var quantitaPromo)
+            || !TryParseOptionalDecimal(PrezzoPromoLocaleText, out var prezzoPromo)
             || !TryParseOptionalInt(GiorniCoperturaText, out var giorniCopertura))
         {
             StatusMessage = "Uno o piu` valori locali non sono validi. Controlla numeri e separatori prima di salvare.";
@@ -938,7 +1549,12 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             pezziPerConfezione,
             multiploOrdine,
             lottoMinimo,
-            giorniCopertura);
+            giorniCopertura,
+            prezzoConfezione,
+            prezzoSingolo,
+            prezzoVenditaRiferimento,
+            quantitaPromo,
+            prezzoPromo);
         return true;
     }
 
@@ -947,7 +1563,12 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
         decimal? pezziPerConfezione,
         decimal? multiploOrdine,
         decimal? lottoMinimo,
-        int? giorniCopertura)
+        int? giorniCopertura,
+        decimal? prezzoConfezione,
+        decimal? prezzoSingolo,
+        decimal? prezzoVenditaRiferimento,
+        decimal? quantitaPromo,
+        decimal? prezzoPromo)
     {
         return new ReorderArticleSettings
         {
@@ -969,6 +1590,11 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             MultiploOrdine = multiploOrdine,
             LottoMinimoOrdine = lottoMinimo,
             GiorniCopertura = giorniCopertura,
+            PrezzoConfezione = prezzoConfezione,
+            PrezzoSingolo = prezzoSingolo,
+            PrezzoVenditaRiferimento = prezzoVenditaRiferimento,
+            QuantitaPromo = quantitaPromo,
+            PrezzoPromo = prezzoPromo,
             Note = Note?.Trim() ?? string.Empty,
             UpdatedAt = DateTimeOffset.Now
         };
@@ -996,8 +1622,124 @@ public sealed class MagazzinoArticleViewModel : ViewModelBase
             MultiploOrdine = source.MultiploOrdine,
             LottoMinimoOrdine = source.LottoMinimoOrdine,
             GiorniCopertura = source.GiorniCopertura,
+            PrezzoConfezione = source.PrezzoConfezione,
+            PrezzoSingolo = source.PrezzoSingolo,
+            PrezzoVenditaRiferimento = source.PrezzoVenditaRiferimento,
+            QuantitaPromo = source.QuantitaPromo,
+            PrezzoPromo = source.PrezzoPromo,
             Note = source.Note,
             UpdatedAt = source.UpdatedAt
         };
     }
+
+    private decimal ResolveNormalizedPurchaseUnitCost(GestionaleArticlePurchaseQuickInfo? latestPurchase)
+    {
+        if (latestPurchase is null || latestPurchase.PrezzoUnitario <= 0)
+        {
+            return 0m;
+        }
+
+        if (!AcquistoAConfezione || !VenditaAPezzoSingolo)
+        {
+            return latestPurchase.PrezzoUnitario;
+        }
+
+        if (!TryParseOptionalDecimal(PezziPerConfezioneText, out var pezziPerConfezione)
+            || !pezziPerConfezione.HasValue
+            || pezziPerConfezione.Value <= 1)
+        {
+            return latestPurchase.PrezzoUnitario;
+        }
+
+        return decimal.Round(latestPurchase.PrezzoUnitario / pezziPerConfezione.Value, 4, MidpointRounding.AwayFromZero);
+    }
+
+    private static decimal? ResolvePackagePrice(
+        decimal? pezziPerConfezione,
+        decimal? prezzoSingolo)
+    {
+        if (!pezziPerConfezione.HasValue || pezziPerConfezione.Value <= 1)
+        {
+            return prezzoSingolo;
+        }
+
+        if (!prezzoSingolo.HasValue || prezzoSingolo.Value <= 0)
+        {
+            return null;
+        }
+
+        return decimal.Round(prezzoSingolo.Value * pezziPerConfezione.Value, 2, MidpointRounding.AwayFromZero);
+    }
+
+    private void RefreshFilteredPrimaryUnitOptions()
+    {
+        ReplaceCollection(FilteredPrimaryUnitOptions, FilterLookupOptions(UnitOptions, _primaryUnitPickerSearchText));
+    }
+
+    private void RefreshFilteredSecondaryUnitOptions()
+    {
+        ReplaceCollection(FilteredSecondaryUnitOptions, FilterLookupOptions(SecondaryUnitOptions, _secondaryUnitPickerSearchText));
+    }
+
+    private void SyncSelectedPrimaryUnitOption()
+    {
+        var normalizedValue = (_unitaPrincipaleLegacyText ?? string.Empty).Trim();
+        var matchedOption = string.IsNullOrWhiteSpace(normalizedValue)
+            ? null
+            : UnitOptions.FirstOrDefault(item => string.Equals(item.Label, normalizedValue, StringComparison.OrdinalIgnoreCase));
+
+        if (!ReferenceEquals(_selectedPrimaryUnitOption, matchedOption))
+        {
+            _selectedPrimaryUnitOption = matchedOption;
+            NotifyPropertyChanged(nameof(SelectedPrimaryUnitOption));
+        }
+    }
+
+    private void SyncSelectedSecondaryUnitOption()
+    {
+        var normalizedValue = (_unitaSecondariaLegacyText ?? string.Empty).Trim();
+        GestionaleLookupOption? matchedOption;
+
+        if (string.IsNullOrWhiteSpace(normalizedValue))
+        {
+            matchedOption = SecondaryUnitOptions.FirstOrDefault(item => item.Oid == 0);
+        }
+        else
+        {
+            matchedOption = SecondaryUnitOptions.FirstOrDefault(item => string.Equals(item.Label, normalizedValue, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!ReferenceEquals(_selectedSecondaryUnitOption, matchedOption))
+        {
+            _selectedSecondaryUnitOption = matchedOption;
+            NotifyPropertyChanged(nameof(SelectedSecondaryUnitOption));
+        }
+    }
+
+    private static IReadOnlyList<GestionaleLookupOption> FilterLookupOptions(IEnumerable<GestionaleLookupOption> source, string searchText)
+    {
+        IEnumerable<GestionaleLookupOption> filtered = source;
+        var normalizedSearch = searchText.Trim();
+
+        if (!string.IsNullOrWhiteSpace(normalizedSearch))
+        {
+            var terms = normalizedSearch
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            filtered = filtered.Where(option =>
+                terms.All(term => option.Label.Contains(term, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        return filtered.Take(80).ToList();
+    }
+
+    private static void ReplaceCollection<T>(ObservableCollection<T> target, IReadOnlyList<T> source)
+    {
+        target.Clear();
+        foreach (var item in source)
+        {
+            target.Add(item);
+        }
+    }
 }
+

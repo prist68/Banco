@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using Banco.UI.Wpf.ViewModels;
 
 namespace Banco.UI.Wpf.Views;
@@ -32,5 +33,13 @@ public partial class PosManualWarningDialogWindow : Window
     {
         Choice = PosManualWarningChoice.TornaScheda;
         DialogResult = false;
+    }
+
+    private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
     }
 }

@@ -1,0 +1,148 @@
+<UserControl x:Class="Banco.UI.Wpf.ArchiveSettingsModule.ArchiveSettingsHostView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:Banco.Sidebar.Converters;assembly=Banco.Sidebar"
+             xmlns:module="clr-namespace:Banco.UI.Wpf.ArchiveSettingsModule"
+             Focusable="False"
+             FocusVisualStyle="{x:Null}">
+    <UserControl.Resources>
+        <conv:ResourceKeyToGeometryConverter x:Key="ResourceKeyToGeometryConverter" />
+
+        <Style TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+
+        <Style TargetType="ContentControl">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+
+        <Style x:Key="ArchiveMenuButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Card"
+                                Background="{DynamicResource ShellWorkspaceChromeBrush}"
+                                BorderBrush="{DynamicResource ShellWorkspaceChromeBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="10">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Card" Property="Background" Value="{DynamicResource ShellContextCardHoverBrush}" />
+                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource ShellContextCardHoverBorderBrush}" />
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                <Setter TargetName="Card" Property="Background" Value="{DynamicResource ShellContextCardActiveBrush}" />
+                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource ShellAccentBrush}" />
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="18" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Background="{StaticResource ShellWorkspaceChromeBrush}"
+                BorderBrush="{StaticResource ShellWorkspaceChromeBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="16" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <StackPanel>
+                    <TextBlock FontSize="18"
+                               FontWeight="SemiBold"
+                               Text="{Binding Titolo}" />
+                    <TextBlock Margin="0,6,0,0"
+                               FontSize="12.5"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="{Binding Sottotitolo}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <ItemsControl Grid.Row="2"
+                              ItemsSource="{Binding Sections}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type module:ArchiveSectionItemViewModel}">
+                            <Button Style="{StaticResource ArchiveMenuButtonStyle}"
+                                    Click="SectionButton_OnClick"
+                                    CommandParameter="{Binding Section}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Width="42"
+                                            Height="42"
+                                            CornerRadius="10"
+                                            Background="{DynamicResource BancoAccentSoftBrush}">
+                                        <Path Width="18"
+                                              Height="18"
+                                              Stretch="Uniform"
+                                              Fill="{DynamicResource BancoAccentSoftForegroundBrush}"
+                                              Data="{Binding IconResourceKey, Converter={StaticResource ResourceKeyToGeometryConverter}}" />
+                                    </Border>
+
+                                    <StackPanel Grid.Column="2"
+                                                VerticalAlignment="Center">
+                                        <TextBlock FontSize="13.5"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   Text="{Binding Title}" />
+                                        <TextBlock Margin="0,3,0,0"
+                                                   FontSize="11.5"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   Text="{Binding Subtitle}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="16" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <StackPanel>
+                <TextBlock FontSize="24"
+                           FontWeight="Bold"
+                           Text="{Binding CurrentSectionTitle}" />
+                <TextBlock Margin="0,6,0,0"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="{Binding CurrentSectionSubtitle}" />
+            </StackPanel>
+
+            <ContentControl Grid.Row="2"
+                            Content="{Binding CurrentSectionContent}" />
+        </Grid>
+    </Grid>
+</UserControl>

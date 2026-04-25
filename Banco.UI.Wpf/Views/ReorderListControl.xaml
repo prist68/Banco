@@ -150,7 +150,7 @@
                                Placement="Bottom"
                                StaysOpen="False"
                                AllowsTransparency="True"
-                               PopupAnimation="Fade">
+                               PopupAnimation="None">
                             <Border Width="540"
                                     Background="#FFFFFFFF"
                                     BorderBrush="{StaticResource BorderBrushBase}"

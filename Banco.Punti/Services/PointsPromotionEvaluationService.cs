@@ -100,8 +100,8 @@ public sealed class PointsPromotionEvaluationService : IPointsPromotionEvaluatio
                 Rule = rule,
                 Summary = _balanceService.BuildSummary(context.Customer, context.Campaign, [rule], context.Document)
             })
-            .Where(item => item.Summary.RequiredPoints > 0 && item.Summary.TotalAvailablePoints >= item.Summary.RequiredPoints)
-            .OrderByDescending(item => item.Summary.RequiredPoints)
+            .Where(item => item.Rule.EffectiveRequiredPoints > 0 && item.Summary.TotalAvailablePoints >= item.Rule.EffectiveRequiredPoints)
+            .OrderByDescending(item => item.Rule.EffectiveRequiredPoints)
             .ThenBy(item => item.Rule.RuleName)
             .ToList();
 
@@ -131,7 +131,7 @@ public sealed class PointsPromotionEvaluationService : IPointsPromotionEvaluatio
                     Rule = rule,
                     Summary = _balanceService.BuildSummary(context.Customer, context.Campaign, [rule], context.Document)
                 })
-                .OrderBy(item => item.Summary.RequiredPoints <= 0 ? decimal.MaxValue : item.Summary.RequiredPoints)
+                .OrderBy(item => item.Rule.EffectiveRequiredPoints <= 0 ? decimal.MaxValue : item.Rule.EffectiveRequiredPoints)
                 .First();
 
             return new PromotionEvaluationResult

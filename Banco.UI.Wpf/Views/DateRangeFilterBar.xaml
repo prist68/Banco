@@ -59,7 +59,7 @@
                        Placement="Bottom"
                        StaysOpen="False"
                        AllowsTransparency="True"
-                       PopupAnimation="Fade">
+                       PopupAnimation="None">
                     <Border Background="{DynamicResource UIDocumentCalendarPopupBrush}"
                             BorderBrush="{DynamicResource UIDocumentCalendarPopupBorderBrush}"
                             BorderThickness="1"
@@ -107,7 +107,7 @@
                        Placement="Bottom"
                        StaysOpen="False"
                        AllowsTransparency="True"
-                       PopupAnimation="Fade">
+                       PopupAnimation="None">
                     <Border Background="{DynamicResource UIDocumentCalendarPopupBrush}"
                             BorderBrush="{DynamicResource UIDocumentCalendarPopupBorderBrush}"
                             BorderThickness="1"

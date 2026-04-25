@@ -270,10 +270,18 @@ public sealed class WinEcrAutoRunService : IWinEcrAutoRunService
             : await _rewardRuleService.GetAsync(campaign.Oid, cancellationToken);
         var summary = _pointsCustomerBalanceService.BuildSummary(customer, campaign, rewardRules, documento);
         var puntiPrima = customer.PuntiDisponibili ?? 0m;
-        var puntiDopo = Math.Max(0m, summary.TotalAvailablePoints - ResolveSpentPoints(documento, rewardRules));
+        var puntiMaturati = summary.CurrentDocumentPoints;
+        var puntiSpesi = ResolveSpentPoints(documento, rewardRules);
+        var puntiDopo = puntiPrima + puntiMaturati - puntiSpesi;
 
-        lines.Add($"Punti prima: {FormatPoints(puntiPrima)}");
-        lines.Add($"Punti dopo : {FormatPoints(puntiDopo)}");
+        lines.Add($"Punti precedenti: {FormatPoints(puntiPrima)}");
+        lines.Add($"Punti maturati : {FormatPoints(puntiMaturati)}");
+        if (puntiSpesi > 0)
+        {
+            lines.Add($"Punti spesi    : {FormatPoints(puntiSpesi)}");
+        }
+
+        lines.Add($"Saldo punti    : {FormatPoints(puntiDopo)}");
         return lines;
     }
 
@@ -326,7 +334,7 @@ public sealed class WinEcrAutoRunService : IWinEcrAutoRunService
             builder.AppendLine(BuildVendLine(riga));
         }
 
-        builder.AppendLine("SUBT");
+        builder.AppendLine(BuildSubtotalCommand(documento));
 
         if (footerLines.Count > 0)
         {
@@ -370,6 +378,18 @@ public sealed class WinEcrAutoRunService : IWinEcrAutoRunService
         builder.AppendLine($"vis ope2='Resto : {FormatDisplayAmount(resto)}'");
 
         return builder.ToString().TrimEnd() + Environment.NewLine;
+    }
+
+    private static string BuildSubtotalCommand(DocumentoLocale documento)
+    {
+        var scontoDocumento = documento.TotaleScontoLocale;
+        if (scontoDocumento <= 0)
+        {
+            return "SUBT";
+        }
+
+        // Lo sconto documento va tradotto in abbuono fiscale di subtotale verso WinEcr.
+        return $"SCONTO VAL={FormatAmount(scontoDocumento)},SUBTOT";
     }
 
     private static string BuildDailyJournalCommandContent(CashJournalMode journalMode)

@@ -21,6 +21,7 @@ namespace Banco.UI.Wpf.ViewModels;
 
 public sealed class BancoViewModel : ViewModelBase
 {
+    private const string DefaultReceiptPrefix = "1959";
     private readonly IGestionaleDocumentReadService _documentReadService;
     private readonly IGestionaleArticleReadService _articleReadService;
     private readonly IGestionaleCustomerReadService _customerReadService;
@@ -42,8 +43,11 @@ public sealed class BancoViewModel : ViewModelBase
     private readonly IReorderListRepository _reorderListRepository;
     private readonly RelayCommand _incrementaQuantitaRigaSelezionataCommand;
     private readonly RelayCommand _decrementaQuantitaRigaSelezionataCommand;
+    private readonly RelayCommand _applyArticleOfferSuggestionCommand;
+    private readonly RelayCommand _dismissArticleOfferSuggestionCommand;
     private readonly Dictionary<string, bool> _columnVisibility = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, GestionaleArticlePricingDetail> _articlePricingDetails = new();
+    private readonly Dictionary<string, decimal> _articleOfferSuggestionSuppressions = new(StringComparer.OrdinalIgnoreCase);
     private readonly Task _layoutInitializationTask;
     private DocumentoLocale? _documentoLocale;
     private GestionaleDocumentDetail? _documentoGestionaleOrigine;
@@ -76,6 +80,15 @@ public sealed class BancoViewModel : ViewModelBase
     private string _statusMessage = "Apri un documento dal gestionale oppure crea una nuova scheda Banco.";
     private bool _isArticlePopupOpen;
     private bool _isCustomerPopupOpen;
+    private bool _isArticleOfferSuggestionVisible;
+    private string _articleOfferSuggestionText = string.Empty;
+    private string _articleOfferSuggestionPrimaryActionLabel = "Applica";
+    private string _articleOfferSuggestionKey = string.Empty;
+    private Guid? _articleOfferSuggestionRowId;
+    private GestionaleArticlePricingDetail? _articleOfferSuggestionPricingDetail;
+    private decimal _articleOfferSuggestionQuantity;
+    private decimal _articleOfferSuggestionFallbackUnitPrice;
+    private int _articleOfferSuggestionRequestVersion;
     private CancellationTokenSource? _articleSearchCts;
     private CancellationTokenSource? _customerSearchCts;
     private CancellationTokenSource? _purchaseQuickInfoCts;
@@ -133,6 +146,8 @@ public sealed class BancoViewModel : ViewModelBase
     private int _customerSearchRequestVersion;
     private int _purchaseQuickInfoRequestVersion;
     private int _promoRefreshRequestVersion;
+    private bool _isManualArticleLookupActive;
+    private CashRegisterOptionSelection? _lastReceiptReprintSelection;
 
     public event Action? FocusArticleSearchRequested;
     public event Action<StoricoAcquistiViewModel>? OpenStoricoAcquistiRequested;
@@ -145,6 +160,8 @@ public sealed class BancoViewModel : ViewModelBase
     public event Action<int>? OfficialDocumentDeleted;
     public event Action<int>? OfficialDocumentMissing;
     public event Action<string>? DirectArticleMissing;
+    public Func<ArticleLookupRequest, Task<GestionaleArticleSearchResult?>>? ArticleLookupRequested;
+    public Func<GestionaleArticleSearchResult, IReadOnlyList<GestionaleArticleSearchResult>, Task<GestionaleArticleSearchResult?>>? ArticleVariantSelectionRequested;
     public Func<string, string?, Task<string?>>? Pos80PrintRequested;
     public Func<PosPaymentResult, Task<PosManualWarningChoice>>? PosManualWarningRequested;
     public Func<PromotionEvaluationResult, Task<PointsRewardRule?>>? PromotionConfirmationRequested;
@@ -201,11 +218,11 @@ public sealed class BancoViewModel : ViewModelBase
         ListiniDisponibili = [];
 
         CercaArticoliCommand = new RelayCommand(() => _ = CercaArticoliAsync(), () => !IsReadOnly && !string.IsNullOrWhiteSpace(SearchArticoloText));
-        AggiungiArticoloCommand = new RelayCommand(() => _ = AggiungiArticoloAsync(), () => CanModifyDocument && ArticoloSelezionato is not null);
+        AggiungiArticoloCommand = new RelayCommand(() => _ = HandleAddArticleRequestedAsync(), () => CanModifyDocument && (ArticoloSelezionato is not null || !string.IsNullOrWhiteSpace(SearchArticoloText)));
         RimuoviRigaCommand = new RelayCommand<RigaDocumentoLocaleViewModel>(RimuoviRiga, riga => CanModifyDocument && riga is not null);
         CercaClientiCommand = new RelayCommand(() => _ = CercaClientiAsync(), () => !IsReadOnly && !string.IsNullOrWhiteSpace(SearchClienteText));
         SelezionaClienteCommand = new RelayCommand(SelezionaCliente, () => CanModifyDocument && ClienteSelezionato is not null);
-        NuovoDocumentoCommand = new RelayCommand(() => _ = NuovoDocumentoAsync());
+        NuovoDocumentoCommand = new RelayCommand(() => _ = NuovoDocumentoAsync(clearLastReceiptReprint: true));
         AzzeraDocumentoCommand = new RelayCommand(() => _ = AzzeraDocumentoAsync(), () => CanAzzeraContenuto);
         SalvaDocumentoCommand = new RelayCommand(() => _ = SalvaDocumentoAsync(), () => CanSaveDocumentoLocale);
         AbilitaModificaDocumentoFiscalizzatoCommand = new RelayCommand(AbilitaModificaDocumentoFiscalizzato, () => CanEnableConsultationEdit);
@@ -216,17 +233,20 @@ public sealed class BancoViewModel : ViewModelBase
         ScontrinoCommand = new RelayCommand(() => _ = EmettiScontrinoAsync(), () => CanEmettiScontrino);
         _incrementaQuantitaRigaSelezionataCommand = new RelayCommand(() => ModificaQuantitaRigaSelezionata(1), () => RigaSelezionata is not null);
         _decrementaQuantitaRigaSelezionataCommand = new RelayCommand(() => ModificaQuantitaRigaSelezionata(-1), () => RigaSelezionata is not null);
+        _applyArticleOfferSuggestionCommand = new RelayCommand(ApplyArticleOfferSuggestion, () => IsArticleOfferSuggestionVisible && _articleOfferSuggestionRowId.HasValue);
+        _dismissArticleOfferSuggestionCommand = new RelayCommand(DismissArticleOfferSuggestion, () => IsArticleOfferSuggestionVisible);
         ApriStoricoAcquistiCommand = new RelayCommand(ApriStoricoAcquisti, () => CanOpenCustomerHistory);
         ApriStoricoAcquistiArticoloCommand = new RelayCommand(ApriStoricoAcquistiArticoloDaPulsante);
         MostraListaDocumentiCommand = new RelayCommand(() => ShowDocumentListRequested?.Invoke());
         ApriImpostazioniBancoCommand = new RelayCommand(() => OpenSettingsRequested?.Invoke());
         ApriRegistratoreCassaCommand = new RelayCommand(() => OpenCashRegisterRequested?.Invoke());
+        RistampaUltimoScontrinoCommand = new RelayCommand(() => _ = RistampaUltimoScontrinoAsync(), () => CanRistampaUltimoScontrino);
         StampaPos80Command = new RelayCommand(() => _ = StampaPos80Async());
 
         _layoutInitializationTask = InitializeLayoutAsync();
         _ = LoadOperatorsAsync();
         _ = LoadPromoCampaignAsync();
-        _ = NuovoDocumentoAsync();
+        _ = NuovoDocumentoAsync(clearLastReceiptReprint: true);
     }
 
     private void OnSettingsChanged(object? sender, ApplicationConfigurationChangedEventArgs e)
@@ -342,6 +362,11 @@ public sealed class BancoViewModel : ViewModelBase
     {
         get
         {
+            if (HasArticleOfferHeaderNotification)
+            {
+                return ArticleOfferSuggestionText.Trim();
+            }
+
             var parti = new List<string>();
 
             if (ShowDocumentoAccessBanner && !string.IsNullOrWhiteSpace(DocumentoAccessBannerInlineText))
@@ -361,6 +386,8 @@ public sealed class BancoViewModel : ViewModelBase
             return string.Join(" | ", parti);
         }
     }
+
+    public bool HasArticleOfferHeaderNotification => IsArticleOfferSuggestionVisible && !string.IsNullOrWhiteSpace(ArticleOfferSuggestionText);
 
     public DocumentoLocale? DocumentoLocaleCorrente
     {
@@ -606,6 +633,7 @@ public sealed class BancoViewModel : ViewModelBase
             return;
         }
 
+        DocumentoLocaleCorrente?.AbilitaCorrezioneFiscalizzata();
         _consultationEditOverrideEnabled = true;
         StatoDocumento = "Documento fiscalizzato - modifica manuale";
         StatusMessage = "Modifica manuale abilitata sulla scheda fiscalizzata. F4/F10 salva sul legacy senza ristampa.";
@@ -700,12 +728,11 @@ public sealed class BancoViewModel : ViewModelBase
             if (SetProperty(ref _searchArticoloText, value))
             {
                 CercaArticoliCommand.RaiseCanExecuteChanged();
+                AggiungiArticoloCommand.RaiseCanExecuteChanged();
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     IsArticlePopupOpen = false;
                 }
-
-                ScheduleArticleSearch();
             }
         }
     }
@@ -838,6 +865,7 @@ public sealed class BancoViewModel : ViewModelBase
                 _incrementaQuantitaRigaSelezionataCommand.RaiseCanExecuteChanged();
                 _decrementaQuantitaRigaSelezionataCommand.RaiseCanExecuteChanged();
                 _ = AggiornaUltimoAcquistoArticoloSelezionatoAsync();
+                _ = RefreshArticleOfferSuggestionForSelectedRowAsync();
             }
         }
     }
@@ -934,6 +962,42 @@ public sealed class BancoViewModel : ViewModelBase
     {
         get => _isCustomerPopupOpen;
         set => SetProperty(ref _isCustomerPopupOpen, value);
+    }
+
+    public bool IsArticleOfferSuggestionVisible
+    {
+        get => _isArticleOfferSuggestionVisible;
+        private set
+        {
+            if (SetProperty(ref _isArticleOfferSuggestionVisible, value))
+            {
+                _applyArticleOfferSuggestionCommand.RaiseCanExecuteChanged();
+                _dismissArticleOfferSuggestionCommand.RaiseCanExecuteChanged();
+                NotifyPropertyChanged(nameof(HasArticleOfferHeaderNotification));
+                NotifyPropertyChanged(nameof(HeaderNotificationText));
+                NotifyPropertyChanged(nameof(HasHeaderNotification));
+            }
+        }
+    }
+
+    public string ArticleOfferSuggestionText
+    {
+        get => _articleOfferSuggestionText;
+        private set
+        {
+            if (SetProperty(ref _articleOfferSuggestionText, value))
+            {
+                NotifyPropertyChanged(nameof(HasArticleOfferHeaderNotification));
+                NotifyPropertyChanged(nameof(HeaderNotificationText));
+                NotifyPropertyChanged(nameof(HasHeaderNotification));
+            }
+        }
+    }
+
+    public string ArticleOfferSuggestionPrimaryActionLabel
+    {
+        get => _articleOfferSuggestionPrimaryActionLabel;
+        private set => SetProperty(ref _articleOfferSuggestionPrimaryActionLabel, value);
     }
 
     public double RigaColumnWidth
@@ -1129,6 +1193,10 @@ public sealed class BancoViewModel : ViewModelBase
 
     public RelayCommand DecrementaQuantitaRigaSelezionataCommand => _decrementaQuantitaRigaSelezionataCommand;
 
+    public RelayCommand ApplyArticleOfferSuggestionCommand => _applyArticleOfferSuggestionCommand;
+
+    public RelayCommand DismissArticleOfferSuggestionCommand => _dismissArticleOfferSuggestionCommand;
+
     public RelayCommand ApriStoricoAcquistiCommand { get; }
 
     public RelayCommand ApriStoricoAcquistiArticoloCommand { get; }
@@ -1139,7 +1207,11 @@ public sealed class BancoViewModel : ViewModelBase
 
     public RelayCommand ApriRegistratoreCassaCommand { get; }
 
+    public RelayCommand RistampaUltimoScontrinoCommand { get; }
+
     public RelayCommand StampaPos80Command { get; }
+
+    public bool CanRistampaUltimoScontrino => _lastReceiptReprintSelection is not null && !_isPaymentOperationInProgress;
 
     public async Task RegistraOperazioneCassaAsync(CashRegisterOptionSelection selection)
     {
@@ -1213,6 +1285,16 @@ public sealed class BancoViewModel : ViewModelBase
         return (deviceSerialNumber, "1959");
     }
 
+    public async Task RistampaUltimoScontrinoAsync()
+    {
+        if (_lastReceiptReprintSelection is null || _isPaymentOperationInProgress)
+        {
+            return;
+        }
+
+        await RegistraOperazioneCassaAsync(_lastReceiptReprintSelection);
+    }
+
     public bool CanPrintPos80 => DocumentoLocaleCorrente is not null
                                  && DocumentoLocaleCorrente.Righe.Count > 0
                                  && !_isPaymentOperationInProgress;
@@ -1284,7 +1366,92 @@ public sealed class BancoViewModel : ViewModelBase
         string.Equals(pagamento.TipoPagamento?.Trim(), "buonipasto", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(pagamento.TipoPagamento?.Trim(), "ticket", StringComparison.OrdinalIgnoreCase)) == true;
 
-    public Task ExecuteArticleSearchAsync() => CercaArticoliAsync(explicitUserRequest: true);
+    public Task ExecuteArticleSearchAsync(bool fromScanner = false) => CercaArticoliAsync(
+        explicitUserRequest: true,
+        allowAutoInsert: fromScanner,
+        consumeSearchText: fromScanner);
+
+    public async Task OpenManualArticleLookupAsync(string? initialSearchText = null)
+    {
+        if (!CanModifyDocument || ArticleLookupRequested is null || _isManualArticleLookupActive)
+        {
+            return;
+        }
+
+        var searchText = (initialSearchText ?? SearchArticoloText)?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            return;
+        }
+
+        _isManualArticleLookupActive = true;
+        InvalidatePendingArticleSearch(clearSearchText: false);
+        RisultatiRicercaArticoli.Clear();
+        ArticoloSelezionato = null;
+
+        try
+        {
+            var selectedArticle = await ArticleLookupRequested.Invoke(new ArticleLookupRequest
+            {
+                SearchText = searchText,
+                SelectedPriceListOid = ListinoSelezionato?.Oid,
+                Title = "Ricerca articolo Banco",
+                Subtitle = "Digita per cercare nel catalogo legacy. Il barcode da pistola continua invece a inserire diretto.",
+                PreferVariantResults = true
+            });
+
+            if (selectedArticle is null)
+            {
+                StatusMessage = "Ricerca articolo annullata. Campo ricerca pronto per un nuovo inserimento.";
+                FocusArticleSearchRequested?.Invoke();
+                return;
+            }
+
+            var articleToInsert = await ResolveManualLookupArticleSelectionAsync(selectedArticle);
+            if (articleToInsert is null)
+            {
+                StatusMessage = "Selezione variante annullata. Campo ricerca pronto per un nuovo inserimento.";
+                FocusArticleSearchRequested?.Invoke();
+                return;
+            }
+
+            ArticoloSelezionato = articleToInsert;
+            await AggiungiArticoloAsync();
+        }
+        finally
+        {
+            _isManualArticleLookupActive = false;
+            AggiungiArticoloCommand.RaiseCanExecuteChanged();
+        }
+    }
+
+    private async Task<GestionaleArticleSearchResult?> ResolveManualLookupArticleSelectionAsync(GestionaleArticleSearchResult selectedArticle)
+    {
+        if (selectedArticle.IsVariante)
+        {
+            return selectedArticle;
+        }
+
+        if (!selectedArticle.HasVariantChildren)
+        {
+            return selectedArticle;
+        }
+
+        if (ArticleVariantSelectionRequested is null)
+        {
+            StatusMessage = "La scheda richiede la scelta variante ma il selettore UI non e` disponibile.";
+            return null;
+        }
+
+        var variants = await _articleReadService.GetArticleVariantsAsync(selectedArticle.Oid, ListinoSelezionato?.Oid);
+        if (variants.Count == 0)
+        {
+            StatusMessage = "L'articolo selezionato ha varianti legacy ma non e` stato possibile caricarle. Nessuna riga inserita.";
+            return null;
+        }
+
+        return await ArticleVariantSelectionRequested(selectedArticle, variants);
+    }
 
     public async Task ExecuteCustomerSearchAsync()
     {
@@ -1459,8 +1626,13 @@ public sealed class BancoViewModel : ViewModelBase
             : "Documento Banco operativo caricato dal supporto tecnico.";
     }
 
-    private async Task NuovoDocumentoAsync()
+    private async Task NuovoDocumentoAsync(bool clearLastReceiptReprint)
     {
+        if (clearLastReceiptReprint)
+        {
+            ClearLastReceiptReprintSelection();
+        }
+
         ResetState();
 
         DocumentoLocaleCorrente = DocumentoLocale.Reidrata(
@@ -1548,13 +1720,25 @@ public sealed class BancoViewModel : ViewModelBase
         FocusArticleSearchRequested?.Invoke();
     }
 
-    private Task CercaArticoliAsync(bool explicitUserRequest = false)
+    private Task CercaArticoliAsync(bool explicitUserRequest = false, bool allowAutoInsert = false, bool consumeSearchText = false)
     {
         var requestVersion = ++_articleSearchRequestVersion;
-        return CercaArticoliAsync(requestVersion, SearchArticoloText, explicitUserRequest);
+        var searchText = SearchArticoloText;
+
+        if (consumeSearchText)
+        {
+            ConsumeArticleScannerText();
+        }
+
+        return CercaArticoliAsync(requestVersion, searchText, explicitUserRequest, allowAutoInsert, validateCurrentSearchText: !consumeSearchText);
     }
 
-    private async Task CercaArticoliAsync(int requestVersion, string searchText, bool explicitUserRequest = false)
+    private async Task CercaArticoliAsync(
+        int requestVersion,
+        string searchText,
+        bool explicitUserRequest = false,
+        bool allowAutoInsert = false,
+        bool validateCurrentSearchText = true)
     {
         if (IsReadOnly || string.IsNullOrWhiteSpace(searchText))
         {
@@ -1562,7 +1746,7 @@ public sealed class BancoViewModel : ViewModelBase
         }
 
         var results = await _articleReadService.SearchArticlesAsync(searchText, ListinoSelezionato?.Oid);
-        if (!IsArticleSearchRequestCurrent(requestVersion, searchText))
+        if (validateCurrentSearchText && !IsArticleSearchRequestCurrent(requestVersion, searchText))
         {
             return;
         }
@@ -1577,7 +1761,7 @@ public sealed class BancoViewModel : ViewModelBase
         IsArticlePopupOpen = results.Count > 0;
         ArticoloSelezionato = RisultatiRicercaArticoli.FirstOrDefault();
 
-        var barcodeMatch = CanModifyDocument && IsBarcodeScan(searchText)
+        var barcodeMatch = allowAutoInsert && CanModifyDocument && IsBarcodeScan(searchText)
             ? FindBestBarcodeMatch(results, searchText)
             : null;
 
@@ -1589,13 +1773,6 @@ public sealed class BancoViewModel : ViewModelBase
             IsArticlePopupOpen = false;
             await AggiungiArticoloAsync(fromAutoSearch: true, capturedSearchText: barcodeToken);
             StatusMessage = "Barcode riconosciuto e articolo aggiunto automaticamente al documento.";
-            return;
-        }
-
-        if (results.Count == 1 && CanModifyDocument)
-        {
-            await AggiungiArticoloAsync(fromAutoSearch: true);
-            StatusMessage = "Articolo trovato e aggiunto automaticamente al documento.";
             return;
         }
 
@@ -1616,12 +1793,14 @@ public sealed class BancoViewModel : ViewModelBase
             return;
         }
 
-        if (fromAutoSearch && IsDuplicateAutoSearchInsert(capturedSearchText, ArticoloSelezionato))
+        var articoloSelezionato = ArticoloSelezionato;
+
+        if (fromAutoSearch && IsDuplicateAutoSearchInsert(capturedSearchText, articoloSelezionato))
         {
             return;
         }
 
-        var dettaglioPrezzi = await GetArticlePricingDetailAsync(ArticoloSelezionato);
+        var dettaglioPrezzi = await GetArticlePricingDetailAsync(articoloSelezionato);
         var quantitaDaInserire = 1m;
 
         if (dettaglioPrezzi is not null)
@@ -1629,7 +1808,7 @@ public sealed class BancoViewModel : ViewModelBase
             quantitaDaInserire = CalcolaQuantitaPredefinitaArticolo(dettaglioPrezzi);
             if (dettaglioPrezzi.RichiedeSceltaQuantita && ArticleQuantitySelectionRequested is not null)
             {
-                var quantitaSelezionata = await ArticleQuantitySelectionRequested(ArticoloSelezionato, dettaglioPrezzi, quantitaDaInserire);
+                var quantitaSelezionata = await ArticleQuantitySelectionRequested(articoloSelezionato, dettaglioPrezzi, quantitaDaInserire);
                 if (!quantitaSelezionata.HasValue)
                 {
                     ClearPendingArticleSelection();
@@ -1643,7 +1822,7 @@ public sealed class BancoViewModel : ViewModelBase
             }
         }
 
-        var decisioneDisponibilitaNegativa = await ResolveNegativeAvailabilityDecisionAsync(quantitaDaInserire);
+        var decisioneDisponibilitaNegativa = await ResolveNegativeAvailabilityDecisionAsync(articoloSelezionato, quantitaDaInserire);
         if (decisioneDisponibilitaNegativa == NegativeAvailabilityDecision.Annulla)
         {
             ClearPendingArticleSelection();
@@ -1659,13 +1838,14 @@ public sealed class BancoViewModel : ViewModelBase
         RigaDocumentoLocale? rigaInserita = null;
         if (!rigaCreataComeManuale)
         {
-            rigaAccorpata = TryAccorpaArticoloSelezionato(quantitaDaInserire, dettaglioPrezzi);
+            rigaAccorpata = TryAccorpaArticoloSelezionato(articoloSelezionato, quantitaDaInserire, dettaglioPrezzi);
         }
 
         if (rigaAccorpata is null)
         {
-            var prezzoUnitario = ResolveArticleUnitPrice(dettaglioPrezzi, quantitaDaInserire, ArticoloSelezionato.PrezzoVendita);
+            var prezzoUnitario = ResolveArticleUnitPrice(dettaglioPrezzi, quantitaDaInserire, articoloSelezionato.PrezzoVendita);
             rigaInserita = CreateArticleRowFromSelection(
+                articoloSelezionato,
                 prezzoUnitario,
                 quantitaDaInserire,
                 dettaglioPrezzi,
@@ -1675,7 +1855,7 @@ public sealed class BancoViewModel : ViewModelBase
 
         if (fromAutoSearch)
         {
-            RegisterAutoSearchInsert(capturedSearchText, ArticoloSelezionato);
+            RegisterAutoSearchInsert(capturedSearchText, articoloSelezionato);
         }
 
         RefreshRows();
@@ -1683,6 +1863,12 @@ public sealed class BancoViewModel : ViewModelBase
         RigaSelezionata = rigaTargetId.HasValue
             ? Righe.LastOrDefault(item => item.Id == rigaTargetId.Value)
             : Righe.LastOrDefault();
+
+        TryShowArticleOfferSuggestion(
+            articoloSelezionato,
+            dettaglioPrezzi,
+            articoloSelezionato.PrezzoVendita,
+            rigaAccorpata ?? rigaInserita);
 
         if (aggiungiARiordino && RigaSelezionata is not null)
         {
@@ -1699,7 +1885,8 @@ public sealed class BancoViewModel : ViewModelBase
             dettaglioPrezzi,
             quantitaDaInserire,
             rigaCreataComeManuale,
-            aggiungiARiordino);
+            aggiungiARiordino,
+            articoloSelezionato.PrezzoVendita);
         HasPendingLocalChanges = true;
 
         if (fromAutoSearch)
@@ -1708,9 +1895,25 @@ public sealed class BancoViewModel : ViewModelBase
         }
     }
 
-    private async Task<NegativeAvailabilityDecision> ResolveNegativeAvailabilityDecisionAsync(decimal quantitaDaInserire)
+    private async Task HandleAddArticleRequestedAsync()
     {
-        if (ArticoloSelezionato is null || ArticoloSelezionato.Giacenza > 0)
+        if (!CanModifyDocument)
+        {
+            return;
+        }
+
+        if (ArticoloSelezionato is not null)
+        {
+            await AggiungiArticoloAsync();
+            return;
+        }
+
+        await OpenManualArticleLookupAsync();
+    }
+
+    private async Task<NegativeAvailabilityDecision> ResolveNegativeAvailabilityDecisionAsync(GestionaleArticleSearchResult articoloSelezionato, decimal quantitaDaInserire)
+    {
+        if (articoloSelezionato.Giacenza > 0)
         {
             return NegativeAvailabilityDecision.ScaricaComunque;
         }
@@ -1720,7 +1923,7 @@ public sealed class BancoViewModel : ViewModelBase
             return NegativeAvailabilityDecision.ScaricaComunque;
         }
 
-        return await NegativeAvailabilityDecisionRequested(ArticoloSelezionato, quantitaDaInserire);
+        return await NegativeAvailabilityDecisionRequested(articoloSelezionato, quantitaDaInserire);
     }
 
     private void ClearPendingArticleSelection()
@@ -1731,14 +1934,17 @@ public sealed class BancoViewModel : ViewModelBase
         IsArticlePopupOpen = false;
     }
 
-    private RigaDocumentoLocale? TryAccorpaArticoloSelezionato(decimal quantitaDaAggiungere, GestionaleArticlePricingDetail? dettaglioPrezzi)
+    private RigaDocumentoLocale? TryAccorpaArticoloSelezionato(
+        GestionaleArticleSearchResult articoloSelezionato,
+        decimal quantitaDaAggiungere,
+        GestionaleArticlePricingDetail? dettaglioPrezzi)
     {
-        if (DocumentoLocaleCorrente is null || ArticoloSelezionato is null)
+        if (DocumentoLocaleCorrente is null)
         {
             return null;
         }
 
-        var barcodeSelezionato = NormalizeBarcodeIdentity(ArticoloSelezionato.BarcodeAlternativo);
+        var barcodeSelezionato = NormalizeBarcodeIdentity(articoloSelezionato.BarcodeAlternativo);
         var rigaEsistente = DocumentoLocaleCorrente.Righe.FirstOrDefault(riga =>
             riga.TipoRiga == TipoRigaDocumento.Articolo &&
             !riga.FlagManuale &&
@@ -1751,16 +1957,17 @@ public sealed class BancoViewModel : ViewModelBase
         }
 
         rigaEsistente.Quantita = NormalizeArticleQuantity(rigaEsistente.Quantita + quantitaDaAggiungere, dettaglioPrezzi);
-        rigaEsistente.DisponibilitaRiferimento = ArticoloSelezionato.Giacenza;
+        rigaEsistente.DisponibilitaRiferimento = articoloSelezionato.Giacenza;
         if (dettaglioPrezzi is not null)
         {
-            ApplicaPrezzoQuantitaArticolo(rigaEsistente, dettaglioPrezzi, fallbackPrezzoUnitario: ArticoloSelezionato.PrezzoVendita);
+            ApplicaPrezzoQuantitaArticolo(rigaEsistente, dettaglioPrezzi, fallbackPrezzoUnitario: articoloSelezionato.PrezzoVendita);
         }
 
         return rigaEsistente;
     }
 
     private RigaDocumentoLocale CreateArticleRowFromSelection(
+        GestionaleArticleSearchResult articoloSelezionato,
         decimal prezzoUnitario,
         decimal quantitaDaInserire,
         GestionaleArticlePricingDetail? dettaglioPrezzi,
@@ -1770,19 +1977,19 @@ public sealed class BancoViewModel : ViewModelBase
         {
             OrdineRiga = DocumentoLocaleCorrente!.Righe.Count + 1,
             TipoRiga = asManualRow ? TipoRigaDocumento.Manuale : TipoRigaDocumento.Articolo,
-            ArticoloOid = asManualRow ? null : ArticoloSelezionato!.Oid,
-            CodiceArticolo = asManualRow ? null : ArticoloSelezionato!.CodiceArticolo,
-            BarcodeArticolo = asManualRow ? null : NormalizeBarcodeIdentity(ArticoloSelezionato!.BarcodeAlternativo),
-            VarianteDettaglioOid1 = asManualRow ? null : ArticoloSelezionato!.VarianteDettaglioOid1,
-            VarianteDettaglioOid2 = asManualRow ? null : ArticoloSelezionato!.VarianteDettaglioOid2,
-            Descrizione = BuildDocumentRowDescription(ArticoloSelezionato!),
+            ArticoloOid = asManualRow ? null : articoloSelezionato.Oid,
+            CodiceArticolo = asManualRow ? null : articoloSelezionato.CodiceArticolo,
+            BarcodeArticolo = asManualRow ? null : NormalizeBarcodeIdentity(articoloSelezionato.BarcodeAlternativo),
+            VarianteDettaglioOid1 = asManualRow ? null : articoloSelezionato.VarianteDettaglioOid1,
+            VarianteDettaglioOid2 = asManualRow ? null : articoloSelezionato.VarianteDettaglioOid2,
+            Descrizione = BuildDocumentRowDescription(articoloSelezionato),
             UnitaMisura = dettaglioPrezzi?.UnitaMisuraPrincipale ?? "PZ",
             Quantita = quantitaDaInserire,
-            DisponibilitaRiferimento = ArticoloSelezionato!.Giacenza,
+            DisponibilitaRiferimento = articoloSelezionato.Giacenza,
             PrezzoUnitario = prezzoUnitario,
             ScontoPercentuale = 0,
-            IvaOid = ArticoloSelezionato.IvaOid,
-            AliquotaIva = ArticoloSelezionato.AliquotaIva,
+            IvaOid = articoloSelezionato.IvaOid,
+            AliquotaIva = articoloSelezionato.AliquotaIva,
             FlagManuale = asManualRow
         };
     }
@@ -1792,7 +1999,8 @@ public sealed class BancoViewModel : ViewModelBase
         GestionaleArticlePricingDetail? dettaglioPrezzi,
         decimal quantitaDaInserire,
         bool createdAsManualRow,
-        bool addedToReorderList)
+        bool addedToReorderList,
+        decimal fallbackPrezzoUnitario)
     {
         if (createdAsManualRow)
         {
@@ -1800,8 +2008,8 @@ public sealed class BancoViewModel : ViewModelBase
         }
 
         var messaggio = rigaAccorpata is null
-            ? BuildArticleAddedStatusMessage(dettaglioPrezzi, quantitaDaInserire)
-            : BuildArticleMergedStatusMessage(rigaAccorpata, dettaglioPrezzi);
+            ? BuildArticleAddedStatusMessage(dettaglioPrezzi, quantitaDaInserire, fallbackPrezzoUnitario)
+            : BuildArticleMergedStatusMessage(rigaAccorpata, dettaglioPrezzi, fallbackPrezzoUnitario);
 
         return addedToReorderList
             ? $"{messaggio} Riga aggiunta anche alla lista riordino."
@@ -1825,7 +2033,10 @@ public sealed class BancoViewModel : ViewModelBase
 
         if (ArticoloSelezionato.IsVariante)
         {
-            return false;
+            return riga.ArticoloOid.HasValue
+                   && riga.ArticoloOid.Value == ArticoloSelezionato.Oid
+                   && NormalizeVariantOid(riga.VarianteDettaglioOid1) == NormalizeVariantOid(ArticoloSelezionato.VarianteDettaglioOid1)
+                   && NormalizeVariantOid(riga.VarianteDettaglioOid2) == NormalizeVariantOid(ArticoloSelezionato.VarianteDettaglioOid2);
         }
 
         return riga.ArticoloOid.HasValue && riga.ArticoloOid.Value == ArticoloSelezionato.Oid;
@@ -1839,6 +2050,11 @@ public sealed class BancoViewModel : ViewModelBase
         }
 
         return barcode.Trim().ToUpperInvariant();
+    }
+
+    private static int NormalizeVariantOid(int? value)
+    {
+        return value ?? 0;
     }
 
     private async Task<GestionaleArticlePricingDetail?> GetArticlePricingDetailAsync(GestionaleArticleSearchResult articolo)
@@ -1981,36 +2197,206 @@ public sealed class BancoViewModel : ViewModelBase
         riga.PrezzoUnitario = ResolveArticleUnitPrice(dettaglioPrezzi, riga.Quantita, fallbackPrezzoUnitario);
     }
 
-    private string BuildArticleAddedStatusMessage(GestionaleArticlePricingDetail? dettaglioPrezzi, decimal quantitaInserita)
+    private void TryShowArticleOfferSuggestion(
+        GestionaleArticleSearchResult articolo,
+        GestionaleArticlePricingDetail? dettaglioPrezzi,
+        decimal fallbackPrezzoUnitario,
+        RigaDocumentoLocale? rigaTarget)
+    {
+        if (dettaglioPrezzi is null || rigaTarget is null || dettaglioPrezzi.RichiedeSceltaQuantita)
+        {
+            ClearArticleOfferSuggestion();
+            return;
+        }
+
+        var fasciaSuggerita = GetSuggestedOfferTier(dettaglioPrezzi);
+        if (fasciaSuggerita is null)
+        {
+            ClearArticleOfferSuggestion();
+            return;
+        }
+
+        var suggestionKey = BuildPricingDetailCacheKey(articolo);
+        if (rigaTarget.Quantita >= fasciaSuggerita.QuantitaMinima)
+        {
+            _articleOfferSuggestionSuppressions.Remove(suggestionKey);
+            ClearArticleOfferSuggestion();
+            return;
+        }
+
+        if (_articleOfferSuggestionSuppressions.TryGetValue(suggestionKey, out var suppressedUntilQuantity) &&
+            rigaTarget.Quantita < suppressedUntilQuantity)
+        {
+            ClearArticleOfferSuggestion();
+            return;
+        }
+
+        var prezzoSingolo = ResolveArticleUnitPrice(dettaglioPrezzi, 1, fallbackPrezzoUnitario);
+        var prezzoTotaleOfferta = fasciaSuggerita.PrezzoUnitario * fasciaSuggerita.QuantitaMinima;
+        var unitaMisura = string.IsNullOrWhiteSpace(dettaglioPrezzi.UnitaMisuraPrincipale)
+            ? "PZ"
+            : dettaglioPrezzi.UnitaMisuraPrincipale;
+
+        _articleOfferSuggestionKey = suggestionKey;
+        _articleOfferSuggestionRowId = rigaTarget.Id;
+        _articleOfferSuggestionPricingDetail = dettaglioPrezzi;
+        _articleOfferSuggestionQuantity = fasciaSuggerita.QuantitaMinima;
+        _articleOfferSuggestionFallbackUnitPrice = fallbackPrezzoUnitario;
+        ArticleOfferSuggestionPrimaryActionLabel = $"Porta a {fasciaSuggerita.QuantitaMinima:N0} {unitaMisura}";
+        ArticleOfferSuggestionText =
+            $"OFFERTA DISPONIBILE: {fasciaSuggerita.QuantitaMinima:N0} {unitaMisura} a {fasciaSuggerita.PrezzoUnitario:N2} €/cad invece di {prezzoSingolo:N2} €/cad ({prezzoTotaleOfferta:N2} € tot.).";
+        IsArticleOfferSuggestionVisible = true;
+    }
+
+    private void ApplyArticleOfferSuggestion()
+    {
+        if (!IsArticleOfferSuggestionVisible ||
+            !_articleOfferSuggestionRowId.HasValue ||
+            DocumentoLocaleCorrente is null ||
+            _articleOfferSuggestionPricingDetail is null)
+        {
+            ClearArticleOfferSuggestion();
+            return;
+        }
+
+        var riga = DocumentoLocaleCorrente.Righe.FirstOrDefault(item => item.Id == _articleOfferSuggestionRowId.Value);
+        if (riga is null)
+        {
+            ClearArticleOfferSuggestion();
+            return;
+        }
+
+        riga.Quantita = NormalizeArticleQuantity(_articleOfferSuggestionQuantity, _articleOfferSuggestionPricingDetail);
+        ApplicaPrezzoQuantitaArticolo(riga, _articleOfferSuggestionPricingDetail, _articleOfferSuggestionFallbackUnitPrice);
+        _articleOfferSuggestionSuppressions.Remove(_articleOfferSuggestionKey);
+
+        RefreshRows();
+        RigaSelezionata = Righe.LastOrDefault(item => item.Id == riga.Id);
+        NotifySelectedRowStateChanged();
+        HasPendingLocalChanges = true;
+        StatoDocumento = "Offerta quantita` applicata";
+        StatusMessage = $"Offerta applicata: {ArticleOfferSuggestionText}";
+        ClearArticleOfferSuggestion();
+    }
+
+    private void DismissArticleOfferSuggestion()
+    {
+        if (!string.IsNullOrWhiteSpace(_articleOfferSuggestionKey) && _articleOfferSuggestionQuantity > 1)
+        {
+            _articleOfferSuggestionSuppressions[_articleOfferSuggestionKey] = _articleOfferSuggestionQuantity;
+        }
+
+        ClearArticleOfferSuggestion();
+    }
+
+    private void ClearArticleOfferSuggestion()
+    {
+        _articleOfferSuggestionKey = string.Empty;
+        _articleOfferSuggestionRowId = null;
+        _articleOfferSuggestionPricingDetail = null;
+        _articleOfferSuggestionQuantity = 0;
+        _articleOfferSuggestionFallbackUnitPrice = 0;
+        ArticleOfferSuggestionText = string.Empty;
+        ArticleOfferSuggestionPrimaryActionLabel = "Applica";
+        IsArticleOfferSuggestionVisible = false;
+    }
+
+    private async Task RefreshArticleOfferSuggestionForSelectedRowAsync()
+    {
+        var requestVersion = ++_articleOfferSuggestionRequestVersion;
+        var selectedRow = RigaSelezionata?.Model;
+        if (selectedRow?.ArticoloOid is not int articoloOid || articoloOid <= 0 || selectedRow.IsPromoRow)
+        {
+            if (requestVersion == _articleOfferSuggestionRequestVersion)
+            {
+                ClearArticleOfferSuggestion();
+            }
+
+            return;
+        }
+
+        var articolo = BuildSearchResultFromRow(selectedRow);
+        var cacheKey = BuildPricingDetailCacheKey(selectedRow);
+        if (!_articlePricingDetails.TryGetValue(cacheKey, out var dettaglioPrezzi))
+        {
+            try
+            {
+                dettaglioPrezzi = await _articleReadService.GetArticlePricingDetailAsync(
+                    articolo,
+                    ListinoSelezionato?.Oid);
+            }
+            catch
+            {
+                dettaglioPrezzi = null;
+            }
+
+            if (dettaglioPrezzi is not null)
+            {
+                _articlePricingDetails[cacheKey] = dettaglioPrezzi;
+            }
+        }
+
+        if (requestVersion != _articleOfferSuggestionRequestVersion ||
+            RigaSelezionata?.Id != selectedRow.Id)
+        {
+            return;
+        }
+
+        TryShowArticleOfferSuggestion(
+            articolo,
+            dettaglioPrezzi,
+            selectedRow.PrezzoUnitario,
+            selectedRow);
+    }
+
+    private static GestionaleArticleQuantityPriceTier? GetSuggestedOfferTier(GestionaleArticlePricingDetail dettaglioPrezzi)
+    {
+        return dettaglioPrezzi.FascePrezzoQuantita
+            .OrderBy(fascia => fascia.QuantitaMinima)
+            .FirstOrDefault(fascia => fascia.QuantitaMinima > 1);
+    }
+
+    private string BuildArticleAddedStatusMessage(
+        GestionaleArticlePricingDetail? dettaglioPrezzi,
+        decimal quantitaInserita,
+        decimal fallbackPrezzoUnitario)
     {
         if (dettaglioPrezzi is null || dettaglioPrezzi.FascePrezzoQuantita.Count <= 1)
         {
             return "Articolo aggiunto al documento corrente.";
         }
 
-        return $"Articolo aggiunto. Quantita` {quantitaInserita:N2} {dettaglioPrezzi.UnitaMisuraPrincipale}. {BuildArticleTierSummary(dettaglioPrezzi)}";
+        return $"Articolo aggiunto. Quantita` {quantitaInserita:N2} {dettaglioPrezzi.UnitaMisuraPrincipale}. {BuildArticleOfferSummary(dettaglioPrezzi, fallbackPrezzoUnitario)}";
     }
 
-    private string BuildArticleMergedStatusMessage(RigaDocumentoLocale riga, GestionaleArticlePricingDetail? dettaglioPrezzi)
+    private string BuildArticleMergedStatusMessage(
+        RigaDocumentoLocale riga,
+        GestionaleArticlePricingDetail? dettaglioPrezzi,
+        decimal fallbackPrezzoUnitario)
     {
         if (dettaglioPrezzi is null || dettaglioPrezzi.FascePrezzoQuantita.Count <= 1)
         {
             return "Articolo gia` presente: quantita` aggiornata sulla riga esistente.";
         }
 
-        return $"Articolo gia` presente: quantita` aggiornata a {riga.Quantita:N2} {dettaglioPrezzi.UnitaMisuraPrincipale}. {BuildArticleTierSummary(dettaglioPrezzi)}";
+        return $"Articolo gia` presente: quantita` aggiornata a {riga.Quantita:N2} {dettaglioPrezzi.UnitaMisuraPrincipale}. {BuildArticleOfferSummary(dettaglioPrezzi, fallbackPrezzoUnitario)}";
     }
 
-    private static string BuildArticleTierSummary(GestionaleArticlePricingDetail dettaglioPrezzi)
+    private static string BuildArticleOfferSummary(GestionaleArticlePricingDetail dettaglioPrezzi, decimal fallbackPrezzoUnitario)
     {
-        var fasce = dettaglioPrezzi.FascePrezzoQuantita
+        var fasciaConfezione = dettaglioPrezzi.FascePrezzoQuantita
             .OrderBy(fascia => fascia.QuantitaMinima)
-            .Select(fascia => $"da {fascia.QuantitaMinima:N0} {dettaglioPrezzi.UnitaMisuraPrincipale} = {fascia.PrezzoUnitario:N2}")
-            .ToList();
+            .FirstOrDefault(fascia => fascia.QuantitaMinima > 1);
 
-        return fasce.Count == 0
-            ? string.Empty
-            : $"Prezzi q.ta`: {string.Join(" | ", fasce)}.";
+        if (fasciaConfezione is null)
+        {
+            return string.Empty;
+        }
+
+        var prezzoSingolo = ResolveArticleUnitPrice(dettaglioPrezzi, 1, fallbackPrezzoUnitario);
+        var prezzoConfezioneTotale = fasciaConfezione.PrezzoUnitario * fasciaConfezione.QuantitaMinima;
+
+        return $"Prezzo singolo {prezzoSingolo:N2} € | confezione {fasciaConfezione.QuantitaMinima:N0} {dettaglioPrezzi.UnitaMisuraPrincipale} {prezzoConfezioneTotale:N2} € ({fasciaConfezione.PrezzoUnitario:N2} €/cad).";
     }
 
     private Task CercaClientiAsync()
@@ -2207,16 +2593,18 @@ public sealed class BancoViewModel : ViewModelBase
             await RefreshPreviewDocumentNumberAsync();
             DocumentoLocaleCorrente.SegnaInChiusura();
             var documentoSalvatoLabel = GetOperationalDocumentLabel(DocumentoLocaleCorrente);
-
+            var savePlan = BancoSavePlanResolver.Resolve(DocumentoLocaleCorrente);
             var workflowResult = await _bancoDocumentWorkflowService.PublishAsync(
                 DocumentoLocaleCorrente,
-                CategoriaDocumentoBanco.Indeterminata);
+                savePlan.CategoriaDocumentoBanco,
+                savePlan.PublishOptions);
 
-            ApplyPublishSuccessUiState(workflowResult, CategoriaDocumentoBanco.Indeterminata, "Salva");
+            ApplyPublishSuccessUiState(workflowResult, savePlan.CategoriaDocumentoBanco, "Salva");
+            StatoDocumento = ResolveSaveCompletedStateLabel(savePlan);
             _processLogService.Info(
                 nameof(BancoViewModel),
-                $"Documento {GetOperationalDocumentLabel(DocumentoLocaleCorrente)} pubblicato su db_diltech con OID {workflowResult.DocumentoGestionaleOid} tramite Salva.");
-            StatusMessage = $"Documento {documentoSalvatoLabel} pubblicato su db_diltech.";
+                $"Documento {GetOperationalDocumentLabel(DocumentoLocaleCorrente)} pubblicato su db_diltech con OID {workflowResult.DocumentoGestionaleOid} tramite Salva. SaveKind={savePlan.ExecutionKind}.");
+            StatusMessage = ResolveSaveCompletedMessage(savePlan, documentoSalvatoLabel, workflowResult);
             await ResetCurrentTabToNewDocumentAsync("Operazione completata", StatusMessage, true);
         }
         catch (Exception ex)
@@ -2272,7 +2660,7 @@ public sealed class BancoViewModel : ViewModelBase
                 _processLogService.Info(nameof(BancoViewModel), $"Scheda Banco {documentoLocaleId:N} cancellata da SQLite.");
             }
 
-            await NuovoDocumentoAsync();
+            await NuovoDocumentoAsync(clearLastReceiptReprint: true);
             StatoDocumento = "Scheda cancellata";
             StatusMessage = documentoGestionaleOid.HasValue
                 ? "Vendita non scontrinata cancellata dal DB legacy. Nuova scheda Banco pronta."
@@ -2454,6 +2842,7 @@ public sealed class BancoViewModel : ViewModelBase
 
         if (DocumentoLocaleCorrente is null)
         {
+            ClearArticleOfferSuggestion();
             NotifyPropertyChanged(nameof(HasDocumentRows));
             NotifyTotalsChanged();
             return;
@@ -2468,6 +2857,13 @@ public sealed class BancoViewModel : ViewModelBase
         NotifyPropertyChanged(nameof(EmptyDocumentStateTitle));
         NotifyPropertyChanged(nameof(EmptyDocumentStateMessage));
         NotifyTotalsChanged();
+
+        if (_articleOfferSuggestionRowId.HasValue &&
+            DocumentoLocaleCorrente.Righe.All(riga => riga.Id != _articleOfferSuggestionRowId.Value))
+        {
+            ClearArticleOfferSuggestion();
+        }
+
         SchedulePromoRefresh();
         _ = RefreshReorderMarkersAsync();
     }
@@ -2480,6 +2876,11 @@ public sealed class BancoViewModel : ViewModelBase
             !riga.Model.IsPromoRow)
         {
             _ = EnsureArticlePricingAppliedAsync(riga.Model, riga);
+
+            if (_articleOfferSuggestionRowId == riga.Id && riga.Quantita >= _articleOfferSuggestionQuantity)
+            {
+                ClearArticleOfferSuggestion();
+            }
         }
 
         NotifyTotalsChanged();
@@ -3477,7 +3878,7 @@ public sealed class BancoViewModel : ViewModelBase
 
     private void ApriStoricoAcquistiArticolo(PurchaseHistoryOpenMode modalita)
     {
-        var vm = new PurchaseHistoryViewModel(_documentReadService, _articleReadService, _customerReadService);
+        var vm = new PurchaseHistoryViewModel(_documentReadService, _articleReadService, _customerReadService, _configurationService);
 
         if (modalita == PurchaseHistoryOpenMode.ArticleContext)
         {
@@ -4354,6 +4755,16 @@ public sealed class BancoViewModel : ViewModelBase
         }
     }
 
+    private void ConsumeArticleScannerText()
+    {
+        _articleSearchCts?.Cancel();
+        _articleSearchCts = null;
+        IsArticlePopupOpen = false;
+        RisultatiRicercaArticoli.Clear();
+        ArticoloSelezionato = null;
+        SearchArticoloText = string.Empty;
+    }
+
     private static string NormalizeArticleSearchToken(string? value)
     {
         return string.IsNullOrWhiteSpace(value)
@@ -4371,7 +4782,7 @@ public sealed class BancoViewModel : ViewModelBase
 
         return _lastAutoAddedArticleOid == articolo.Oid &&
                string.Equals(_lastAutoAddedSearchText, normalizedSearch, StringComparison.OrdinalIgnoreCase) &&
-               DateTimeOffset.Now - _lastAutoAddedAt <= TimeSpan.FromMilliseconds(700);
+               DateTimeOffset.Now - _lastAutoAddedAt <= TimeSpan.FromMilliseconds(150);
     }
 
     private void RegisterAutoSearchInsert(string? capturedSearchText, GestionaleArticleSearchResult articolo)
@@ -4384,7 +4795,7 @@ public sealed class BancoViewModel : ViewModelBase
     private async Task ResetCurrentTabToNewDocumentAsync(string popupTitle, string popupMessage, bool popupSuccess)
     {
         await ShowFinalOperationPopupAsync(popupTitle, popupMessage, popupSuccess);
-        await NuovoDocumentoAsync();
+        await NuovoDocumentoAsync(clearLastReceiptReprint: false);
     }
 
     private void RaiseCommandStateChanged()
@@ -4401,6 +4812,7 @@ public sealed class BancoViewModel : ViewModelBase
         CancellaSchedaCommand.RaiseCanExecuteChanged();
         ApplicaImportoPagamentoCommand.RaiseCanExecuteChanged();
         ScontrinoCommand.RaiseCanExecuteChanged();
+        RistampaUltimoScontrinoCommand.RaiseCanExecuteChanged();
         ApriStoricoAcquistiCommand.RaiseCanExecuteChanged();
         NotifyPropertyChanged(nameof(CanEmettiCortesia));
         NotifyPropertyChanged(nameof(CanEnableConsultationEdit));
@@ -4410,6 +4822,39 @@ public sealed class BancoViewModel : ViewModelBase
         NotifyPropertyChanged(nameof(CanAzzeraContenuto));
         NotifyPropertyChanged(nameof(CanCancellaScheda));
         NotifyPropertyChanged(nameof(HasRiferimentiUfficialiDocumentoCorrente));
+        NotifyPropertyChanged(nameof(CanRistampaUltimoScontrino));
+        _applyArticleOfferSuggestionCommand.RaiseCanExecuteChanged();
+        _dismissArticleOfferSuggestionCommand.RaiseCanExecuteChanged();
+    }
+
+    private void UpdateLastReceiptReprintSelection(FiscalizationResult workflowResult)
+    {
+        if (workflowResult.NumeroDocumentoGestionale <= 0)
+        {
+            return;
+        }
+
+        if (workflowResult.NumeroDocumentoGestionale > int.MaxValue)
+        {
+            _processLogService.Warning(
+                nameof(BancoViewModel),
+                $"Ristampa ultimo scontrino non disponibile: numero documento fuori range ({workflowResult.NumeroDocumentoGestionale}).");
+            return;
+        }
+
+        _lastReceiptReprintSelection = new CashRegisterOptionSelection
+        {
+            Action = CashRegisterOptionAction.ReceiptReprint,
+            ReceiptDocumentPrefix = DefaultReceiptPrefix,
+            ReceiptNumber = (int)workflowResult.NumeroDocumentoGestionale,
+            ReceiptDate = workflowResult.DataDocumentoGestionale.Date,
+            ReceiptMachineId = "ND"
+        };
+    }
+
+    private void ClearLastReceiptReprintSelection()
+    {
+        _lastReceiptReprintSelection = null;
     }
 
     private async Task AggiornaUltimoAcquistoArticoloSelezionatoAsync()
@@ -4627,6 +5072,7 @@ public sealed class BancoViewModel : ViewModelBase
         NotifyPropertyChanged(nameof(CanCancellaScheda));
         NotifyPropertyChanged(nameof(HasRiferimentiUfficialiDocumentoCorrente));
         NotifyPropertyChanged(nameof(IsPubblicazioneBancoNeutraCorrente));
+        NotifyPropertyChanged(nameof(CanRistampaUltimoScontrino));
         NotifyPropertyChanged(nameof(RichiedeConfermaRistampa));
         RaiseCommandStateChanged();
     }
@@ -4677,6 +5123,10 @@ public sealed class BancoViewModel : ViewModelBase
 
         // Dopo un publish riuscito la scheda e` allineata al documento ufficiale.
         HasPendingLocalChanges = false;
+        if (categoriaDocumentoBanco == CategoriaDocumentoBanco.Scontrino && workflowResult.WinEcrExecuted)
+        {
+            UpdateLastReceiptReprintSelection(workflowResult);
+        }
         RefreshPublishedDocumentUiState();
         OfficialDocumentPublished?.Invoke(new BancoLegacyPublishNotification
         {
@@ -4793,6 +5243,32 @@ public sealed class BancoViewModel : ViewModelBase
             null,
             detail.Righe.Select(MapRigaGestionale),
             BuildPagamentiFromGestionaleDetail(detail));
+    }
+
+    private static string ResolveSaveCompletedStateLabel(BancoSavePlan savePlan)
+    {
+        return savePlan.ExecutionKind switch
+        {
+            BancoSaveExecutionKind.SaveExistingScontrinoWithoutPrint => "Documento scontrino aggiornato senza ristampa",
+            BancoSaveExecutionKind.ReplaceNonFiscalizedWithNewScontrino => "Documento sostituito con nuovo scontrino",
+            _ => "Documento salvato senza stampa"
+        };
+    }
+
+    private static string ResolveSaveCompletedMessage(
+        BancoSavePlan savePlan,
+        string documentoSalvatoLabel,
+        FiscalizationResult workflowResult)
+    {
+        return savePlan.ExecutionKind switch
+        {
+            BancoSaveExecutionKind.SaveExistingScontrinoWithoutPrint =>
+                $"Documento {documentoSalvatoLabel} aggiornato sullo stesso riferimento fiscale senza nuova stampa. {workflowResult.Message}",
+            BancoSaveExecutionKind.ReplaceNonFiscalizedWithNewScontrino =>
+                $"Documento non fiscalizzato sostituito con nuovo scontrino {workflowResult.NumeroDocumentoGestionale}/{workflowResult.AnnoDocumentoGestionale}.",
+            _ =>
+                $"Documento {documentoSalvatoLabel} salvato senza stampa sullo stesso flusso non fiscalizzato. {workflowResult.Message}"
+        };
     }
 
     private static IEnumerable<PagamentoLocale> BuildPagamentiFromGestionaleDetail(GestionaleDocumentDetail detail)

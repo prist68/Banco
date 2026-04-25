@@ -1,0 +1,82 @@
+<UserControl x:Class="Banco.UI.Wpf.DesktopModule.DesktopAlertsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Banco.UI.Wpf.DesktopModule">
+    <UserControl.Resources>
+        <DataTemplate DataType="{x:Type local:DesktopAlertItemViewModel}">
+            <Button MinHeight="54"
+                    Margin="0,0,0,8"
+                    Padding="10"
+                    HorizontalContentAlignment="Stretch"
+                    Background="{DynamicResource ShellWorkspaceChromeBrush}"
+                    BorderBrush="{DynamicResource ShellWorkspaceChromeBorderBrush}"
+                    BorderThickness="1"
+                    Click="Alert_OnClick">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ShellContextCardHoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="6" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="5"
+                            CornerRadius="3"
+                            Background="{Binding AccentColor}" />
+                    <StackPanel Grid.Column="2">
+                        <TextBlock FontSize="12.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Text="{Binding Title}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Margin="0,2,0,0"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Text="{Binding Detail}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="3"
+                               Margin="10,0,0,0"
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="{Binding AccentColor}"
+                               Text="{Binding StateLabel}" />
+                </Grid>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border Style="{StaticResource CardStyle}"
+            Background="{DynamicResource WindowBackgroundBrush}"
+            Padding="12">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="8" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <TextBlock FontSize="16"
+                       FontWeight="SemiBold"
+                       Text="Segnalazioni" />
+            <ItemsControl Grid.Row="2"
+                          ItemsSource="{Binding OperationalAlerts}" />
+        </Grid>
+    </Border>
+</UserControl>

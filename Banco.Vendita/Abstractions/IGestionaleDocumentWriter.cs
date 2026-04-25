@@ -8,4 +8,8 @@ public interface IGestionaleDocumentWriter
         FiscalizationRequest request,
         int? documentoGestionaleOid = null,
         CancellationToken cancellationToken = default);
+
+    Task MarkLegacyReceiptCompletedAsync(
+        int documentoGestionaleOid,
+        CancellationToken cancellationToken = default);
 }

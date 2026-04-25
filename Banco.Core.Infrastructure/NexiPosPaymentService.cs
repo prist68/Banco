@@ -10,8 +10,11 @@ namespace Banco.Core.Infrastructure;
 
 public sealed class NexiPosPaymentService : IPosPaymentService
 {
+    private static readonly TimeSpan CooldownDopoAnnullaOperatore = TimeSpan.FromSeconds(2);
+
     private readonly IApplicationConfigurationService _configurationService;
     private readonly IPosProcessLogService _logService;
+    private long _lastUserCancelUtcTicks;
 
     public NexiPosPaymentService(
         IApplicationConfigurationService configurationService,
@@ -39,6 +42,7 @@ public sealed class NexiPosPaymentService : IPosPaymentService
     public async Task<PosPaymentResult> ExecutePaymentAsync(decimal amount, CancellationToken cancellationToken = default)
     {
         var settings = (await _configurationService.LoadAsync(cancellationToken)).PosIntegration;
+        await EnsureTerminalReadyAfterRecentUserCancellationAsync(cancellationToken).ConfigureAwait(false);
         var payload = BuildExtendedPaymentMessage(
             settings.TerminalId,
             settings.CashRegisterId,
@@ -112,6 +116,7 @@ public sealed class NexiPosPaymentService : IPosPaymentService
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            RegisterUserCancellation();
             CaptureTrace($"Pagamento POS annullato esplicitamente dall'operatore su {endpoint}.");
 
             finalResult = BuildFailure(
@@ -199,6 +204,34 @@ public sealed class NexiPosPaymentService : IPosPaymentService
                     : $"Pagamento POS non autorizzato su {endpoint}. Log transazione: {transactionLogFilePath}");
             }
         }
+    }
+
+    private async Task EnsureTerminalReadyAfterRecentUserCancellationAsync(CancellationToken cancellationToken)
+    {
+        long lastCancellationTicks = Interlocked.Read(ref _lastUserCancelUtcTicks);
+        if (lastCancellationTicks <= 0)
+        {
+            return;
+        }
+
+        var lastCancellationUtc = new DateTimeOffset(lastCancellationTicks, TimeSpan.Zero);
+        var elapsed = DateTimeOffset.UtcNow - lastCancellationUtc;
+        var remaining = CooldownDopoAnnullaOperatore - elapsed;
+        if (remaining <= TimeSpan.Zero)
+        {
+            return;
+        }
+
+        _logService.Info(
+            nameof(NexiPosPaymentService),
+            $"Attendo {remaining.TotalMilliseconds:0} ms prima del nuovo invio POS per consentire al terminale di chiudere l'annullo precedente.");
+
+        await Task.Delay(remaining, cancellationToken).ConfigureAwait(false);
+    }
+
+    private void RegisterUserCancellation()
+    {
+        Interlocked.Exchange(ref _lastUserCancelUtcTicks, DateTimeOffset.UtcNow.Ticks);
     }
 
     private static PosPaymentResult ParseExtendedPaymentResponse(

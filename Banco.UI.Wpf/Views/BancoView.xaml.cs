@@ -10,10 +10,13 @@ using Banco.Vendita.Configuration;
 using Banco.Vendita.Customers;
 using Banco.Vendita.Pos;
 using Banco.Vendita.Points;
-using Banco.UI.Wpf.Infrastructure.GridColumns;
+using Banco.UI.Shared.Grid;
+using Banco.UI.Shared.Input;
 using Banco.UI.Wpf.Interactions;
 using Banco.UI.Wpf.Services;
 using Banco.UI.Wpf.ViewModels;
+using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Banco.UI.Wpf.Views;
 
@@ -23,6 +26,12 @@ public partial class BancoView : UserControl
     private BancoViewModel? _attachedViewModel;
     private bool _isSynchronizingDocumentoSelection;
     private Pos80PreviewWindow? _previewPos80Window;
+    private readonly StringBuilder _articleSearchInputBuffer = new();
+    private DateTime _articleSearchFirstInputAtUtc;
+    private DateTime _articleSearchLastInputAtUtc;
+    private readonly DispatcherTimer _manualArticleLookupTimer;
+    private bool _isArticleLookupDialogOpen;
+    private bool _suppressManualArticleLookupScheduling;
 
     private bool _isLayoutDirty;
     private Dictionary<string, double> _layoutPredefinitoColonne = new(StringComparer.OrdinalIgnoreCase);
@@ -31,23 +40,27 @@ public partial class BancoView : UserControl
     private readonly Dictionary<string, DataGridColumn> _gridColumns = new(StringComparer.OrdinalIgnoreCase);
     private static readonly IReadOnlyList<GridColumnDefinition> BancoColumnDefinitions =
     [
-        new() { Key = "Riga", Header = "Riga", IsVisibleByDefault = true, DefaultWidth = 46, DefaultDisplayIndex = 0 },
-        new() { Key = "Codice", Header = "Codice", IsVisibleByDefault = true, DefaultWidth = 110, DefaultDisplayIndex = 1 },
-        new() { Key = "Descrizione", Header = "Descrizione", IsVisibleByDefault = true, DefaultWidth = 350, DefaultDisplayIndex = 2 },
-        new() { Key = "UnitaMisura", Header = "Um", IsVisibleByDefault = true, DefaultWidth = 54, DefaultDisplayIndex = 3 },
-        new() { Key = "Quantita", Header = "Quantita`", IsVisibleByDefault = true, DefaultWidth = 78, DefaultDisplayIndex = 4, IsNumeric = true },
-        new() { Key = "Prezzo", Header = "Valore Ivato", IsVisibleByDefault = true, DefaultWidth = 98, DefaultDisplayIndex = 5, IsNumeric = true },
-        new() { Key = "Sconto", Header = "Sc1 %", IsVisibleByDefault = true, DefaultWidth = 72, DefaultDisplayIndex = 6, IsNumeric = true },
-        new() { Key = "Importo", Header = "Importo", IsVisibleByDefault = true, DefaultWidth = 92, DefaultDisplayIndex = 7, IsNumeric = true },
-        new() { Key = "Disponibilita", Header = "Disp.", IsVisibleByDefault = true, DefaultWidth = 76, DefaultDisplayIndex = 8, IsNumeric = true },
-        new() { Key = "Iva", Header = "Iva", IsVisibleByDefault = true, DefaultWidth = 62, DefaultDisplayIndex = 9 },
-        new() { Key = "TipoRiga", Header = "Tipo", IsVisibleByDefault = true, DefaultWidth = 92, DefaultDisplayIndex = 10 },
-        new() { Key = "Azioni", Header = "Azioni", IsVisibleByDefault = true, DefaultWidth = 44, DefaultDisplayIndex = 11 }
+        new() { Key = "Codice", Header = "Codice", IsVisibleByDefault = true, DefaultWidth = 110, DefaultDisplayIndex = 0, Group = "Documento", Description = "Codice articolo della riga.", MinWidth = 90, IsFrozen = true, TextAlignment = GridColumnContentAlignment.Left },
+        new() { Key = "Descrizione", Header = "Descrizione", IsVisibleByDefault = true, DefaultWidth = 350, DefaultDisplayIndex = 1, Group = "Documento", Description = "Descrizione operativa della riga.", MinWidth = 180, IsFrozen = true, TextAlignment = GridColumnContentAlignment.Left },
+        new() { Key = "UnitaMisura", Header = "Um", IsVisibleByDefault = true, DefaultWidth = 54, DefaultDisplayIndex = 2, Group = "Documento", Description = "Unita` di misura della riga.", MinWidth = 48, MaxWidth = 72, TextAlignment = GridColumnContentAlignment.Center },
+        new() { Key = "Quantita", Header = "Quantita`", IsVisibleByDefault = true, DefaultWidth = 78, DefaultDisplayIndex = 3, Group = "Prezzi e q.ta", Description = "Quantita` della riga.", IsNumeric = true, MinWidth = 70, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new() { Key = "Prezzo", Header = "Valore Ivato", IsVisibleByDefault = true, DefaultWidth = 98, DefaultDisplayIndex = 4, Group = "Prezzi e q.ta", Description = "Prezzo unitario ivato.", IsNumeric = true, MinWidth = 88, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new() { Key = "Sconto", Header = "Sc1 %", IsVisibleByDefault = true, DefaultWidth = 72, DefaultDisplayIndex = 5, Group = "Prezzi e q.ta", Description = "Sconto percentuale della riga.", IsNumeric = true, MinWidth = 64, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new() { Key = "Importo", Header = "Importo", IsVisibleByDefault = true, DefaultWidth = 92, DefaultDisplayIndex = 6, Group = "Prezzi e q.ta", Description = "Importo totale della riga.", IsNumeric = true, MinWidth = 86, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new() { Key = "Disponibilita", Header = "Disp.", IsVisibleByDefault = true, DefaultWidth = 76, DefaultDisplayIndex = 7, Group = "Controllo", Description = "Disponibilita` residua di riferimento.", IsNumeric = true, MinWidth = 68, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new() { Key = "Iva", Header = "Iva", IsVisibleByDefault = true, DefaultWidth = 62, DefaultDisplayIndex = 8, Group = "Controllo", Description = "Aliquota IVA della riga.", MinWidth = 54, MaxWidth = 72, TextAlignment = GridColumnContentAlignment.Center },
+        new() { Key = "TipoRiga", Header = "Tipo", IsVisibleByDefault = true, DefaultWidth = 92, DefaultDisplayIndex = 9, Group = "Controllo", Description = "Tipo di riga del documento.", MinWidth = 84, TextAlignment = GridColumnContentAlignment.Center },
+        new() { Key = "Azioni", Header = "Azioni", IsVisibleByDefault = true, DefaultWidth = 44, DefaultDisplayIndex = 10, Group = "Controllo", Description = "Colonna operativa fissa delle azioni rapide.", CanHide = false, IsLocked = true, MinWidth = 44, MaxWidth = 44, TextAlignment = GridColumnContentAlignment.Center, PresetKey = "operativa" }
     ];
 
     public BancoView()
     {
         InitializeComponent();
+        _manualArticleLookupTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(280)
+        };
+        _manualArticleLookupTimer.Tick += ManualArticleLookupTimer_OnTick;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         DataContextChanged += OnDataContextChanged;
@@ -64,7 +77,6 @@ public partial class BancoView : UserControl
         {
             await viewModel.EnsureLayoutInitializedAsync();
 
-            RigaColumn.Width = new DataGridLength(viewModel.RigaColumnWidth);
             CodiceColumn.Width = new DataGridLength(viewModel.CodiceColumnWidth);
             DescrizioneColumn.Width = new DataGridLength(viewModel.DescrizioneColumnWidth);
             QuantitaColumn.Width = new DataGridLength(viewModel.QuantitaColumnWidth);
@@ -75,24 +87,13 @@ public partial class BancoView : UserControl
             ImportoColumn.Width = new DataGridLength(viewModel.ImportoColumnWidth);
             AzioniColumn.Width = new DataGridLength(viewModel.AzioniColumnWidth);
 
-            RigaColumn.DisplayIndex = viewModel.GetColumnDisplayIndex("Riga");
-            CodiceColumn.DisplayIndex = viewModel.GetColumnDisplayIndex("Codice");
-            DescrizioneColumn.DisplayIndex = viewModel.GetColumnDisplayIndex("Descrizione");
-            QuantitaColumn.DisplayIndex = viewModel.GetColumnDisplayIndex("Quantita");
-            PrezzoColumn.DisplayIndex = viewModel.GetColumnDisplayIndex("Prezzo");
-            IvaColumn.DisplayIndex = viewModel.GetColumnDisplayIndex("Iva");
-            UnitaMisuraColumn.DisplayIndex = viewModel.GetColumnDisplayIndex("UnitaMisura");
-            ScontoColumn.DisplayIndex = viewModel.GetColumnDisplayIndex("Sconto");
-            ImportoColumn.DisplayIndex = viewModel.GetColumnDisplayIndex("Importo");
-            TipoRigaColumn.DisplayIndex = viewModel.GetColumnDisplayIndex("TipoRiga");
-            AzioniColumn.DisplayIndex = viewModel.GetColumnDisplayIndex("Azioni");
+            ApplyFixedDisplayIndexes();
 
             // Memorizza il layout di default reale prima di eventuale override XML.
             MemorizzaLayoutPredefinitoCorrente();
 
             ApplyColumnVisibility(viewModel);
 
-            RegisterWidthChange(RigaColumn, "Riga");
             RegisterWidthChange(CodiceColumn, "Codice");
             RegisterWidthChange(DescrizioneColumn, "Descrizione");
             RegisterWidthChange(QuantitaColumn, "Quantita");
@@ -103,24 +104,27 @@ public partial class BancoView : UserControl
             RegisterWidthChange(ImportoColumn, "Importo");
             RegisterWidthChange(AzioniColumn, "Azioni");
 
-            RegisterDisplayIndexChange(RigaColumn, "Riga");
-            RegisterDisplayIndexChange(CodiceColumn, "Codice");
-            RegisterDisplayIndexChange(DescrizioneColumn, "Descrizione");
-            RegisterDisplayIndexChange(QuantitaColumn, "Quantita");
-            RegisterDisplayIndexChange(PrezzoColumn, "Prezzo");
-            RegisterDisplayIndexChange(IvaColumn, "Iva");
-            RegisterDisplayIndexChange(UnitaMisuraColumn, "UnitaMisura");
-            RegisterDisplayIndexChange(ScontoColumn, "Sconto");
-            RegisterDisplayIndexChange(ImportoColumn, "Importo");
-            RegisterDisplayIndexChange(TipoRigaColumn, "TipoRiga");
-            RegisterDisplayIndexChange(AzioniColumn, "Azioni");
-
             _columnsInitialized = true;
         }
 
         EnsureColumnInfrastructure(viewModel);
         AttachViewModel(viewModel);
         FocusDefaultInput(force: false);
+    }
+
+    private void ApplyFixedDisplayIndexes()
+    {
+        CodiceColumn.DisplayIndex = 0;
+        DescrizioneColumn.DisplayIndex = 1;
+        UnitaMisuraColumn.DisplayIndex = 2;
+        QuantitaColumn.DisplayIndex = 3;
+        PrezzoColumn.DisplayIndex = 4;
+        ScontoColumn.DisplayIndex = 5;
+        ImportoColumn.DisplayIndex = 6;
+        DisponibilitaColumn.DisplayIndex = 7;
+        IvaColumn.DisplayIndex = 8;
+        TipoRigaColumn.DisplayIndex = 9;
+        AzioniColumn.DisplayIndex = 10;
     }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -140,6 +144,14 @@ public partial class BancoView : UserControl
 
     private void OnUnloaded(object sender, System.Windows.RoutedEventArgs e)
     {
+        _manualArticleLookupTimer.Stop();
+        _suppressManualArticleLookupScheduling = true;
+
+        if (_previewPos80Window is not null && _previewPos80Window.IsLoaded)
+        {
+            _previewPos80Window.Close();
+        }
+
         _contextMenuController?.Dispose();
         _contextMenuController = null;
         DetachViewModel();
@@ -150,11 +162,27 @@ public partial class BancoView : UserControl
         FocusDefaultInput(force: true);
     }
 
+    private async void ManualArticleLookupTimer_OnTick(object? sender, EventArgs e)
+    {
+        _manualArticleLookupTimer.Stop();
+        if (_suppressManualArticleLookupScheduling || _isArticleLookupDialogOpen || DataContext is not BancoViewModel viewModel)
+        {
+            return;
+        }
+
+        var searchText = viewModel.SearchArticoloText?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(searchText) || !ArticleSearchTextBox.IsKeyboardFocusWithin)
+        {
+            return;
+        }
+
+        await viewModel.OpenManualArticleLookupAsync(searchText);
+    }
+
     private void EnsureColumnInfrastructure(BancoViewModel viewModel)
     {
         if (_gridColumns.Count == 0)
         {
-            _gridColumns["Riga"] = RigaColumn;
             _gridColumns["Codice"] = CodiceColumn;
             _gridColumns["Descrizione"] = DescrizioneColumn;
             _gridColumns["UnitaMisura"] = UnitaMisuraColumn;
@@ -173,12 +201,13 @@ public partial class BancoView : UserControl
             () => Task.FromResult(CreateBancoGridLayoutSettings()),
             _ => Task.CompletedTask,
             key => ResolveColumnVisibility(viewModel, key),
-            viewModel.GetColumnDisplayIndex,
+            ResolveBancoDisplayIndex,
             key => ResolveColumnWidth(viewModel, key),
             key => viewModel.SetColumnVisibilityAsync(key, !ResolveColumnVisibility(viewModel, key)),
-            viewModel.SaveColumnDisplayIndexAsync,
+            (_, _) => Task.CompletedTask,
             viewModel.SaveColumnWidthAsync,
-            () => ApplyColumnVisibility(viewModel));
+            () => ApplyColumnVisibility(viewModel),
+            applyFrozenColumnCount: count => DocumentoRowsGrid.FrozenColumnCount = count);
 
         _ = _columnManager.InitializeAsync(_gridColumns);
 
@@ -270,7 +299,6 @@ public partial class BancoView : UserControl
 
     private static bool ResolveColumnVisibility(BancoViewModel viewModel, string key) => key switch
     {
-        "Riga" => viewModel.ShowRigaColumn,
         "Codice" => viewModel.ShowCodiceColumn,
         "Descrizione" => viewModel.ShowDescrizioneColumn,
         "Quantita" => viewModel.ShowQuantitaColumn,
@@ -285,9 +313,24 @@ public partial class BancoView : UserControl
         _ => true
     };
 
+    private static int ResolveBancoDisplayIndex(string key) => key switch
+    {
+        "Codice" => 0,
+        "Descrizione" => 1,
+        "UnitaMisura" => 2,
+        "Quantita" => 3,
+        "Prezzo" => 4,
+        "Sconto" => 5,
+        "Importo" => 6,
+        "Disponibilita" => 7,
+        "Iva" => 8,
+        "TipoRiga" => 9,
+        "Azioni" => 10,
+        _ => 0
+    };
+
     private static double ResolveColumnWidth(BancoViewModel viewModel, string key) => key switch
     {
-        "Riga" => viewModel.RigaColumnWidth,
         "Codice" => viewModel.CodiceColumnWidth,
         "Descrizione" => viewModel.DescrizioneColumnWidth,
         "Quantita" => viewModel.QuantitaColumnWidth,
@@ -887,7 +930,6 @@ public partial class BancoView : UserControl
     {
         _layoutPredefinitoColonne = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Riga"] = LarghezzaColonna(RigaColumn),
             ["Codice"] = LarghezzaColonna(CodiceColumn),
             ["Descrizione"] = LarghezzaColonna(DescrizioneColumn),
             ["Quantita"] = LarghezzaColonna(QuantitaColumn),
@@ -903,7 +945,6 @@ public partial class BancoView : UserControl
 
     private DataGridColumn? GetColonnaPerChiave(string chiave) => chiave switch
     {
-        "Riga" => RigaColumn,
         "Codice" => CodiceColumn,
         "Descrizione" => DescrizioneColumn,
         "Quantita" => QuantitaColumn,
@@ -963,7 +1004,7 @@ public partial class BancoView : UserControl
             return;
         }
 
-        if (!Banco.UI.Wpf.Infrastructure.Input.PosAmountTextBoxBehavior.GetIsEnabled(textBox))
+        if (!PosAmountTextBoxBehavior.GetIsEnabled(textBox))
         {
             return;
         }
@@ -996,10 +1037,10 @@ public partial class BancoView : UserControl
             // Il primo digit che apre l'editing della cella deve passare dal behavior POS
             // prima che il DataGrid lo trasformi in testo intero nella textbox.
             if (initialDigitText is not null
-                && Banco.UI.Wpf.Infrastructure.Input.PosAmountTextBoxBehavior.GetIsEnabled(textBox))
+            && PosAmountTextBoxBehavior.GetIsEnabled(textBox))
             {
-                Banco.UI.Wpf.Infrastructure.Input.PosAmountTextBoxBehavior.ResetToZero(textBox);
-                Banco.UI.Wpf.Infrastructure.Input.PosAmountTextBoxBehavior.TryProcessDigitInput(textBox, initialDigitText);
+            PosAmountTextBoxBehavior.ResetToZero(textBox);
+            PosAmountTextBoxBehavior.TryProcessDigitInput(textBox, initialDigitText);
                 textBox.SelectionLength = 0;
                 textBox.CaretIndex = textBox.Text?.Length ?? 0;
             }
@@ -1020,7 +1061,6 @@ public partial class BancoView : UserControl
 
     private void ApplyColumnVisibility(BancoViewModel viewModel)
     {
-        RigaColumn.Visibility = viewModel.ShowRigaColumn ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
         CodiceColumn.Visibility = viewModel.ShowCodiceColumn ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
         DescrizioneColumn.Visibility = viewModel.ShowDescrizioneColumn ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
         QuantitaColumn.Visibility = viewModel.ShowQuantitaColumn ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
@@ -1048,6 +1088,8 @@ public partial class BancoView : UserControl
         _attachedViewModel.Pos80PrintRequested = OnPos80PrintRequestedAsync;
         _attachedViewModel.OpenStoricoAcquistiRequested += OnOpenStoricoAcquistiRequested;
         _attachedViewModel.OpenPurchaseHistoryRequested += OnOpenPurchaseHistoryRequested;
+        _attachedViewModel.ArticleLookupRequested = OnArticleLookupRequestedAsync;
+        _attachedViewModel.ArticleVariantSelectionRequested = OnArticleVariantSelectionRequestedAsync;
         _attachedViewModel.PromotionConfirmationRequested += OnPromotionConfirmationRequestedAsync;
         _attachedViewModel.PosManualWarningRequested += OnPosManualWarningRequestedAsync;
         _attachedViewModel.ArticleQuantitySelectionRequested += OnArticleQuantitySelectionRequestedAsync;
@@ -1068,6 +1110,8 @@ public partial class BancoView : UserControl
         _attachedViewModel.FocusArticleSearchRequested -= OnFocusArticleSearchRequested;
         _attachedViewModel.OpenCashRegisterRequested -= OnOpenCashRegisterOptionsRequested;
         _attachedViewModel.Pos80PreviewRequested -= OnPos80PreviewRequested;
+        _attachedViewModel.ArticleLookupRequested = null;
+        _attachedViewModel.ArticleVariantSelectionRequested = null;
         _attachedViewModel.Pos80PrintRequested = null;
         _attachedViewModel.PromotionConfirmationRequested -= OnPromotionConfirmationRequestedAsync;
         _attachedViewModel.PosManualWarningRequested -= OnPosManualWarningRequestedAsync;
@@ -1092,6 +1136,48 @@ public partial class BancoView : UserControl
             Owner = Window.GetWindow(this)
         };
         window.ShowDialog();
+    }
+
+    private Task<GestionaleArticleSearchResult?> OnArticleLookupRequestedAsync(ArticleLookupRequest request)
+    {
+        var lookupViewModel = ActivatorUtilities.CreateInstance<ArticleLookupViewModel>(App.Services, request);
+        var window = new ArticleLookupWindow(lookupViewModel)
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        _isArticleLookupDialogOpen = true;
+        _manualArticleLookupTimer.Stop();
+
+        try
+        {
+            var dialogResult = window.ShowDialog();
+            return Task.FromResult(dialogResult == true ? window.SelectedArticle : null);
+        }
+        finally
+        {
+            _isArticleLookupDialogOpen = false;
+            _suppressManualArticleLookupScheduling = true;
+            _ = Dispatcher.BeginInvoke(() =>
+            {
+                _suppressManualArticleLookupScheduling = false;
+                ArticleSearchTextBox.Focus();
+                ArticleSearchTextBox.SelectAll();
+            }, DispatcherPriority.Input);
+        }
+    }
+
+    private Task<GestionaleArticleSearchResult?> OnArticleVariantSelectionRequestedAsync(
+        GestionaleArticleSearchResult parentArticle,
+        IReadOnlyList<GestionaleArticleSearchResult> variants)
+    {
+        var dialog = new ArticleVariantSelectionDialogWindow(parentArticle, variants)
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        var dialogResult = dialog.ShowDialog();
+        return Task.FromResult(dialogResult == true ? dialog.SelectedVariant : null);
     }
 
     private Task<PointsRewardRule?> OnPromotionConfirmationRequestedAsync(PromotionEvaluationResult evaluation)
@@ -1177,8 +1263,7 @@ public partial class BancoView : UserControl
             return;
         }
 
-        if (e.PropertyName is nameof(BancoViewModel.ShowRigaColumn)
-            or nameof(BancoViewModel.ShowCodiceColumn)
+        if (e.PropertyName is nameof(BancoViewModel.ShowCodiceColumn)
             or nameof(BancoViewModel.ShowDescrizioneColumn)
             or nameof(BancoViewModel.ShowQuantitaColumn)
             or nameof(BancoViewModel.ShowDisponibilitaColumn)
@@ -1192,6 +1277,7 @@ public partial class BancoView : UserControl
         {
             Dispatcher.Invoke(() => ApplyColumnVisibility(viewModel));
         }
+
     }
 
     private void PaymentButton_OnClick(object sender, RoutedEventArgs e)
@@ -1248,10 +1334,18 @@ public partial class BancoView : UserControl
             return;
         }
 
+        var usePosAmountBehavior = PosAmountTextBoxBehavior.GetIsEnabled(textBox);
         if (!textBox.IsKeyboardFocusWithin)
         {
             e.Handled = true;
             textBox.Focus();
+        }
+
+        if (usePosAmountBehavior)
+        {
+            textBox.SelectionLength = 0;
+            textBox.CaretIndex = textBox.Text?.Length ?? 0;
+            return;
         }
 
         textBox.SelectAll();
@@ -1290,54 +1384,12 @@ public partial class BancoView : UserControl
 
     private async void ScontrinoButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (DataContext is not BancoViewModel viewModel || !viewModel.CanEmettiScontrino)
-        {
-            return;
-        }
-
-        if (!BancoDefaultPaymentInteractionHelper.EnsureDefaultCashPayment(viewModel, Window.GetWindow(this), "Scontrino"))
-        {
-            return;
-        }
-
-        if (viewModel.RichiedeConfermaRistampa)
-        {
-            var dialog = new ConfirmationDialogWindow(
-                "Banco / fiscale",
-                "Conferma ristampa",
-                "Il documento risulta gia` inviato alla stampa fiscale. Vuoi confermare la richiesta di ristampa?",
-                "Conferma ristampa",
-                "Annulla",
-                "L'operazione richiede una nuova emissione del documento.")
-            {
-                Owner = Window.GetWindow(this)
-            };
-
-            if (dialog.ShowDialog() != true)
-            {
-                return;
-            }
-
-            await viewModel.EmettiScontrinoAsync(confermaRistampa: true);
-            return;
-        }
-
-        await viewModel.EmettiScontrinoAsync();
+        await ExecuteScontrinoShortcutAsync();
     }
 
     private async void CortesiaButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (DataContext is not BancoViewModel viewModel || !viewModel.CanEmettiCortesia)
-        {
-            return;
-        }
-
-        if (!BancoDefaultPaymentInteractionHelper.EnsureDefaultCashPayment(viewModel, Window.GetWindow(this), "Cortesia"))
-        {
-            return;
-        }
-
-        await viewModel.EmettiCortesiaAsync();
+        await ExecuteCortesiaShortcutAsync();
     }
 
     private async void AnteprimaPos80BuoniButton_OnClick(object sender, RoutedEventArgs e)
@@ -1352,15 +1404,15 @@ public partial class BancoView : UserControl
 
     private async void SalvaDocumentoButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (DataContext is not BancoViewModel viewModel)
-        {
-            return;
-        }
-
-        await BancoSaveInteractionHelper.ExecuteOfficialSaveAsync(viewModel, Window.GetWindow(this));
+        await ExecuteSalvaShortcutAsync();
     }
 
     private void AzzeraContenutoButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        HandleAzzeraContenutoAction();
+    }
+
+    private void HandleAzzeraContenutoAction()
     {
         if (DataContext is not BancoViewModel viewModel || !viewModel.CanAzzeraContenuto)
         {
@@ -1427,9 +1479,19 @@ public partial class BancoView : UserControl
 
         if (e.Key == Key.Down)
         {
+            ResetArticleSearchInputTracking();
             e.Handled = true;
             FocusDocumentoRowsGrid(selectFirstColumn: true);
             return;
+        }
+
+        if (e.Key is Key.Back or Key.Delete or Key.Left or Key.Right or Key.Home or Key.End or Key.Tab or Key.Escape)
+        {
+            ResetArticleSearchInputTracking();
+            if (e.Key == Key.Escape)
+            {
+                _manualArticleLookupTimer.Stop();
+            }
         }
 
         if (e.Key != Key.Enter)
@@ -1437,8 +1499,96 @@ public partial class BancoView : UserControl
             return;
         }
 
+        _manualArticleLookupTimer.Stop();
+        var isScannerSubmission = IsProbableArticleScannerSubmission();
+        ResetArticleSearchInputTracking();
         e.Handled = true;
-        await viewModel.ExecuteArticleSearchAsync();
+        if (isScannerSubmission)
+        {
+            await viewModel.ExecuteArticleSearchAsync(fromScanner: true);
+            return;
+        }
+
+        await viewModel.OpenManualArticleLookupAsync(viewModel.SearchArticoloText);
+    }
+
+    private void ArticleSearchTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_suppressManualArticleLookupScheduling || _isArticleLookupDialogOpen || DataContext is not BancoViewModel viewModel)
+        {
+            return;
+        }
+
+        if (!viewModel.CanModifyDocument)
+        {
+            _manualArticleLookupTimer.Stop();
+            return;
+        }
+
+        var searchText = viewModel.SearchArticoloText?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            _manualArticleLookupTimer.Stop();
+            return;
+        }
+
+        _manualArticleLookupTimer.Stop();
+        _manualArticleLookupTimer.Start();
+    }
+
+    private void ArticleSearchTextBox_OnPreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Text) || Keyboard.Modifiers != ModifierKeys.None)
+        {
+            ResetArticleSearchInputTracking();
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        if (_articleSearchInputBuffer.Length == 0 || now - _articleSearchLastInputAtUtc > TimeSpan.FromMilliseconds(120))
+        {
+            _articleSearchInputBuffer.Clear();
+            _articleSearchFirstInputAtUtc = now;
+        }
+
+        foreach (var character in e.Text)
+        {
+            if (!char.IsControl(character))
+            {
+                _articleSearchInputBuffer.Append(character);
+            }
+        }
+
+        _articleSearchLastInputAtUtc = now;
+    }
+
+    private void ArticleSearchTextBox_OnLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        _manualArticleLookupTimer.Stop();
+        ResetArticleSearchInputTracking();
+    }
+
+    private bool IsProbableArticleScannerSubmission()
+    {
+        if (_articleSearchInputBuffer.Length < 8 || _articleSearchInputBuffer.Length > 18)
+        {
+            return false;
+        }
+
+        if (_articleSearchInputBuffer.ToString().Any(ch => !char.IsDigit(ch)))
+        {
+            return false;
+        }
+
+        var duration = _articleSearchLastInputAtUtc - _articleSearchFirstInputAtUtc;
+        return duration <= TimeSpan.FromMilliseconds(350);
+    }
+
+    private void ResetArticleSearchInputTracking()
+    {
+        _articleSearchInputBuffer.Clear();
+        _articleSearchFirstInputAtUtc = default;
+        _articleSearchLastInputAtUtc = default;
     }
 
     private async void CustomerSearchTextBox_OnKeyDown(object sender, KeyEventArgs e)
@@ -1520,32 +1670,6 @@ public partial class BancoView : UserControl
         }
 
         viewModel.RipristinaTestoClienteCorrente();
-    }
-
-    private void ArticleLookupGrid_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        if (DataContext is not BancoViewModel viewModel ||
-            ArticleLookupGrid.SelectedItem is not GestionaleArticleSearchResult articolo)
-        {
-            return;
-        }
-
-        viewModel.AggiungiArticoloDaPopup(articolo);
-        ArticleSearchTextBox.Focus();
-    }
-
-    private void ArticleLookupGrid_OnKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key != Key.Enter ||
-            DataContext is not BancoViewModel viewModel ||
-            ArticleLookupGrid.SelectedItem is not GestionaleArticleSearchResult articolo)
-        {
-            return;
-        }
-
-        e.Handled = true;
-        viewModel.AggiungiArticoloDaPopup(articolo);
-        ArticleSearchTextBox.Focus();
     }
 
     private void CustomerLookupList_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -1730,7 +1854,51 @@ public partial class BancoView : UserControl
             return;
         }
 
-        // F5 e F8 sono gestiti globalmente in ShellWindow.xaml.cs
+        if (e.Key == Key.F1)
+        {
+            e.Handled = true;
+            viewModel.ApriStoricoAcquistiArticoloDaTastiera();
+            return;
+        }
+
+        if (e.Key == Key.F2)
+        {
+            if (viewModel.NuovoDocumentoCommand.CanExecute(null))
+            {
+                e.Handled = true;
+                viewModel.NuovoDocumentoCommand.Execute(null);
+            }
+
+            return;
+        }
+
+        if (e.Key == Key.F4)
+        {
+            e.Handled = true;
+            await ExecuteSalvaShortcutAsync();
+            return;
+        }
+
+        if (e.Key == Key.F3)
+        {
+            HandleAzzeraContenutoAction();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.F5)
+        {
+            e.Handled = true;
+            await ExecuteCortesiaShortcutAsync();
+            return;
+        }
+
+        if (e.Key == Key.F8)
+        {
+            e.Handled = true;
+            await ExecuteScontrinoShortcutAsync();
+            return;
+        }
 
         if (e.Key == Key.F10)
         {
@@ -1773,6 +1941,68 @@ public partial class BancoView : UserControl
         {
             e.Handled = viewModel.ConvertiRigaSelezionataInManuale();
         }
+    }
+
+    private async Task ExecuteScontrinoShortcutAsync()
+    {
+        if (DataContext is not BancoViewModel viewModel || !viewModel.CanEmettiScontrino)
+        {
+            return;
+        }
+
+        if (!BancoDefaultPaymentInteractionHelper.EnsureDefaultCashPayment(viewModel, Window.GetWindow(this), "Scontrino"))
+        {
+            return;
+        }
+
+        if (viewModel.RichiedeConfermaRistampa)
+        {
+            var dialog = new ConfirmationDialogWindow(
+                "Banco / fiscale",
+                "Conferma ristampa",
+                "Il documento risulta gia` inviato alla stampa fiscale. Vuoi confermare la richiesta di ristampa?",
+                "Conferma ristampa",
+                "Annulla",
+                "L'operazione richiede una nuova emissione del documento.")
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            await viewModel.EmettiScontrinoAsync(confermaRistampa: true);
+            return;
+        }
+
+        await viewModel.EmettiScontrinoAsync();
+    }
+
+    private async Task ExecuteCortesiaShortcutAsync()
+    {
+        if (DataContext is not BancoViewModel viewModel || !viewModel.CanEmettiCortesia)
+        {
+            return;
+        }
+
+        if (!BancoDefaultPaymentInteractionHelper.EnsureDefaultCashPayment(viewModel, Window.GetWindow(this), "Cortesia"))
+        {
+            return;
+        }
+
+        await viewModel.EmettiCortesiaAsync();
+    }
+
+    private async Task ExecuteSalvaShortcutAsync()
+    {
+        if (DataContext is not BancoViewModel viewModel)
+        {
+            return;
+        }
+
+        await BancoSaveInteractionHelper.ExecuteOfficialSaveAsync(viewModel, Window.GetWindow(this));
     }
 
     private async void BancoView_OnPreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -1843,44 +2073,4 @@ public partial class BancoView : UserControl
     }
 
     // Clip griglia documento: applicato al primo layout e ad ogni resize
-    private void DocumentoRowsGrid_OnLoaded(object sender, RoutedEventArgs e)
-    {
-        // Differisce al frame successivo per avere ActualWidth/Height definitivi
-        _ = Dispatcher.BeginInvoke(
-            () => AggiornaCLipGrigliaBanco(DocumentoRowsGrid.ActualWidth, DocumentoRowsGrid.ActualHeight),
-            System.Windows.Threading.DispatcherPriority.Loaded);
-    }
-
-    private void DocumentoRowsGrid_OnSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        AggiornaCLipGrigliaBanco(e.NewSize.Width, e.NewSize.Height);
-    }
-
-    private void AggiornaCLipGrigliaBanco(double w, double h)
-    {
-        if (w <= 0 || h <= 0) return;
-
-        const double r = 10;
-        var geom = new StreamGeometry();
-        using (var ctx = geom.Open())
-        {
-            // Parte dall'angolo in alto a sinistra (dopo il radius)
-            ctx.BeginFigure(new Point(r, 0), isFilled: true, isClosed: true);
-            // Bordo superiore verso destra
-            ctx.LineTo(new Point(w - r, 0), isStroked: false, isSmoothJoin: false);
-            // Arco angolo superiore destro
-            ctx.ArcTo(new Point(w, r), new Size(r, r), 0, false, SweepDirection.Clockwise, isStroked: false, isSmoothJoin: false);
-            // Bordo destro
-            ctx.LineTo(new Point(w, h), isStroked: false, isSmoothJoin: false);
-            // Bordo inferiore (angoli inferiori piatti)
-            ctx.LineTo(new Point(0, h), isStroked: false, isSmoothJoin: false);
-            // Bordo sinistro
-            ctx.LineTo(new Point(0, r), isStroked: false, isSmoothJoin: false);
-            // Arco angolo superiore sinistro (chiusura)
-            ctx.ArcTo(new Point(r, 0), new Size(r, r), 0, false, SweepDirection.Clockwise, isStroked: false, isSmoothJoin: false);
-        }
-        geom.Freeze();
-        DocumentoRowsGrid.Clip = geom;
-    }
-
 }

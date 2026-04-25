@@ -2,17 +2,22 @@ using System.ComponentModel;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Interop;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using Banco.UI.Wpf.Interactions;
 using Banco.UI.Wpf.ViewModels;
 using Banco.UI.Wpf.Views;
+using Banco.UI.Wpf.ArchiveSettingsModule;
+using System.Runtime.InteropServices;
 
 namespace Banco.UI.Wpf.Shell;
 
 public partial class ShellWindow : Window
 {
+    private const int WmGetMinMaxInfoMessage = 0x0024;
+
     private readonly DispatcherTimer _sidebarHoverCloseTimer;
     private bool _isProgrammaticWorkspaceSelection;
     private bool _isEvaluatingBancoExit;
@@ -29,6 +34,67 @@ public partial class ShellWindow : Window
             Interval = TimeSpan.FromMilliseconds(180)
         };
         _sidebarHoverCloseTimer.Tick += SidebarHoverCloseTimer_OnTick;
+        SourceInitialized += ShellWindow_OnSourceInitialized;
+        StateChanged += ShellWindow_OnStateChanged;
+    }
+
+    private void ShellWindow_OnSourceInitialized(object? sender, EventArgs e)
+    {
+        if (PresentationSource.FromVisual(this) is not HwndSource hwndSource)
+        {
+            return;
+        }
+
+        hwndSource.AddHook(WindowProc);
+        UpdateWindowChromeMargin();
+    }
+
+    private void ShellWindow_OnStateChanged(object? sender, EventArgs e)
+    {
+        UpdateWindowChromeMargin();
+    }
+
+    private void UpdateWindowChromeMargin()
+    {
+        // In finestra massimizzata eliminiamo il bordo esterno fisso della custom shell,
+        // cosi` il contenuto arriva davvero fino alla work area sopra la taskbar/dock.
+        Margin = WindowState == WindowState.Maximized
+            ? new Thickness(0)
+            : new Thickness(6);
+    }
+
+    private IntPtr WindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WmGetMinMaxInfoMessage)
+        {
+            WmGetMinMaxInfo(hwnd, lParam);
+            handled = true;
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private static void WmGetMinMaxInfo(IntPtr hwnd, IntPtr lParam)
+    {
+        var minMaxInfo = Marshal.PtrToStructure<MinMaxInfo>(lParam);
+
+        var monitor = MonitorFromWindow(hwnd, MonitorDefaultToNearest);
+        if (monitor != IntPtr.Zero)
+        {
+            var monitorInfo = new MonitorInfo();
+            monitorInfo.CbSize = Marshal.SizeOf<MonitorInfo>();
+            GetMonitorInfo(monitor, ref monitorInfo);
+
+            var workArea = monitorInfo.RcWork;
+            var monitorArea = monitorInfo.RcMonitor;
+
+            minMaxInfo.PtMaxPosition.X = Math.Abs(workArea.Left - monitorArea.Left);
+            minMaxInfo.PtMaxPosition.Y = Math.Abs(workArea.Top - monitorArea.Top);
+            minMaxInfo.PtMaxSize.X = Math.Abs(workArea.Right - workArea.Left);
+            minMaxInfo.PtMaxSize.Y = Math.Abs(workArea.Bottom - workArea.Top);
+        }
+
+        Marshal.StructureToPtr(minMaxInfo, lParam, true);
     }
 
     private void SidebarHoverHost_OnMouseEnter(object sender, MouseEventArgs e)
@@ -69,55 +135,95 @@ public partial class ShellWindow : Window
 
     private void HeaderBrandButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (DataContext is not ShellViewModel shell)
+        if (sender is not Button button)
         {
             return;
         }
 
-        shell.OpenSettingsWorkspace();
+        if (button.ContextMenu is null)
+        {
+            return;
+        }
+
+        button.ContextMenu.PlacementTarget = button;
+        button.ContextMenu.IsOpen = true;
     }
 
-    // Routine tasti funzione globali della shell.
-    // I comandi si applicano solo quando la tab attiva e` il Banco.
-    private void ShellWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
+    private void ArchiveGeneralMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        if (DataContext is not ShellViewModel shell)
-            return;
-
-        switch (e.Key)
+        if (DataContext is ShellViewModel shell)
         {
-            case Key.F2:
-                e.Handled = true;
-                _ = HandleNewBancoDocumentAsync(shell);
-                return;
+            shell.OpenArchiveSettingsWorkspace(ArchiveSettingsSection.General);
+        }
+    }
+
+    private void ArchiveBackupMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ShellViewModel shell)
+        {
+            shell.OpenArchiveSettingsWorkspace(ArchiveSettingsSection.Backup);
+        }
+    }
+
+    private void ArchiveRestoreMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ShellViewModel shell)
+        {
+            shell.OpenArchiveSettingsWorkspace(ArchiveSettingsSection.Restore);
+        }
+    }
+
+    private void ArchiveSqliteMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ShellViewModel shell)
+        {
+            shell.OpenArchiveSettingsWorkspace(ArchiveSettingsSection.Sqlite);
+        }
+    }
+
+    private void HeaderChrome_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (IsInteractiveHeaderSource(e.OriginalSource as DependencyObject))
+        {
+            return;
         }
 
-        if (shell.ActiveTab?.Content is not BancoViewModel banco)
-            return;
-
-        switch (e.Key)
+        if (e.ClickCount == 2)
         {
-            case Key.F1:
-                e.Handled = true;
-                banco.ApriStoricoAcquistiArticoloDaTastiera();
-                break;
-
-            case Key.F4:
-            case Key.F10:
-                e.Handled = true;
-                _ = BancoSaveInteractionHelper.ExecuteOfficialSaveAsync(banco, this);
-                break;
-
-            case Key.F5:
-                e.Handled = true;
-                _ = HandleCortesiaAsync(banco);
-                break;
-
-            case Key.F8:
-                e.Handled = true;
-                _ = HandleScontrinoAsync(banco);
-                break;
+            ToggleWindowState();
+            return;
         }
+
+        try
+        {
+            DragMove();
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignoriamo click non validi durante il cambio stato finestra.
+        }
+    }
+
+    private void MinimizeWindowButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void ToggleWindowStateButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ToggleWindowState();
+    }
+
+    private void CloseWindowButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private void ToggleWindowState()
+    {
+        WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
     }
 
     private async Task HandleNewBancoDocumentAsync(ShellViewModel shell)
@@ -159,47 +265,6 @@ public partial class ShellWindow : Window
         }
 
         await HandleNewBancoDocumentAsync(shell);
-    }
-
-    private static async Task HandleScontrinoAsync(BancoViewModel vm)
-    {
-        if (!BancoDefaultPaymentInteractionHelper.EnsureDefaultCashPayment(vm, Application.Current.MainWindow, "Scontrino"))
-        {
-            return;
-        }
-
-        if (vm.RichiedeConfermaRistampa)
-        {
-            var dialog = new ConfirmationDialogWindow(
-                "Banco / fiscale",
-                "Conferma ristampa",
-                "Il documento risulta gia` inviato alla stampa fiscale. Vuoi confermare la richiesta di ristampa?",
-                "Conferma ristampa",
-                "Annulla",
-                "L'operazione prosegue solo dopo conferma esplicita dell'operatore.")
-            {
-                Owner = Application.Current.MainWindow
-            };
-
-            if (dialog.ShowDialog() != true)
-                return;
-
-            await vm.EmettiScontrinoAsync(confermaRistampa: true);
-        }
-        else
-        {
-            await vm.EmettiScontrinoAsync();
-        }
-    }
-
-    private static async Task HandleCortesiaAsync(BancoViewModel vm)
-    {
-        if (!BancoDefaultPaymentInteractionHelper.EnsureDefaultCashPayment(vm, Application.Current.MainWindow, "Cortesia"))
-        {
-            return;
-        }
-
-        await vm.EmettiCortesiaAsync();
     }
 
     private async void WorkspaceTabCloseButton_OnClick(object sender, RoutedEventArgs e)
@@ -287,6 +352,42 @@ public partial class ShellWindow : Window
         }
     }
 
+    private async Task CloseWorkspaceTabWithGuardAsync(ShellViewModel shell, ShellWorkspaceTabViewModel tab)
+    {
+        if (_isEvaluatingBancoExit || !tab.CanClose)
+        {
+            return;
+        }
+
+        _isEvaluatingBancoExit = true;
+        try
+        {
+            if (!await CanLeaveTabAsync(tab, WorkspaceExitScenario.TabClose))
+            {
+                return;
+            }
+
+            shell.CloseWorkspaceTab(tab);
+        }
+        finally
+        {
+            _isEvaluatingBancoExit = false;
+        }
+    }
+
+    private async Task CloseWorkspaceTabsWithGuardAsync(ShellViewModel shell, IEnumerable<ShellWorkspaceTabViewModel> tabs)
+    {
+        var targets = tabs
+            .Where(tab => tab.CanClose)
+            .Distinct()
+            .ToList();
+
+        foreach (var tab in targets)
+        {
+            await CloseWorkspaceTabWithGuardAsync(shell, tab);
+        }
+    }
+
     private async void ShellWindow_OnClosing(object? sender, CancelEventArgs e)
     {
         if (_isProgrammaticWindowClose || _isEvaluatingBancoExit)
@@ -321,6 +422,27 @@ public partial class ShellWindow : Window
         var topLeft = element.TranslatePoint(new Point(0, 0), this);
         var bounds = new Rect(topLeft, new Size(element.ActualWidth, element.ActualHeight));
         return bounds.Contains(mousePosition);
+    }
+
+    private static bool IsInteractiveHeaderSource(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is Button
+                or ComboBox
+                or ComboBoxItem
+                or TextBox
+                or PasswordBox
+                or System.Windows.Controls.Primitives.Selector
+                or System.Windows.Controls.Primitives.ScrollBar)
+            {
+                return true;
+            }
+
+            source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
     }
 
     private async Task EvaluateWindowCloseAsync(ShellViewModel shell)
@@ -542,4 +664,48 @@ public partial class ShellWindow : Window
             Func<Task<bool>>? discardAction)
             => new(true, dialogTitle, dialogHeader, dialogMessage, dialogHint, discardAction);
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PointStruct
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MinMaxInfo
+    {
+        public PointStruct PtReserved;
+        public PointStruct PtMaxSize;
+        public PointStruct PtMaxPosition;
+        public PointStruct PtMinTrackSize;
+        public PointStruct PtMaxTrackSize;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RectStruct
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct MonitorInfo
+    {
+        public int CbSize;
+        public RectStruct RcMonitor;
+        public RectStruct RcWork;
+        public int DwFlags;
+    }
+
+    private const int MonitorDefaultToNearest = 0x00000002;
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, int dwFlags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MonitorInfo lpmi);
 }

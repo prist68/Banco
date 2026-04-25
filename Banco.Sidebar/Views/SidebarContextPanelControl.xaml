@@ -7,12 +7,21 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <conv:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
 
+        <Style x:Key="GroupTitleStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,0,0,5" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+
         <Style x:Key="ShortcutButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Padding" Value="12,10" />
-            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Margin" Value="0,0,0,3" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -25,11 +34,26 @@
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="4" />
-                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="8" />
                                     <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <Border Background="{Binding AccentBrush}" CornerRadius="4" />
-                                <ContentPresenter Grid.Column="2" />
+                                <Border Grid.RowSpan="2"
+                                        Width="4"
+                                        Margin="0,1"
+                                        Background="{Binding AccentBrush}"
+                                        CornerRadius="4" />
+                                <ContentPresenter Grid.Column="2"
+                                                  VerticalAlignment="Center" />
+                                <Path Grid.Column="3"
+                                      Width="9"
+                                      Height="9"
+                                      Margin="6,0,1,0"
+                                      VerticalAlignment="Center"
+                                      Stretch="Uniform"
+                                      Fill="{DynamicResource ShellContextMutedBrush}"
+                                      Data="M 0 0 L 6 5 L 0 10 Z"
+                                      Opacity="0.72" />
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -57,8 +81,8 @@
     <Border Background="{DynamicResource ShellContextOverlayBrush}"
             BorderBrush="{DynamicResource ShellContextOverlayBorderBrush}"
             BorderThickness="1"
-            CornerRadius="18"
-            Padding="18"
+            CornerRadius="16"
+            Padding="10"
             Effect="{DynamicResource CardShadow}">
         <Grid>
             <Grid.RowDefinitions>
@@ -72,38 +96,44 @@
                            Foreground="{DynamicResource ShellContextMutedBrush}"
                            Text="PANNELLO CATEGORIA" />
                 <TextBlock Margin="0,4,0,0"
-                           FontSize="18"
+                           FontSize="14"
                            FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            Text="{Binding SelectedMacroCategory.Title, TargetNullValue=Navigazione}" />
+                <Border Margin="0,8,0,0"
+                        Height="1"
+                        Background="{DynamicResource ShellContextCardBorderBrush}"
+                        Opacity="0.85" />
             </StackPanel>
 
             <ScrollViewer Grid.Row="1"
-                          Margin="0,16,0,0"
+                          Margin="0,8,0,0"
                           VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
+                          HorizontalScrollBarVisibility="Disabled"
+                          CanContentScroll="True">
                 <StackPanel>
                     <ItemsControl ItemsSource="{Binding SelectedGroups}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:SidebarSectionGroupViewModel}">
-                                <StackPanel Margin="0,0,0,14">
-                                    <TextBlock Margin="0,0,0,8"
-                                               FontSize="13"
-                                               FontWeight="Bold"
-                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                <StackPanel Margin="0,0,0,6">
+                                    <TextBlock Style="{StaticResource GroupTitleStyle}"
                                                Text="{Binding Title}" />
                                     <ItemsControl ItemsSource="{Binding Items}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate DataType="{x:Type vm:SidebarShortcutItemViewModel}">
                                                 <Button Style="{StaticResource ShortcutButtonStyle}"
                                                         Command="{Binding OpenCommand}"
-                                                        IsEnabled="{Binding IsEnabled}">
-                                                    <StackPanel>
-                                                        <TextBlock FontWeight="SemiBold"
+                                                        IsEnabled="{Binding IsEnabled}"
+                                                        PreviewMouseLeftButtonDown="ShortcutButton_OnPreviewMouseLeftButtonDown"
+                                                        PreviewMouseMove="ShortcutButton_OnPreviewMouseMove"
+                                                        Click="ShortcutButton_OnClick">
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock FontSize="11.5"
+                                                                   FontWeight="SemiBold"
                                                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                                                    Text="{Binding DisplayTitle}" />
                                                         <TextBlock Margin="0,2,0,0"
-                                                                   FontSize="11.5"
+                                                                   FontSize="11"
                                                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                                                    Text="{Binding InfoText}"
                                                                    TextWrapping="Wrap"
@@ -118,7 +148,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Border Padding="14"
+                    <Border Padding="12"
                             Background="{DynamicResource ShellContextEmptyStateBrush}"
                             BorderBrush="{DynamicResource ShellContextCardBorderBrush}"
                             BorderThickness="1"

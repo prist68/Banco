@@ -7,4 +7,6 @@ public sealed class GridColumnLayoutState
     public int DisplayIndex { get; set; }
 
     public bool IsVisible { get; set; } = true;
+
+    public GridColumnContentAlignment ContentAlignment { get; set; } = GridColumnContentAlignment.Center;
 }

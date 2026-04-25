@@ -33,4 +33,6 @@ public sealed class FiscalizationRequest
     public FiscalizationPaymentBreakdown Pagamenti { get; init; } = new();
 
     public IReadOnlyList<FiscalizationRow> Righe { get; init; } = [];
+
+    public FiscalizationPointsSettlement? PointsSettlement { get; init; }
 }

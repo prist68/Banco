@@ -9,11 +9,11 @@ namespace Banco.Punti.ViewModels;
 
 public sealed class PuntiViewModel : BindableBase
 {
-    private static readonly IReadOnlyList<string> RewardTypeOptionsInternal =
+    private static readonly IReadOnlyList<InlinePickerOption> RewardTypeOptionsInternal =
     [
-        "ScontoFisso",
-        "ScontoPercentuale",
-        "ArticoloPremio"
+        new("ScontoFisso", "Sconto fisso (EUR)"),
+        new("ScontoPercentuale", "Sconto percentuale (%)"),
+        new("ArticoloPremio", "Articolo premio")
     ];
     private static readonly IReadOnlyList<string> BaseCalculationOptionsInternal =
     [
@@ -24,30 +24,40 @@ public sealed class PuntiViewModel : BindableBase
     ];
 
     private readonly IGestionaleCustomerReadService _customerReadService;
+    private readonly IGestionaleFidelityHistoryService _fidelityHistoryService;
     private readonly IGestionalePointsReadService _pointsReadService;
     private readonly IGestionalePointsWriteService _pointsWriteService;
     private readonly IGestionaleArticleReadService _articleReadService;
     private readonly IPointsRewardRuleService _rewardRuleService;
     private readonly IPointsCustomerBalanceService _balanceService;
     private readonly IApplicationConfigurationService _configurationService;
+    private readonly HashSet<Guid> _checkedRewardRuleIds = [];
     private string _searchText = string.Empty;
     private string _rewardArticleSearchText = string.Empty;
     private string _statusMessage = "Modulo punti pronto.";
     private bool _isLoading;
+    private bool _isRewardTypePickerOpen;
+    private string _rewardTypePickerSearchText = string.Empty;
     private CancellationTokenSource? _customerSearchDebounceCts;
     private CancellationTokenSource? _articleSearchDebounceCts;
     private GestionaleCustomerSummary? _selectedCustomer;
     private GestionalePointsCampaignSummary? _selectedCampaignSummary;
+    private bool _suppressSelectedCampaignAutoLoad;
     private GestionalePointsCampaignEditModel? _editedCampaign;
     private PointsRewardRule? _selectedRewardRule;
     private PointsCustomerRewardSummary _customerRewardSummary = new();
     private GestionaleArticleSearchResult? _selectedRewardArticleSearchResult;
+    private FidelityCustomerHistory? _fidelityCustomerHistory;
+    private FidelityHistoryEntry? _selectedFidelityHistoryEntry;
+    private InlinePickerOption? _selectedRewardTypeOption;
 
     public event Action? PromotionsConfigurationSaved;
+    public event Action<int>? OpenDocumentInBancoRequested;
 
     public PuntiViewModel(
         IApplicationConfigurationService configurationService,
         IGestionaleCustomerReadService customerReadService,
+        IGestionaleFidelityHistoryService fidelityHistoryService,
         IGestionalePointsReadService pointsReadService,
         IGestionalePointsWriteService pointsWriteService,
         IGestionaleArticleReadService articleReadService,
@@ -56,6 +66,7 @@ public sealed class PuntiViewModel : BindableBase
     {
         _configurationService = configurationService;
         _customerReadService = customerReadService;
+        _fidelityHistoryService = fidelityHistoryService;
         _pointsReadService = pointsReadService;
         _pointsWriteService = pointsWriteService;
         _articleReadService = articleReadService;
@@ -65,13 +76,18 @@ public sealed class PuntiViewModel : BindableBase
 
         SearchCustomerCommand = new RelayCommand(() => _ = SearchCustomersAsync());
         RefreshCommand = new RelayCommand(() => _ = LoadAsync());
+        RefreshFidelityHistoryCommand = new RelayCommand(() => _ = LoadFidelityHistoryAsync());
+        RecalculateSelectedFidelityBalanceCommand = new RelayCommand(
+            () => _ = RecalculateSelectedFidelityBalanceAsync(),
+            () => SelectedCustomer?.Oid is > 0 && SelectedCustomer.HaRaccoltaPunti == true);
+        RecalculateAllFidelityBalancesCommand = new RelayCommand(() => _ = RecalculateAllFidelityBalancesAsync());
         NewCampaignCommand = new RelayCommand(CreateNewCampaign);
         SaveCampaignCommand = new RelayCommand(() => _ = SaveCampaignAsync());
         CancelCampaignCommand = new RelayCommand(() => _ = CancelCampaignAsync(), () => EditedCampaign is not null);
         AddRewardRuleCommand = new RelayCommand(AddRewardRule, () => EditedCampaign is not null);
         EditRewardRuleCommand = new RelayCommand(EditSelectedRewardRule, () => SelectedRewardRule is not null);
-        DeleteRewardRuleCommand = new RelayCommand(DeleteSelectedRewardRule, () => SelectedRewardRule is not null);
-        DuplicateRewardRuleCommand = new RelayCommand(DuplicateSelectedRewardRule, () => SelectedRewardRule is not null);
+        DeleteRewardRuleCommand = new RelayCommand(DeleteSelectedRewardRule, CanDeleteRewardRule);
+        DuplicateRewardRuleCommand = new RelayCommand(DuplicateSelectedRewardRule, CanDuplicateRewardRule);
         ClearRewardArticleCommand = new RelayCommand(ClearSelectedRewardArticle, () => HasSelectedRewardArticle);
 
         _ = LoadAsync();
@@ -104,9 +120,11 @@ public sealed class PuntiViewModel : BindableBase
 
     public ObservableCollection<GestionaleArticleSearchResult> RewardArticleResults { get; } = [];
 
-    public IReadOnlyList<string> RewardTypeOptions => RewardTypeOptionsInternal;
+    public IReadOnlyList<InlinePickerOption> RewardTypeOptions => RewardTypeOptionsInternal;
 
     public IReadOnlyList<string> BaseCalculationOptions => BaseCalculationOptionsInternal;
+
+    public ObservableCollection<InlinePickerOption> FilteredRewardTypeOptions { get; } = [];
 
     public string SearchText
     {
@@ -171,6 +189,26 @@ public sealed class PuntiViewModel : BindableBase
         set => SetProperty(ref _isLoading, value);
     }
 
+    public bool IsRewardTypePickerOpen
+    {
+        get => _isRewardTypePickerOpen;
+        set => SetProperty(ref _isRewardTypePickerOpen, value);
+    }
+
+    public string RewardTypePickerSearchText
+    {
+        get => _rewardTypePickerSearchText;
+        set
+        {
+            if (!SetProperty(ref _rewardTypePickerSearchText, value))
+            {
+                return;
+            }
+
+            RefreshRewardTypeOptions();
+        }
+    }
+
     public GestionaleCustomerSummary? SelectedCustomer
     {
         get => _selectedCustomer;
@@ -181,6 +219,8 @@ public sealed class PuntiViewModel : BindableBase
                 NotifyPropertyChanged(nameof(SelectedCustomerCardCodeLabel));
                 NotifyPropertyChanged(nameof(SelectedCustomerLoyaltyLabel));
                 RefreshCustomerRewardSummary();
+                _ = LoadFidelityHistoryAsync();
+                RecalculateSelectedFidelityBalanceCommand.RaiseCanExecuteChanged();
             }
         }
     }
@@ -192,7 +232,10 @@ public sealed class PuntiViewModel : BindableBase
         {
             if (SetProperty(ref _selectedCampaignSummary, value))
             {
-                _ = LoadCampaignDetailsAsync(value);
+                if (!_suppressSelectedCampaignAutoLoad)
+                {
+                    _ = LoadCampaignDetailsAsync(value);
+                }
             }
         }
     }
@@ -246,6 +289,8 @@ public sealed class PuntiViewModel : BindableBase
             }
 
             SelectedRewardRule.ApplyArticle(value);
+            RewardArticleSearchText = string.Empty;
+            RewardArticleResults.Clear();
             NotifyRewardRuleEditorChanged();
             RefreshCustomerRewardSummary();
             StatusMessage = $"Articolo premio selezionato: {value.DisplayLabel}.";
@@ -321,6 +366,36 @@ public sealed class PuntiViewModel : BindableBase
         ? "Premio non configurato"
         : CustomerRewardSummary.RewardDescription;
 
+    public ObservableCollection<FidelityHistoryEntry> FidelityHistoryEntries { get; } = [];
+
+    public FidelityHistoryEntry? SelectedFidelityHistoryEntry
+    {
+        get => _selectedFidelityHistoryEntry;
+        set
+        {
+            if (SetProperty(ref _selectedFidelityHistoryEntry, value))
+            {
+                NotifyPropertyChanged(nameof(FidelityHistoryDetailText));
+            }
+        }
+    }
+
+    public string FidelityCardCodeLabel => _fidelityCustomerHistory?.CardCode ?? SelectedCustomer?.CodiceCartaFedelta ?? string.Empty;
+
+    public string FidelityInitialPointsLabel => _fidelityCustomerHistory?.InitialPoints.ToString("N0") ?? "0";
+
+    public string FidelityLegacyCurrentPointsLabel => _fidelityCustomerHistory?.LegacyCurrentPoints.ToString("N0") ?? "0";
+
+    public string FidelityComputedCurrentPointsLabel => _fidelityCustomerHistory?.ComputedCurrentPoints.ToString("N0") ?? "0";
+
+    public string FidelityDeltaPointsLabel => _fidelityCustomerHistory?.DeltaPoints.ToString("N0") ?? "0";
+
+    public string FidelityHistorySummaryLabel => _fidelityCustomerHistory is null
+        ? "Seleziona un cliente fidelity per leggere i movimenti."
+        : $"Movimenti Banco: {_fidelityCustomerHistory.Entries.Count} | Legacy {_fidelityCustomerHistory.LegacyCurrentPoints:N0} | Ricalcolato {_fidelityCustomerHistory.ComputedCurrentPoints:N0}";
+
+    public string FidelityHistoryDetailText => SelectedFidelityHistoryEntry?.DetailLines ?? "Seleziona un movimento per vedere il dettaglio.";
+
     public string SelectedRuleDisplayName => !string.IsNullOrWhiteSpace(SelectedRewardRule?.RuleName)
         ? SelectedRewardRule.RuleName
         : !string.IsNullOrWhiteSpace(CustomerRewardSummary.RuleName)
@@ -330,6 +405,34 @@ public sealed class PuntiViewModel : BindableBase
     public string SelectedRewardArticleLabel => SelectedRewardRule?.RewardArticleOid.GetValueOrDefault() > 0
         ? $"{SelectedRewardRule.RewardArticleCode} - {SelectedRewardRule.RewardArticleDescription}"
         : "Nessun articolo premio selezionato";
+
+    public string RewardRulesSummary
+    {
+        get
+        {
+            if (RewardRules.Count == 0)
+            {
+                return "Nessuna regola premio.";
+            }
+
+            if (CheckedRewardRuleCount > 0)
+            {
+                return $"Regole premio: {RewardRules.Count}. Selezionate: {CheckedRewardRuleCount}.";
+            }
+
+            if (SelectedRewardRule is null)
+            {
+                return $"Regole premio: {RewardRules.Count}.";
+            }
+
+            var index = RewardRules.IndexOf(SelectedRewardRule);
+            return index >= 0
+                ? $"Record {index + 1} di {RewardRules.Count}."
+                : $"Regole premio: {RewardRules.Count}.";
+        }
+    }
+
+    public int CheckedRewardRuleCount => _checkedRewardRuleIds.Count;
 
     public string? SelectedBaseCalculation
     {
@@ -394,7 +497,7 @@ public sealed class PuntiViewModel : BindableBase
 
     public string SelectedRewardTypeName
     {
-        get => SelectedRewardRule?.RewardType.ToString() ?? RewardTypeOptionsInternal[0];
+        get => SelectedRewardRule?.RewardType.ToString() ?? RewardTypeOptionsInternal[0].Key;
         set
         {
             if (SelectedRewardRule is null)
@@ -434,6 +537,37 @@ public sealed class PuntiViewModel : BindableBase
 
             NotifyRewardRuleEditorChanged();
             NotifyRewardRuleCollectionChanged();
+        }
+    }
+
+    public InlinePickerOption? SelectedRewardTypeOption
+    {
+        get => _selectedRewardTypeOption;
+        set
+        {
+            if (!SetProperty(ref _selectedRewardTypeOption, value) || value is null)
+            {
+                return;
+            }
+
+            SelectedRewardTypeName = value.Key;
+            if (!string.IsNullOrWhiteSpace(RewardTypePickerSearchText))
+            {
+                RewardTypePickerSearchText = string.Empty;
+            }
+
+            IsRewardTypePickerOpen = false;
+            NotifyPropertyChanged(nameof(SelectedRewardTypeLabel));
+        }
+    }
+
+    public string SelectedRewardTypeLabel
+    {
+        get
+        {
+            var key = SelectedRewardTypeName;
+            return RewardTypeOptionsInternal.FirstOrDefault(option => string.Equals(option.Key, key, StringComparison.Ordinal))?.Label
+                ?? RewardTypeOptionsInternal[0].Label;
         }
     }
 
@@ -522,6 +656,12 @@ public sealed class PuntiViewModel : BindableBase
 
     public RelayCommand RefreshCommand { get; }
 
+    public RelayCommand RefreshFidelityHistoryCommand { get; }
+
+    public RelayCommand RecalculateSelectedFidelityBalanceCommand { get; }
+
+    public RelayCommand RecalculateAllFidelityBalancesCommand { get; }
+
     public RelayCommand NewCampaignCommand { get; }
 
     public RelayCommand SaveCampaignCommand { get; }
@@ -561,6 +701,7 @@ public sealed class PuntiViewModel : BindableBase
                 EditedCampaign = null;
                 RewardRules.Clear();
                 SelectedRewardRule = null;
+                ClearFidelityHistory();
             }
 
             StatusMessage = Campaigns.Count > 0
@@ -584,6 +725,7 @@ public sealed class PuntiViewModel : BindableBase
             EditedCampaign = null;
             RewardRules.Clear();
             SelectedRewardRule = null;
+            ClearCheckedRewardRules();
             RefreshCustomerRewardSummary();
             return;
         }
@@ -603,10 +745,12 @@ public sealed class PuntiViewModel : BindableBase
 
         var rewardRules = await _rewardRuleService.GetAsync(campaign.Oid);
         ReplaceCollection(RewardRules, rewardRules);
-        SelectedRewardRule = RewardRules.FirstOrDefault();
+        SelectedRewardRule = null;
+        ClearCheckedRewardRules();
         RewardArticleSearchText = string.Empty;
         RewardArticleResults.Clear();
         RefreshCustomerRewardSummary();
+        NotifyPropertyChanged(nameof(RewardRulesSummary));
     }
 
     private void CreateNewCampaign()
@@ -626,8 +770,10 @@ public sealed class PuntiViewModel : BindableBase
         SelectedCampaignSummary = null;
         RewardRules.Clear();
         SelectedRewardRule = null;
+        ClearCheckedRewardRules();
         AddRewardRule();
         StatusMessage = "Nuova campagna punti pronta. Aggiungi o modifica le regole premio locali.";
+        NotifyPropertyChanged(nameof(RewardRulesSummary));
     }
 
     private async Task SaveCampaignAsync()
@@ -649,7 +795,15 @@ public sealed class PuntiViewModel : BindableBase
 
             await _rewardRuleService.SaveAsync(savedOid, RewardRules.ToList());
             await LoadAsync();
-            SelectedCampaignSummary = Campaigns.FirstOrDefault(c => c.Oid == savedOid);
+            var savedCampaign = Campaigns.FirstOrDefault(c => c.Oid == savedOid);
+            if (savedCampaign is not null)
+            {
+                _suppressSelectedCampaignAutoLoad = true;
+                SelectedCampaignSummary = savedCampaign;
+                _suppressSelectedCampaignAutoLoad = false;
+                await LoadCampaignDetailsAsync(savedCampaign);
+            }
+
             StatusMessage = "Campagna punti e regole premio salvate.";
             PromotionsConfigurationSaved?.Invoke();
         }
@@ -675,6 +829,7 @@ public sealed class PuntiViewModel : BindableBase
             EditedCampaign = null;
             RewardRules.Clear();
             SelectedRewardRule = null;
+            ClearCheckedRewardRules();
             StatusMessage = "Creazione campagna annullata.";
             return;
         }
@@ -710,8 +865,10 @@ public sealed class PuntiViewModel : BindableBase
         };
 
         RewardRules.Add(newRule);
+        ClearCheckedRewardRules();
         SelectedRewardRule = newRule;
         StatusMessage = "Nuova regola premio aggiunta.";
+        NotifyPropertyChanged(nameof(RewardRulesSummary));
     }
 
     private void EditSelectedRewardRule()
@@ -727,34 +884,54 @@ public sealed class PuntiViewModel : BindableBase
 
     private void DeleteSelectedRewardRule()
     {
-        if (SelectedRewardRule is null)
+        var rulesToRemove = GetTargetRewardRules().ToList();
+        if (rulesToRemove.Count == 0)
         {
             return;
         }
 
-        var ruleToRemove = SelectedRewardRule;
-        var nextRule = RewardRules.FirstOrDefault(rule => !ReferenceEquals(rule, ruleToRemove));
-        RewardRules.Remove(ruleToRemove);
-        SelectedRewardRule = nextRule;
-        StatusMessage = $"Regola '{ruleToRemove.RuleName}' rimossa.";
+        foreach (var rule in rulesToRemove)
+        {
+            RewardRules.Remove(rule);
+            _checkedRewardRuleIds.Remove(rule.Id);
+        }
+
+        SelectedRewardRule = RewardRules.FirstOrDefault();
+        StatusMessage = rulesToRemove.Count > 1
+            ? $"Rimosse {rulesToRemove.Count} regole premio selezionate."
+            : $"Regola '{rulesToRemove[0].RuleName}' rimossa.";
         RefreshCustomerRewardSummary();
+        NotifyPropertyChanged(nameof(RewardRulesSummary));
+        RaiseRewardRuleCommandStates();
     }
 
     private void DuplicateSelectedRewardRule()
     {
-        if (SelectedRewardRule is null)
+        var sourceRules = GetTargetRewardRules().ToList();
+        if (sourceRules.Count == 0)
         {
             return;
         }
 
-        var duplicate = SelectedRewardRule.Clone();
-        duplicate.Id = Guid.NewGuid();
-        duplicate.RuleName = string.IsNullOrWhiteSpace(duplicate.RuleName)
-            ? "Copia regola"
-            : $"{duplicate.RuleName} - copia";
-        RewardRules.Add(duplicate);
-        SelectedRewardRule = duplicate;
-        StatusMessage = $"Creata copia della regola '{duplicate.RuleName}'.";
+        var duplicates = new List<PointsRewardRule>(sourceRules.Count);
+        foreach (var sourceRule in sourceRules)
+        {
+            var duplicate = sourceRule.Clone();
+            duplicate.Id = Guid.NewGuid();
+            duplicate.RuleName = string.IsNullOrWhiteSpace(duplicate.RuleName)
+                ? "Copia regola"
+                : $"{duplicate.RuleName} - copia";
+            RewardRules.Add(duplicate);
+            duplicates.Add(duplicate);
+        }
+
+        ClearCheckedRewardRules();
+        SelectedRewardRule = duplicates.LastOrDefault();
+        StatusMessage = duplicates.Count > 1
+            ? $"Create {duplicates.Count} copie delle regole selezionate."
+            : $"Creata copia della regola '{duplicates[0].RuleName}'.";
+        NotifyPropertyChanged(nameof(RewardRulesSummary));
+        RaiseRewardRuleCommandStates();
     }
 
     private void ClearSelectedRewardArticle()
@@ -884,6 +1061,137 @@ public sealed class PuntiViewModel : BindableBase
             document: null);
     }
 
+    private async Task LoadFidelityHistoryAsync()
+    {
+        if (SelectedCustomer?.Oid is not > 0 || SelectedCustomer.HaRaccoltaPunti != true)
+        {
+            ClearFidelityHistory();
+            return;
+        }
+
+        try
+        {
+            var history = await _fidelityHistoryService.GetCustomerHistoryAsync(SelectedCustomer.Oid);
+            _fidelityCustomerHistory = history;
+            ReplaceCollection(FidelityHistoryEntries, history?.Entries ?? []);
+            SelectedFidelityHistoryEntry = FidelityHistoryEntries.LastOrDefault();
+            NotifyFidelityHistoryChanged();
+        }
+        catch (Exception ex)
+        {
+            ClearFidelityHistory();
+            StatusMessage = $"Errore storico fidelity: {ex.Message}";
+        }
+    }
+
+    private async Task RecalculateSelectedFidelityBalanceAsync()
+    {
+        if (SelectedCustomer?.Oid is not > 0 || SelectedCustomer.HaRaccoltaPunti != true)
+        {
+            return;
+        }
+
+        IsLoading = true;
+        try
+        {
+            var result = await _fidelityHistoryService.RecalculateCustomerBalanceAsync(
+                SelectedCustomer.Oid,
+                persistToLegacy: true,
+                operatore: "Modulo Punti");
+            await ReloadSelectedCustomerAsync(SelectedCustomer.Oid);
+            await LoadFidelityHistoryAsync();
+
+            if (result is null)
+            {
+                StatusMessage = "Cliente fidelity non trovato per il ricalcolo.";
+                return;
+            }
+
+            StatusMessage = result.LegacyUpdated
+                ? $"Saldo fidelity cliente {result.CustomerOid} riallineato: {result.PreviousLegacyCurrentPoints:N0} -> {result.ComputedCurrentPoints:N0}."
+                : $"Saldo fidelity cliente {result.CustomerOid} gia' coerente a {result.ComputedCurrentPoints:N0}.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Errore ricalcolo saldo cliente: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task RecalculateAllFidelityBalancesAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            var results = await _fidelityHistoryService.RecalculateAllActiveCustomersAsync(
+                persistToLegacy: true,
+                operatore: "Modulo Punti");
+            var updatedCount = results.Count(item => item.LegacyUpdated);
+            var unchangedCount = results.Count - updatedCount;
+
+            if (SelectedCustomer?.Oid is > 0)
+            {
+                await ReloadSelectedCustomerAsync(SelectedCustomer.Oid);
+                await LoadFidelityHistoryAsync();
+            }
+
+            StatusMessage = $"Ricalcolo fidelity completato: {results.Count} clienti, {updatedCount} aggiornati, {unchangedCount} gia' coerenti.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Errore ricalcolo globale fidelity: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ClearFidelityHistory()
+    {
+        _fidelityCustomerHistory = null;
+        FidelityHistoryEntries.Clear();
+        SelectedFidelityHistoryEntry = null;
+        NotifyFidelityHistoryChanged();
+    }
+
+    public void OpenSelectedFidelityDocumentInBanco(FidelityHistoryEntry? entry)
+    {
+        if (entry?.DocumentoOid is not > 0)
+        {
+            return;
+        }
+
+        SelectedFidelityHistoryEntry = entry;
+        OpenDocumentInBancoRequested?.Invoke(entry.DocumentoOid);
+        StatusMessage = $"Apertura vendita Banco {entry.DocumentoShortLabel} richiesta.";
+    }
+
+    private async Task ReloadSelectedCustomerAsync(int customerOid)
+    {
+        var refreshedCustomer = await _customerReadService.GetCustomerByOidAsync(customerOid);
+        if (refreshedCustomer is null)
+        {
+            return;
+        }
+
+        SelectedCustomer = refreshedCustomer;
+    }
+
+    private void NotifyFidelityHistoryChanged()
+    {
+        NotifyPropertyChanged(nameof(FidelityCardCodeLabel));
+        NotifyPropertyChanged(nameof(FidelityInitialPointsLabel));
+        NotifyPropertyChanged(nameof(FidelityLegacyCurrentPointsLabel));
+        NotifyPropertyChanged(nameof(FidelityComputedCurrentPointsLabel));
+        NotifyPropertyChanged(nameof(FidelityDeltaPointsLabel));
+        NotifyPropertyChanged(nameof(FidelityHistorySummaryLabel));
+        NotifyPropertyChanged(nameof(FidelityHistoryDetailText));
+    }
+
     private void NotifyRewardRuleCollectionChanged()
     {
         var currentRule = SelectedRewardRule;
@@ -906,6 +1214,7 @@ public sealed class PuntiViewModel : BindableBase
 
     private void NotifyRewardRuleEditorChanged()
     {
+        SyncRewardTypeSelection();
         NotifyPropertyChanged(nameof(HasSelectedRewardRule));
         NotifyPropertyChanged(nameof(SelectedRuleIsFixedDiscount));
         NotifyPropertyChanged(nameof(SelectedRuleIsPercentDiscount));
@@ -915,6 +1224,7 @@ public sealed class PuntiViewModel : BindableBase
         NotifyPropertyChanged(nameof(EditedRuleActive));
         NotifyPropertyChanged(nameof(EditedRuleRequiredPoints));
         NotifyPropertyChanged(nameof(SelectedRewardTypeName));
+        NotifyPropertyChanged(nameof(SelectedRewardTypeLabel));
         NotifyPropertyChanged(nameof(EditedRuleDiscountAmount));
         NotifyPropertyChanged(nameof(EditedRuleDiscountPercent));
         NotifyPropertyChanged(nameof(EditedRuleRewardQuantity));
@@ -922,7 +1232,67 @@ public sealed class PuntiViewModel : BindableBase
         NotifyPropertyChanged(nameof(EditedRuleNotes));
         NotifyPropertyChanged(nameof(SelectedRewardArticleLabel));
         NotifyPropertyChanged(nameof(RewardConfigurationLabel));
+        NotifyPropertyChanged(nameof(RewardRulesSummary));
         RaiseRewardRuleCommandStates();
+    }
+
+    public bool IsRewardRuleChecked(PointsRewardRule? rule)
+    {
+        return rule is not null && _checkedRewardRuleIds.Contains(rule.Id);
+    }
+
+    public void SetRewardRuleChecked(PointsRewardRule? rule, bool isChecked)
+    {
+        if (rule is null)
+        {
+            return;
+        }
+
+        if (isChecked)
+        {
+            _checkedRewardRuleIds.Add(rule.Id);
+        }
+        else
+        {
+            _checkedRewardRuleIds.Remove(rule.Id);
+        }
+
+        NotifyPropertyChanged(nameof(RewardRulesSummary));
+        RaiseRewardRuleCommandStates();
+    }
+
+    public void ClearCheckedRewardRules()
+    {
+        if (_checkedRewardRuleIds.Count == 0)
+        {
+            return;
+        }
+
+        _checkedRewardRuleIds.Clear();
+        NotifyPropertyChanged(nameof(RewardRulesSummary));
+        RaiseRewardRuleCommandStates();
+    }
+
+    private void RefreshRewardTypeOptions()
+    {
+        var filter = RewardTypePickerSearchText?.Trim() ?? string.Empty;
+        var options = string.IsNullOrWhiteSpace(filter)
+            ? RewardTypeOptionsInternal
+            : RewardTypeOptionsInternal
+                .Where(option => option.Label.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+        ReplaceCollection(FilteredRewardTypeOptions, options);
+    }
+
+    private void SyncRewardTypeSelection()
+    {
+        RefreshRewardTypeOptions();
+
+        var selectedKey = SelectedRewardTypeName;
+        _selectedRewardTypeOption = RewardTypeOptionsInternal.FirstOrDefault(
+            option => string.Equals(option.Key, selectedKey, StringComparison.Ordinal));
+        NotifyPropertyChanged(nameof(SelectedRewardTypeOption));
     }
 
     private void RaiseRewardRuleCommandStates()
@@ -933,6 +1303,28 @@ public sealed class PuntiViewModel : BindableBase
         DeleteRewardRuleCommand.RaiseCanExecuteChanged();
         DuplicateRewardRuleCommand.RaiseCanExecuteChanged();
         ClearRewardArticleCommand.RaiseCanExecuteChanged();
+    }
+
+    private bool CanDeleteRewardRule()
+    {
+        return CheckedRewardRuleCount > 0 || SelectedRewardRule is not null;
+    }
+
+    private bool CanDuplicateRewardRule()
+    {
+        return CheckedRewardRuleCount > 0 || SelectedRewardRule is not null;
+    }
+
+    private IEnumerable<PointsRewardRule> GetTargetRewardRules()
+    {
+        if (CheckedRewardRuleCount > 0)
+        {
+            return RewardRules.Where(rule => _checkedRewardRuleIds.Contains(rule.Id));
+        }
+
+        return SelectedRewardRule is null
+            ? []
+            : [SelectedRewardRule];
     }
 
     private static string? NormalizeBaseCalcolo(string? value)
@@ -953,4 +1345,5 @@ public sealed class PuntiViewModel : BindableBase
             target.Add(item);
         }
     }
+
 }

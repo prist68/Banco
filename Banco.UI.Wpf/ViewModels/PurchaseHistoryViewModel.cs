@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using Banco.UI.Shared.Grid;
 using Banco.Vendita.Abstractions;
 using Banco.Vendita.Articles;
+using Banco.Vendita.Configuration;
 using Banco.Vendita.Customers;
 using Banco.Vendita.Documents;
 
@@ -12,6 +14,8 @@ public sealed class PurchaseHistoryViewModel : DateFilterViewModelBase
     private readonly IGestionaleDocumentReadService _documentReadService;
     private readonly IGestionaleArticleReadService _articleReadService;
     private readonly IGestionaleCustomerReadService _customerReadService;
+    private readonly IApplicationConfigurationService _configurationService;
+    private readonly Dictionary<string, GridColumnLayoutState> _columns = new(StringComparer.OrdinalIgnoreCase);
 
     private CancellationTokenSource? _articleLookupCts;
     private CancellationTokenSource? _supplierLookupCts;
@@ -33,11 +37,13 @@ public sealed class PurchaseHistoryViewModel : DateFilterViewModelBase
     public PurchaseHistoryViewModel(
         IGestionaleDocumentReadService documentReadService,
         IGestionaleArticleReadService articleReadService,
-        IGestionaleCustomerReadService customerReadService)
+        IGestionaleCustomerReadService customerReadService,
+        IApplicationConfigurationService configurationService)
     {
         _documentReadService = documentReadService;
         _articleReadService = articleReadService;
         _customerReadService = customerReadService;
+        _configurationService = configurationService;
 
         Results = [];
         ArticleLookupResults = [];
@@ -53,6 +59,8 @@ public sealed class PurchaseHistoryViewModel : DateFilterViewModelBase
     public ObservableCollection<GestionaleCustomerSummary> SupplierLookupResults { get; }
 
     public RelayCommand ClearFiltersCommand { get; }
+
+    public IReadOnlyList<GridColumnDefinition> ColumnDefinitions => PurchaseHistoryColumnDefinitions;
 
     public PurchaseHistoryOpenMode OpenMode
     {
@@ -217,6 +225,71 @@ public sealed class PurchaseHistoryViewModel : DateFilterViewModelBase
     }
 
     public bool HasResults => Results.Count > 0;
+
+    public async Task<GridLayoutSettings> GetGridLayoutAsync()
+    {
+        var settings = await _configurationService.LoadAsync();
+        var layout = GridLayoutMigration.GetOrCreatePurchaseHistoryLayout(settings, ColumnDefinitions);
+        SyncColumnsFromLayout(layout);
+        return layout;
+    }
+
+    public async Task SaveGridLayoutAsync(GridLayoutSettings layout)
+    {
+        var settings = await _configurationService.LoadAsync();
+        settings.GridLayouts[GridLayoutMigration.PurchaseHistoryGridId] = layout;
+        await _configurationService.SaveAsync(settings);
+    }
+
+    public double GetColumnWidth(string key) => _columns.TryGetValue(key, out var state) ? state.Width : 120;
+
+    public int GetColumnDisplayIndex(string key) => _columns.TryGetValue(key, out var state) ? state.DisplayIndex : 0;
+
+    public bool GetColumnVisibility(string key) => _columns.TryGetValue(key, out var state) ? state.IsVisible : true;
+
+    public async Task ToggleColumnVisibilityAsync(string key)
+    {
+        var layout = await GetGridLayoutAsync();
+        if (!layout.Columns.TryGetValue(key, out var state))
+        {
+            return;
+        }
+
+        state.IsVisible = !state.IsVisible;
+        _columns[key] = state;
+        await SaveGridLayoutAsync(layout);
+    }
+
+    public async Task SaveColumnWidthAsync(string key, double width)
+    {
+        if (width <= 0)
+        {
+            return;
+        }
+
+        var layout = await GetGridLayoutAsync();
+        if (!layout.Columns.TryGetValue(key, out var state))
+        {
+            return;
+        }
+
+        state.Width = width;
+        _columns[key] = state;
+        await SaveGridLayoutAsync(layout);
+    }
+
+    public async Task SaveColumnDisplayIndexAsync(string key, int displayIndex)
+    {
+        var layout = await GetGridLayoutAsync();
+        if (!layout.Columns.TryGetValue(key, out var state))
+        {
+            return;
+        }
+
+        state.DisplayIndex = displayIndex;
+        _columns[key] = state;
+        await SaveGridLayoutAsync(layout);
+    }
 
     public void InitializeForArticleContext(GestionaleArticleSearchResult articolo)
     {
@@ -571,8 +644,15 @@ public sealed class PurchaseHistoryViewModel : DateFilterViewModelBase
             }
 
             var results = await _customerReadService.SearchSuppliersAsync(SearchSupplierText, cancellationToken: cancellationToken);
+            if (results.Count == 0)
+            {
+                results = await _customerReadService.SearchCustomersAsync(SearchSupplierText, cancellationToken: cancellationToken);
+            }
+
             SupplierLookupResults.Clear();
-            foreach (var result in results)
+            foreach (var result in results
+                         .Where(item => item.Oid > 0 && !item.IsClienteGenerico)
+                         .DistinctBy(item => item.Oid))
             {
                 SupplierLookupResults.Add(result);
             }
@@ -583,4 +663,38 @@ public sealed class PurchaseHistoryViewModel : DateFilterViewModelBase
         {
         }
     }
+
+    private void SyncColumnsFromLayout(GridLayoutSettings layout)
+    {
+        _columns.Clear();
+        foreach (var definition in ColumnDefinitions)
+        {
+            if (!layout.Columns.TryGetValue(definition.Key, out var state))
+            {
+                state = new GridColumnLayoutState
+                {
+                    Width = definition.DefaultWidth,
+                    DisplayIndex = definition.DefaultDisplayIndex,
+                    IsVisible = definition.IsVisibleByDefault,
+                    ContentAlignment = definition.TextAlignment
+                };
+                layout.Columns[definition.Key] = state;
+            }
+
+            _columns[definition.Key] = state;
+        }
+    }
+
+    private static readonly IReadOnlyList<GridColumnDefinition> PurchaseHistoryColumnDefinitions =
+    [
+        new() { Key = "DataDocumento", Header = "Data", IsVisibleByDefault = true, DefaultWidth = 96, DefaultDisplayIndex = 0, Group = "Documento", Description = "Data del documento di acquisto.", MinWidth = 88, TextAlignment = GridColumnContentAlignment.Center, IsFrozen = true },
+        new() { Key = "TipoDocumento", Header = "Tipo", IsVisibleByDefault = true, DefaultWidth = 132, DefaultDisplayIndex = 1, Group = "Documento", Description = "Tipo documento legacy.", MinWidth = 110, TextAlignment = GridColumnContentAlignment.Left },
+        new() { Key = "CodiceArticolo", Header = "Articolo", IsVisibleByDefault = true, DefaultWidth = 100, DefaultDisplayIndex = 2, Group = "Articolo", Description = "Codice articolo della riga.", MinWidth = 90, TextAlignment = GridColumnContentAlignment.Left },
+        new() { Key = "DescrizioneArticolo", Header = "Descrizione", IsVisibleByDefault = true, DefaultWidth = 280, DefaultDisplayIndex = 3, Group = "Articolo", Description = "Descrizione articolo acquistato.", MinWidth = 180, TextAlignment = GridColumnContentAlignment.Left },
+        new() { Key = "FornitoreNominativo", Header = "Fornitore", IsVisibleByDefault = true, DefaultWidth = 220, DefaultDisplayIndex = 4, Group = "Fornitore", Description = "Fornitore collegato al documento di acquisto.", MinWidth = 150, TextAlignment = GridColumnContentAlignment.Left },
+        new() { Key = "RiferimentoFattura", Header = "FT", IsVisibleByDefault = true, DefaultWidth = 120, DefaultDisplayIndex = 5, Group = "Documento", Description = "Riferimento fattura o documento esterno.", MinWidth = 90, TextAlignment = GridColumnContentAlignment.Center },
+        new() { Key = "Quantita", Header = "Pezzi", IsVisibleByDefault = true, DefaultWidth = 90, DefaultDisplayIndex = 6, Group = "Valori", Description = "Quantita` acquistata.", IsNumeric = true, MinWidth = 76, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new() { Key = "PrezzoUnitario", Header = "Prezzo", IsVisibleByDefault = true, DefaultWidth = 110, DefaultDisplayIndex = 7, Group = "Valori", Description = "Prezzo unitario di acquisto.", IsNumeric = true, MinWidth = 92, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new() { Key = "TotaleRiga", Header = "Totale", IsVisibleByDefault = true, DefaultWidth = 110, DefaultDisplayIndex = 8, Group = "Valori", Description = "Totale della riga di acquisto.", IsNumeric = true, MinWidth = 92, Format = "N2", TextAlignment = GridColumnContentAlignment.Right }
+    ];
 }

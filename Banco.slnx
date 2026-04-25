@@ -1,5 +1,6 @@
-﻿<Solution>
+<Solution>
   <Project Path="Banco.Vendita/Banco.Vendita.csproj" />
+  <Project Path="Banco.Backup/Banco.Backup.csproj" />
   <Project Path="Banco.Riordino/Banco.Riordino.csproj" />
   <Project Path="Banco.Magazzino/Banco.Magazzino.csproj" />
   <Project Path="Banco.Punti/Banco.Punti.csproj" />
@@ -9,5 +10,8 @@
   <Project Path="Banco.Core.LocalStore/Banco.Core.LocalStore.csproj" />
   <Project Path="Banco.Stampa/Banco.Stampa.csproj" />
   <Project Path="Banco.Sidebar/Banco.Sidebar.csproj" />
+  <Project Path="lib/Banco.UI.Controls/Banco.UI.Controls.csproj" />
+  <Project Path="lib/Banco.UI.Shared/Banco.UI.Shared.csproj" />
   <Project Path="Banco.UI.Wpf/Banco.UI.Wpf.csproj" />
+  <Project Path="Banco.UI.Avalonia.Lab/Banco.UI.Avalonia.Lab.csproj" />
 </Solution>

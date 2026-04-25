@@ -6,8 +6,8 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
-using Banco.UI.Wpf.Infrastructure.GridColumns;
-using Banco.UI.Wpf.Services;
+using Banco.UI.Shared.Grid;
+using Banco.UI.Shared.Services;
 using Banco.UI.Wpf.ViewModels;
 using Banco.Vendita.Articles;
 
@@ -62,7 +62,8 @@ public partial class ReorderListControl : UserControl
             viewModel.ToggleColumnVisibilityAsync,
             viewModel.SaveColumnDisplayIndexAsync,
             viewModel.SaveColumnWidthAsync,
-            ApplyColumnVisibility);
+            ApplyColumnVisibility,
+            applyFrozenColumnCount: count => ReorderGrid.FrozenColumnCount = count);
 
         await _columnManager.InitializeAsync(_gridColumns);
         ApplyColumnVisibility();

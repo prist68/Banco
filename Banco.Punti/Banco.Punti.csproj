@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="..\lib\Banco.UI.Controls\Banco.UI.Controls.csproj" />
     <ProjectReference Include="..\Banco.Vendita\Banco.Vendita.csproj" />
   </ItemGroup>
 

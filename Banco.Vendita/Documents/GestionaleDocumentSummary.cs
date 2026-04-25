@@ -34,13 +34,17 @@ public sealed class GestionaleDocumentSummary
 
     public decimal TotalePagatoUfficiale { get; init; }
 
+    public int? Fatturato { get; init; }
+
+    public decimal? CustomerPoints { get; init; }
+
     public decimal ResiduoPagamento => Math.Max(0, TotaleDocumento - TotalePagatoUfficiale - Pagatosospeso);
 
     public int? ScontrinoNumero { get; init; }
 
-    public bool HasLegacyFiscalSignal => ScontrinoNumero.HasValue && ScontrinoNumero.Value > 0;
+    public bool HasLegacyFiscalSignal => LegacyScontrinoState.IsFiscalizzato(Fatturato);
 
-    public bool IsNonScontrinatoLegacy => !HasLegacyFiscalSignal;
+    public bool IsNonScontrinatoLegacy => LegacyScontrinoState.IsNonScontrinato(Fatturato);
 
     public bool IsSospeso => Pagatosospeso > 0;
 
@@ -54,7 +58,7 @@ public sealed class GestionaleDocumentSummary
 
     public string OraVenditaLabel => Data.ToString("HH:mm");
 
-    public string ScontrinoLabel => string.Empty;
+    public string ScontrinoLabel => LegacyScontrinoState.ToLabel(Fatturato);
 
     public string StatoLabel => IsSospeso
         ? "Documento Banco legacy con componente sospeso"

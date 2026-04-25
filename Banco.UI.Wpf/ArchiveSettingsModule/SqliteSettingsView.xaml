@@ -1,0 +1,93 @@
+<UserControl x:Class="Banco.UI.Wpf.ArchiveSettingsModule.SqliteSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="16" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="16" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Style="{StaticResource CardStyle}"
+                Background="{StaticResource WindowBackgroundBrush}">
+            <StackPanel>
+                <TextBlock FontSize="18"
+                           FontWeight="SemiBold"
+                           Text="SQLite tecnico" />
+                <TextBlock Margin="0,8,0,0"
+                           FontSize="12.5"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="Parametri locali di supporto usati dal programma fuori dal flusso documento legacy." />
+
+                <TextBlock Margin="0,16,0,0"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="Cartella base LocalStore" />
+                <TextBox Text="{Binding LocalStoreDirectory, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource CompactTextBoxStyle}" />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource CardStyle}"
+                    Background="{StaticResource WindowBackgroundBrush}">
+                <StackPanel>
+                    <TextBlock FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="File configurazione attivo" />
+                    <TextBlock Margin="0,8,0,0"
+                               FontSize="12.5"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="{Binding ConfigurationScope}" />
+                    <TextBlock Margin="0,6,0,0"
+                               FontSize="13"
+                               FontFamily="Consolas"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Text="{Binding ConfigurationPath}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Style="{StaticResource CardStyle}"
+                    Background="{StaticResource WindowBackgroundBrush}">
+                <StackPanel>
+                    <TextBlock FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Database SQLite effettivo" />
+                    <TextBlock Margin="0,8,0,0"
+                               FontSize="13"
+                               FontFamily="Consolas"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Text="{Binding EffectiveDatabasePath}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="4">
+            <WrapPanel>
+                <Button Content="Salva impostazioni SQLite"
+                        Command="{Binding SaveCommand}"
+                        Style="{StaticResource PrimaryButtonStyle}" />
+            </WrapPanel>
+
+            <TextBlock Margin="0,12,0,0"
+                       FontSize="13"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       Text="{Binding StatusMessage}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

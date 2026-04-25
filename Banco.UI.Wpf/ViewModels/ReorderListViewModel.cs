@@ -4,7 +4,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Data;
 using Banco.Riordino;
-using Banco.UI.Wpf.Infrastructure.GridColumns;
+using Banco.UI.Shared.Grid;
 using Banco.Vendita.Abstractions;
 using Banco.Vendita.Articles;
 using Banco.Vendita.Configuration;
@@ -1146,18 +1146,18 @@ internal static class ReorderColumnDefinitions
 {
     public static IReadOnlyList<GridColumnDefinition> All { get; } =
     [
-        new GridColumnDefinition { Key = "Ordinato", Header = "Ok", IsVisibleByDefault = true, DefaultWidth = 56, DefaultDisplayIndex = 0 },
-        new GridColumnDefinition { Key = "Codice", Header = "Codice", IsVisibleByDefault = true, DefaultWidth = 90, DefaultDisplayIndex = 1 },
-        new GridColumnDefinition { Key = "Descrizione", Header = "Descrizione", IsVisibleByDefault = true, DefaultWidth = 260, DefaultDisplayIndex = 2 },
-        new GridColumnDefinition { Key = "Quantita", Header = "Qta`", IsVisibleByDefault = true, DefaultWidth = 70, DefaultDisplayIndex = 3, IsNumeric = true },
-        new GridColumnDefinition { Key = "QuantitaDaOrdinare", Header = "Q.ta da ordinare", IsVisibleByDefault = true, DefaultWidth = 120, DefaultDisplayIndex = 4, IsNumeric = true },
-        new GridColumnDefinition { Key = "UnitaMisura", Header = "U.M.", IsVisibleByDefault = true, DefaultWidth = 70, DefaultDisplayIndex = 5 },
-        new GridColumnDefinition { Key = "FornitoreSuggerito", Header = "Fornitore suggerito", IsVisibleByDefault = true, DefaultWidth = 180, DefaultDisplayIndex = 6 },
-        new GridColumnDefinition { Key = "FornitoreSelezionato", Header = "Fornitore scelto", IsVisibleByDefault = true, DefaultWidth = 180, DefaultDisplayIndex = 7 },
-        new GridColumnDefinition { Key = "Prezzo", Header = "Prezzo", IsVisibleByDefault = true, DefaultWidth = 90, DefaultDisplayIndex = 8, IsNumeric = true },
-        new GridColumnDefinition { Key = "Motivo", Header = "Motivo", IsVisibleByDefault = true, DefaultWidth = 120, DefaultDisplayIndex = 9 },
-        new GridColumnDefinition { Key = "Operatore", Header = "Operatore", IsVisibleByDefault = true, DefaultWidth = 120, DefaultDisplayIndex = 10 },
-        new GridColumnDefinition { Key = "Data", Header = "Data", IsVisibleByDefault = true, DefaultWidth = 110, DefaultDisplayIndex = 11 },
-        new GridColumnDefinition { Key = "Note", Header = "Note", IsVisibleByDefault = false, DefaultWidth = 180, DefaultDisplayIndex = 12 }
+        new GridColumnDefinition { Key = "Ordinato", Header = "Ok", IsVisibleByDefault = true, DefaultWidth = 56, DefaultDisplayIndex = 0, Group = "Stato", Description = "Flag di conferma della riga.", CanHide = false, MinWidth = 52, MaxWidth = 64, IsFrozen = true, TextAlignment = GridColumnContentAlignment.Center, PresetKey = "operativa" },
+        new GridColumnDefinition { Key = "Codice", Header = "Codice", IsVisibleByDefault = true, DefaultWidth = 90, DefaultDisplayIndex = 1, Group = "Articolo", Description = "Codice articolo.", MinWidth = 80, IsFrozen = true, TextAlignment = GridColumnContentAlignment.Left },
+        new GridColumnDefinition { Key = "Descrizione", Header = "Descrizione", IsVisibleByDefault = true, DefaultWidth = 260, DefaultDisplayIndex = 2, Group = "Articolo", Description = "Descrizione articolo.", MinWidth = 180, TextAlignment = GridColumnContentAlignment.Left },
+        new GridColumnDefinition { Key = "Quantita", Header = "Qta`", IsVisibleByDefault = true, DefaultWidth = 70, DefaultDisplayIndex = 3, Group = "Quantita`", Description = "Quantita` originaria rilevata dal Banco.", IsNumeric = true, MinWidth = 64, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "QuantitaDaOrdinare", Header = "Q.ta da ordinare", IsVisibleByDefault = true, DefaultWidth = 120, DefaultDisplayIndex = 4, Group = "Quantita`", Description = "Quantita` modificabile per l'ordine.", IsNumeric = true, MinWidth = 108, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "UnitaMisura", Header = "U.M.", IsVisibleByDefault = true, DefaultWidth = 70, DefaultDisplayIndex = 5, Group = "Quantita`", Description = "Unita` di misura.", MinWidth = 60, MaxWidth = 84, TextAlignment = GridColumnContentAlignment.Center },
+        new GridColumnDefinition { Key = "FornitoreSuggerito", Header = "Fornitore suggerito", IsVisibleByDefault = true, DefaultWidth = 180, DefaultDisplayIndex = 6, Group = "Fornitori", Description = "Fornitore proposto dal legacy.", MinWidth = 140, TextAlignment = GridColumnContentAlignment.Left },
+        new GridColumnDefinition { Key = "FornitoreSelezionato", Header = "Fornitore scelto", IsVisibleByDefault = true, DefaultWidth = 180, DefaultDisplayIndex = 7, Group = "Fornitori", Description = "Fornitore effettivamente assegnato alla riga.", MinWidth = 140, TextAlignment = GridColumnContentAlignment.Left },
+        new GridColumnDefinition { Key = "Prezzo", Header = "Prezzo", IsVisibleByDefault = true, DefaultWidth = 90, DefaultDisplayIndex = 8, Group = "Valori", Description = "Prezzo articolo usato come riferimento.", IsNumeric = true, MinWidth = 82, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "Motivo", Header = "Motivo", IsVisibleByDefault = true, DefaultWidth = 120, DefaultDisplayIndex = 9, Group = "Stato", Description = "Motivo operativo della presenza in lista.", MinWidth = 100, TextAlignment = GridColumnContentAlignment.Left },
+        new GridColumnDefinition { Key = "Operatore", Header = "Operatore", IsVisibleByDefault = true, DefaultWidth = 120, DefaultDisplayIndex = 10, Group = "Stato", Description = "Operatore che ha generato o toccato la riga.", MinWidth = 100, TextAlignment = GridColumnContentAlignment.Center },
+        new GridColumnDefinition { Key = "Data", Header = "Data", IsVisibleByDefault = true, DefaultWidth = 110, DefaultDisplayIndex = 11, Group = "Stato", Description = "Data della riga o dell'ultimo aggiornamento.", MinWidth = 94, TextAlignment = GridColumnContentAlignment.Center },
+        new GridColumnDefinition { Key = "Note", Header = "Note", IsVisibleByDefault = false, DefaultWidth = 180, DefaultDisplayIndex = 12, Group = "Stato", Description = "Note aggiuntive della riga.", MinWidth = 140, TextAlignment = GridColumnContentAlignment.Left }
     ];
 }

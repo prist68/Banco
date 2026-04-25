@@ -36,7 +36,7 @@ public sealed class PointsCustomerBalanceService : IPointsCustomerBalanceService
             .ToList();
 
         var selectedRule = ResolveReferenceRule(eligibleRules, totalAvailablePoints);
-        var requiredPoints = selectedRule?.RequiredPoints ?? 0m;
+        var requiredPoints = selectedRule?.EffectiveRequiredPoints ?? 0m;
         var missingPoints = requiredPoints <= 0 ? 0m : Math.Max(0m, requiredPoints - totalAvailablePoints);
 
         return new PointsCustomerRewardSummary
@@ -60,15 +60,15 @@ public sealed class PointsCustomerBalanceService : IPointsCustomerBalanceService
         }
 
         var reachedRule = rules
-            .Where(rule => rule.RequiredPoints.GetValueOrDefault() > 0 &&
-                           totalAvailablePoints >= rule.RequiredPoints.GetValueOrDefault())
-            .OrderByDescending(rule => rule.RequiredPoints)
+            .Where(rule => rule.EffectiveRequiredPoints > 0 &&
+                           totalAvailablePoints >= rule.EffectiveRequiredPoints)
+            .OrderByDescending(rule => rule.EffectiveRequiredPoints)
             .ThenBy(rule => rule.RuleName)
             .FirstOrDefault();
 
         return reachedRule ?? rules
-            .Where(rule => rule.RequiredPoints.GetValueOrDefault() > 0)
-            .OrderBy(rule => rule.RequiredPoints)
+            .Where(rule => rule.EffectiveRequiredPoints > 0)
+            .OrderBy(rule => rule.EffectiveRequiredPoints)
             .ThenBy(rule => rule.RuleName)
             .FirstOrDefault();
     }
@@ -83,12 +83,12 @@ public sealed class PointsCustomerBalanceService : IPointsCustomerBalanceService
             return "Nessuna promo configurata";
         }
 
-        if (selectedRule.RequiredPoints.GetValueOrDefault() <= 0)
+        if (selectedRule.EffectiveRequiredPoints <= 0)
         {
             return "Soglia premio non configurata";
         }
 
-        if (totalAvailablePoints >= selectedRule.RequiredPoints.GetValueOrDefault())
+        if (totalAvailablePoints >= selectedRule.EffectiveRequiredPoints)
         {
             return "Premio disponibile";
         }

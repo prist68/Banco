@@ -46,12 +46,12 @@ public sealed class FastReportRuntimeService : IFastReportRuntimeService
             DesignerMode = string.IsNullOrWhiteSpace(designerPath)
                 ? FastReportDesignerMode.NotAvailable
                 : FastReportDesignerMode.ExternalWindow,
-            RuntimeDescription = "Runtime FastReport Open Source rilevato. Preview e stampa test passano da export HTML locale.",
+            RuntimeDescription = "Runtime FastReport Open Source rilevato. Preview e stampa POS80 passano da export HTML locale governato da Banco.",
             BlockingReason = string.IsNullOrWhiteSpace(designerPath)
                 ? "Designer integrato non disponibile nel runtime Open Source. Per modificare visualmente il layout serve un Community Designer esterno installato."
                 : (printers.Any(printer => printer.IsAvailable)
                     ? string.Empty
-                    : "Nessuna stampante di sistema rilevata; il test stampa apre comunque un'anteprima HTML stampabile."),
+                    : "Nessuna stampante di sistema rilevata; il test stampa prepara comunque un HTML locale stampabile."),
             LayoutsDirectory = layoutsDirectory,
             RuntimeAssemblyPath = runtimeAssemblyPath,
             DesignerAssemblyPath = designerPath ?? string.Empty,
@@ -198,7 +198,7 @@ public sealed class FastReportRuntimeService : IFastReportRuntimeService
             var printPreviewPath = BuildOutputFilePath(layoutFileName, "print", "html");
             using var export = new HTMLExport
             {
-                Print = true,
+                Print = false,
                 Navigator = false,
                 SinglePage = true,
                 EmbedPictures = true,
@@ -243,7 +243,7 @@ public sealed class FastReportRuntimeService : IFastReportRuntimeService
             var printPreviewPath = BuildOutputFilePath(layoutFileName, "print", "html");
             using var export = new HTMLExport
             {
-                Print = true,
+                Print = false,
                 Navigator = false,
                 SinglePage = true,
                 EmbedPictures = true,

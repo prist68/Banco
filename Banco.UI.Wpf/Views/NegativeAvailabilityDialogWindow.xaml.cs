@@ -65,6 +65,14 @@ public partial class NegativeAvailabilityDialogWindow : Window
         DialogResult = false;
     }
 
+    private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
+    }
+
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {
         if (e.Key == Key.F2)

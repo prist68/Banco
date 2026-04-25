@@ -18,8 +18,6 @@ public sealed class GestionaleDocumentReadService : IGestionaleDocumentReadServi
         int maxResults = 50,
         CancellationToken cancellationToken = default)
     {
-        var results = new List<GestionaleDocumentSummary>();
-
         await using var connection = await OpenConnectionAsync(cancellationToken);
 
         await using var command = connection.CreateCommand();
@@ -36,12 +34,19 @@ public sealed class GestionaleDocumentReadService : IGestionaleDocumentReadServi
                 d.Totaleimponibile,
                 d.Totaleiva,
                 d.Utente,
+                CASE
+                    WHEN NULLIF(TRIM(s.Codicecartafedelta), '') IS NULL THEN NULL
+                    WHEN s.Punticartafedelta IS NOT NULL THEN s.Punticartafedelta
+                    WHEN s.Punticartafedeltainiziali IS NOT NULL THEN s.Punticartafedeltainiziali
+                    ELSE NULL
+                END AS CustomerPoints,
                 COALESCE(d.Pagato, 0) AS PagatoContanti,
                 COALESCE(d.Pagatocartacredito, 0) AS PagatoCarta,
                 COALESCE(d.Pagatoweb, 0) AS PagatoWeb,
                 COALESCE(d.Pagatobuonipasto, 0) AS PagatoBuoni,
                 d.Pagatosospeso,
                 (COALESCE(d.Pagato, 0) + COALESCE(d.Pagatocartacredito, 0) + COALESCE(d.Pagatoweb, 0) + COALESCE(d.Pagatobuonipasto, 0)) AS TotalePagatoUfficiale,
+                d.Fatturato,
                 NULLIF(TRIM(d.Scontrinonumero), '') AS Scontrinonumero
             FROM documento d
             LEFT JOIN soggetto s ON s.OID = d.Soggetto
@@ -89,6 +94,7 @@ public sealed class GestionaleDocumentReadService : IGestionaleDocumentReadServi
                     COALESCE(d.Pagatobuonipasto, 0) AS PagatoBuoni,
                     COALESCE(d.Pagatosospeso, 0) AS PagatoSospeso,
                     (COALESCE(d.Pagato, 0) + COALESCE(d.Pagatocartacredito, 0) + COALESCE(d.Pagatoweb, 0) + COALESCE(d.Pagatobuonipasto, 0)) AS TotalePagatoUfficiale,
+                    d.Fatturato,
                     NULLIF(TRIM(d.Scontrinonumero), '') AS Scontrinonumero,
                     d.Listino AS ListinoOid,
                     NULLIF(TRIM(l.Listino), '') AS ListinoNome,
@@ -119,6 +125,7 @@ public sealed class GestionaleDocumentReadService : IGestionaleDocumentReadServi
                 var pagatoBuoniOrdinal = reader.GetOrdinal("PagatoBuoni");
                 var pagatoSospesoOrdinal = reader.GetOrdinal("PagatoSospeso");
                 var totalePagatoUfficialeOrdinal = reader.GetOrdinal("TotalePagatoUfficiale");
+                var fatturatoOrdinal = reader.GetOrdinal("Fatturato");
                 var scontrinoOrdinal = reader.GetOrdinal("Scontrinonumero");
                 var listinoOidOrdinal = reader.GetOrdinal("ListinoOid");
                 var listinoNomeOrdinal = reader.GetOrdinal("ListinoNome");
@@ -141,6 +148,7 @@ public sealed class GestionaleDocumentReadService : IGestionaleDocumentReadServi
                     PagatoBuoni = reader.IsDBNull(pagatoBuoniOrdinal) ? 0 : reader.GetDecimal(pagatoBuoniOrdinal),
                     PagatoSospeso = reader.IsDBNull(pagatoSospesoOrdinal) ? 0 : reader.GetDecimal(pagatoSospesoOrdinal),
                     TotalePagatoUfficiale = reader.IsDBNull(totalePagatoUfficialeOrdinal) ? 0 : reader.GetDecimal(totalePagatoUfficialeOrdinal),
+                    Fatturato = reader.IsDBNull(fatturatoOrdinal) ? null : reader.GetInt32(fatturatoOrdinal),
                     ScontrinoNumero = reader.IsDBNull(scontrinoOrdinal) ? null : reader.GetInt32(scontrinoOrdinal),
                     ListinoOid = reader.IsDBNull(listinoOidOrdinal) ? null : reader.GetInt32(listinoOidOrdinal),
                     ListinoNome = reader.IsDBNull(listinoNomeOrdinal) ? null : reader.GetString(listinoNomeOrdinal),
@@ -308,12 +316,19 @@ public sealed class GestionaleDocumentReadService : IGestionaleDocumentReadServi
                 d.Totaleimponibile,
                 d.Totaleiva,
                 d.Utente,
+                CASE
+                    WHEN NULLIF(TRIM(s.Codicecartafedelta), '') IS NULL THEN NULL
+                    WHEN s.Punticartafedelta IS NOT NULL THEN s.Punticartafedelta
+                    WHEN s.Punticartafedeltainiziali IS NOT NULL THEN s.Punticartafedeltainiziali
+                    ELSE NULL
+                END AS CustomerPoints,
                 COALESCE(d.Pagato, 0) AS PagatoContanti,
                 COALESCE(d.Pagatocartacredito, 0) AS PagatoCarta,
                 COALESCE(d.Pagatoweb, 0) AS PagatoWeb,
                 COALESCE(d.Pagatobuonipasto, 0) AS PagatoBuoni,
                 d.Pagatosospeso,
                 (COALESCE(d.Pagato, 0) + COALESCE(d.Pagatocartacredito, 0) + COALESCE(d.Pagatoweb, 0) + COALESCE(d.Pagatobuonipasto, 0)) AS TotalePagatoUfficiale,
+                d.Fatturato,
                 NULLIF(TRIM(d.Scontrinonumero), '') AS Scontrinonumero
             FROM documento d
             LEFT JOIN soggetto s ON s.OID = d.Soggetto
@@ -537,7 +552,7 @@ public sealed class GestionaleDocumentReadService : IGestionaleDocumentReadServi
         };
     }
 
-    private static async Task<IReadOnlyList<GestionaleDocumentSummary>> ReadDocumentSummariesAsync(
+    private static async Task<List<GestionaleDocumentSummary>> ReadDocumentSummariesAsync(
         MySqlDataReader reader,
         CancellationToken cancellationToken)
     {
@@ -553,12 +568,14 @@ public sealed class GestionaleDocumentReadService : IGestionaleDocumentReadServi
         var imponibileOrdinal = reader.GetOrdinal("Totaleimponibile");
         var ivaOrdinal = reader.GetOrdinal("Totaleiva");
         var utenteOrdinal = reader.GetOrdinal("Utente");
+        var customerPointsOrdinal = reader.GetOrdinal("CustomerPoints");
         var pagatoContantiOrdinal = reader.GetOrdinal("PagatoContanti");
         var pagatoCartaOrdinal = reader.GetOrdinal("PagatoCarta");
         var pagatoWebOrdinal = reader.GetOrdinal("PagatoWeb");
         var pagatoBuoniOrdinal = reader.GetOrdinal("PagatoBuoni");
         var sospesoOrdinal = reader.GetOrdinal("Pagatosospeso");
         var pagatoUfficialeOrdinal = reader.GetOrdinal("TotalePagatoUfficiale");
+        var fatturatoOrdinal = reader.GetOrdinal("Fatturato");
         var scontrinoOrdinal = reader.GetOrdinal("Scontrinonumero");
 
         while (await reader.ReadAsync(cancellationToken))
@@ -575,12 +592,14 @@ public sealed class GestionaleDocumentReadService : IGestionaleDocumentReadServi
                 TotaleDocumento = reader.IsDBNull(totaleOrdinal) ? 0 : reader.GetDecimal(totaleOrdinal),
                 TotaleImponibile = reader.IsDBNull(imponibileOrdinal) ? 0 : reader.GetDecimal(imponibileOrdinal),
                 TotaleIva = reader.IsDBNull(ivaOrdinal) ? 0 : reader.GetDecimal(ivaOrdinal),
+                CustomerPoints = reader.IsDBNull(customerPointsOrdinal) ? null : Convert.ToDecimal(reader.GetValue(customerPointsOrdinal)),
                 PagatoContanti = reader.IsDBNull(pagatoContantiOrdinal) ? 0 : reader.GetDecimal(pagatoContantiOrdinal),
                 PagatoCarta = reader.IsDBNull(pagatoCartaOrdinal) ? 0 : reader.GetDecimal(pagatoCartaOrdinal),
                 PagatoWeb = reader.IsDBNull(pagatoWebOrdinal) ? 0 : reader.GetDecimal(pagatoWebOrdinal),
                 PagatoBuoni = reader.IsDBNull(pagatoBuoniOrdinal) ? 0 : reader.GetDecimal(pagatoBuoniOrdinal),
                 Pagatosospeso = reader.IsDBNull(sospesoOrdinal) ? 0 : reader.GetDecimal(sospesoOrdinal),
                 TotalePagatoUfficiale = reader.IsDBNull(pagatoUfficialeOrdinal) ? 0 : reader.GetDecimal(pagatoUfficialeOrdinal),
+                Fatturato = reader.IsDBNull(fatturatoOrdinal) ? null : reader.GetInt32(fatturatoOrdinal),
                 ScontrinoNumero = reader.IsDBNull(scontrinoOrdinal) ? null : reader.GetInt32(scontrinoOrdinal)
             });
         }

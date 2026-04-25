@@ -75,12 +75,14 @@ public sealed class SqliteReorderArticleSettingsRepository : IReorderArticleSett
                 SettingsKey, ArticoloOid, CodiceArticolo, DescrizioneArticolo, BarcodeAlternativo,
                 VarianteDettaglioOid1, VarianteDettaglioOid2, VarianteLabel,
                 AcquistoAConfezione, VenditaAPezzoSingolo, PezziPerConfezione, MultiploOrdine,
-                LottoMinimoOrdine, GiorniCopertura, Note, UpdatedAt)
+                LottoMinimoOrdine, GiorniCopertura, PrezzoConfezione, PrezzoSingolo, PrezzoVenditaRiferimento,
+                QuantitaPromo, PrezzoPromo, Note, UpdatedAt)
             VALUES (
                 $settingsKey, $articoloOid, $codiceArticolo, $descrizioneArticolo, $barcodeAlternativo,
                 $varianteDettaglioOid1, $varianteDettaglioOid2, $varianteLabel,
                 $acquistoAConfezione, $venditaAPezzoSingolo, $pezziPerConfezione, $multiploOrdine,
-                $lottoMinimoOrdine, $giorniCopertura, $note, $updatedAt)
+                $lottoMinimoOrdine, $giorniCopertura, $prezzoConfezione, $prezzoSingolo, $prezzoVenditaRiferimento,
+                $quantitaPromo, $prezzoPromo, $note, $updatedAt)
             ON CONFLICT(SettingsKey) DO UPDATE SET
                 CodiceArticolo = excluded.CodiceArticolo,
                 DescrizioneArticolo = excluded.DescrizioneArticolo,
@@ -94,6 +96,11 @@ public sealed class SqliteReorderArticleSettingsRepository : IReorderArticleSett
                 MultiploOrdine = excluded.MultiploOrdine,
                 LottoMinimoOrdine = excluded.LottoMinimoOrdine,
                 GiorniCopertura = excluded.GiorniCopertura,
+                PrezzoConfezione = excluded.PrezzoConfezione,
+                PrezzoSingolo = excluded.PrezzoSingolo,
+                PrezzoVenditaRiferimento = excluded.PrezzoVenditaRiferimento,
+                QuantitaPromo = excluded.QuantitaPromo,
+                PrezzoPromo = excluded.PrezzoPromo,
                 Note = excluded.Note,
                 UpdatedAt = excluded.UpdatedAt;
             """;
@@ -111,6 +118,11 @@ public sealed class SqliteReorderArticleSettingsRepository : IReorderArticleSett
         command.Parameters.AddWithValue("$multiploOrdine", settings.MultiploOrdine.HasValue ? Convert.ToDouble(settings.MultiploOrdine.Value) : DBNull.Value);
         command.Parameters.AddWithValue("$lottoMinimoOrdine", settings.LottoMinimoOrdine.HasValue ? Convert.ToDouble(settings.LottoMinimoOrdine.Value) : DBNull.Value);
         command.Parameters.AddWithValue("$giorniCopertura", settings.GiorniCopertura.HasValue ? settings.GiorniCopertura.Value : DBNull.Value);
+        command.Parameters.AddWithValue("$prezzoConfezione", settings.PrezzoConfezione.HasValue ? Convert.ToDouble(settings.PrezzoConfezione.Value) : DBNull.Value);
+        command.Parameters.AddWithValue("$prezzoSingolo", settings.PrezzoSingolo.HasValue ? Convert.ToDouble(settings.PrezzoSingolo.Value) : DBNull.Value);
+        command.Parameters.AddWithValue("$prezzoVenditaRiferimento", settings.PrezzoVenditaRiferimento.HasValue ? Convert.ToDouble(settings.PrezzoVenditaRiferimento.Value) : DBNull.Value);
+        command.Parameters.AddWithValue("$quantitaPromo", settings.QuantitaPromo.HasValue ? Convert.ToDouble(settings.QuantitaPromo.Value) : DBNull.Value);
+        command.Parameters.AddWithValue("$prezzoPromo", settings.PrezzoPromo.HasValue ? Convert.ToDouble(settings.PrezzoPromo.Value) : DBNull.Value);
         command.Parameters.AddWithValue("$note", NormalizeText(settings.Note));
         command.Parameters.AddWithValue("$updatedAt", settings.UpdatedAt.ToString("O"));
         await command.ExecuteNonQueryAsync(cancellationToken);
@@ -136,7 +148,8 @@ public sealed class SqliteReorderArticleSettingsRepository : IReorderArticleSett
             SELECT SettingsKey, ArticoloOid, CodiceArticolo, DescrizioneArticolo, BarcodeAlternativo,
                    VarianteDettaglioOid1, VarianteDettaglioOid2, VarianteLabel,
                    AcquistoAConfezione, VenditaAPezzoSingolo, PezziPerConfezione, MultiploOrdine,
-                   LottoMinimoOrdine, GiorniCopertura, Note, UpdatedAt
+                   LottoMinimoOrdine, GiorniCopertura, PrezzoConfezione, PrezzoSingolo, PrezzoVenditaRiferimento,
+                   QuantitaPromo, PrezzoPromo, Note, UpdatedAt
             FROM ReorderArticleSettingsEntries
             WHERE SettingsKey = $settingsKey
             LIMIT 1;
@@ -165,8 +178,13 @@ public sealed class SqliteReorderArticleSettingsRepository : IReorderArticleSett
             MultiploOrdine = reader.IsDBNull(11) ? null : Convert.ToDecimal(reader.GetDouble(11)),
             LottoMinimoOrdine = reader.IsDBNull(12) ? null : Convert.ToDecimal(reader.GetDouble(12)),
             GiorniCopertura = reader.IsDBNull(13) ? null : reader.GetInt32(13),
-            Note = reader.IsDBNull(14) ? string.Empty : reader.GetString(14),
-            UpdatedAt = reader.IsDBNull(15) ? DateTimeOffset.MinValue : DateTimeOffset.Parse(reader.GetString(15))
+            PrezzoConfezione = reader.IsDBNull(14) ? null : Convert.ToDecimal(reader.GetDouble(14)),
+            PrezzoSingolo = reader.IsDBNull(15) ? null : Convert.ToDecimal(reader.GetDouble(15)),
+            PrezzoVenditaRiferimento = reader.IsDBNull(16) ? null : Convert.ToDecimal(reader.GetDouble(16)),
+            QuantitaPromo = reader.IsDBNull(17) ? null : Convert.ToDecimal(reader.GetDouble(17)),
+            PrezzoPromo = reader.IsDBNull(18) ? null : Convert.ToDecimal(reader.GetDouble(18)),
+            Note = reader.IsDBNull(19) ? string.Empty : reader.GetString(19),
+            UpdatedAt = reader.IsDBNull(20) ? DateTimeOffset.MinValue : DateTimeOffset.Parse(reader.GetString(20))
         };
     }
 

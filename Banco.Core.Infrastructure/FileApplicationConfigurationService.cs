@@ -248,6 +248,8 @@ public sealed class FileApplicationConfigurationService : IApplicationConfigurat
             PosIntegration = new PosIntegrationSettings(),
             WinEcrIntegration = new WinEcrIntegrationSettings(),
             FmContent = new FmContentSettings(),
+            BackupConfiguration = new BackupConfigurationSettings(),
+            RestoreConfiguration = new RestoreConfigurationSettings(),
             GridLayouts = new Dictionary<string, GridLayoutSettings>(StringComparer.OrdinalIgnoreCase),
             DocumentListLayout = new DocumentListLayoutSettings(),
             BancoDocumentGridLayout = new BancoDocumentGridLayoutSettings()
@@ -300,6 +302,8 @@ public sealed class FileApplicationConfigurationService : IApplicationConfigurat
         settings.PosIntegration = NormalizePosIntegration(settings.PosIntegration);
         settings.WinEcrIntegration = NormalizeWinEcrIntegration(settings.WinEcrIntegration);
         settings.FmContent = NormalizeFmContent(settings.FmContent);
+        settings.BackupConfiguration = NormalizeBackupConfiguration(settings.BackupConfiguration);
+        settings.RestoreConfiguration = NormalizeRestoreConfiguration(settings.RestoreConfiguration);
         settings.LocalStore ??= new LocalStoreSettings();
 
         if (ShouldUseProgramLocalStore(settings.LocalStore.BaseDirectory))
@@ -316,6 +320,8 @@ public sealed class FileApplicationConfigurationService : IApplicationConfigurat
                !AreEquivalent(original.PosIntegration, normalized.PosIntegration) ||
                !AreEquivalent(original.WinEcrIntegration, normalized.WinEcrIntegration) ||
                !AreEquivalent(original.FmContent, normalized.FmContent) ||
+               !AreEquivalent(original.BackupConfiguration, normalized.BackupConfiguration) ||
+               !AreEquivalent(original.RestoreConfiguration, normalized.RestoreConfiguration) ||
                NormalizePath(original.LocalStore.BaseDirectory) != NormalizePath(normalized.LocalStore.BaseDirectory);
     }
 
@@ -381,6 +387,46 @@ public sealed class FileApplicationConfigurationService : IApplicationConfigurat
     {
         return string.Equals(original.RootDirectory ?? string.Empty, normalized.RootDirectory ?? string.Empty, StringComparison.Ordinal) &&
                string.Equals(original.ArticleImagesDirectory ?? string.Empty, normalized.ArticleImagesDirectory ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    private static bool AreEquivalent(BackupConfigurationSettings original, BackupConfigurationSettings normalized)
+    {
+        var originalScheduledTimes = original.ScheduledAdditionalTimes ?? [];
+        var normalizedScheduledTimes = normalized.ScheduledAdditionalTimes ?? [];
+
+        return string.Equals(original.DefaultBackupDirectory ?? string.Empty, normalized.DefaultBackupDirectory ?? string.Empty, StringComparison.Ordinal) &&
+               original.RememberLastOptions == normalized.RememberLastOptions &&
+               original.DisableBackupPrompt == normalized.DisableBackupPrompt &&
+               original.BackupSuggestionDays == normalized.BackupSuggestionDays &&
+               original.LastBackupAt == normalized.LastBackupAt &&
+               original.UseDifferentialBackupNaming == normalized.UseDifferentialBackupNaming &&
+               string.Equals(original.EnabledComputerName ?? string.Empty, normalized.EnabledComputerName ?? string.Empty, StringComparison.Ordinal) &&
+               original.RestrictAdminBackup == normalized.RestrictAdminBackup &&
+               original.DeleteOldBackupsEnabled == normalized.DeleteOldBackupsEnabled &&
+               original.DeleteOldBackupsAfterDays == normalized.DeleteOldBackupsAfterDays &&
+               original.ScheduledBackupEnabled == normalized.ScheduledBackupEnabled &&
+               original.ScheduledRunsPerDay == normalized.ScheduledRunsPerDay &&
+               string.Equals(original.ScheduledStartTime ?? string.Empty, normalized.ScheduledStartTime ?? string.Empty, StringComparison.Ordinal) &&
+               originalScheduledTimes.SequenceEqual(normalizedScheduledTimes, StringComparer.Ordinal) &&
+               original.ScheduledOnMonday == normalized.ScheduledOnMonday &&
+               original.ScheduledOnTuesday == normalized.ScheduledOnTuesday &&
+               original.ScheduledOnWednesday == normalized.ScheduledOnWednesday &&
+               original.ScheduledOnThursday == normalized.ScheduledOnThursday &&
+               original.ScheduledOnFriday == normalized.ScheduledOnFriday &&
+               original.ScheduledOnSaturday == normalized.ScheduledOnSaturday &&
+               original.ScheduledOnSunday == normalized.ScheduledOnSunday &&
+               original.IncludeDatabase == normalized.IncludeDatabase &&
+               original.IncludeAttachments == normalized.IncludeAttachments &&
+               original.IncludeImages == normalized.IncludeImages &&
+               original.IncludeLayouts == normalized.IncludeLayouts &&
+               original.IncludeReports == normalized.IncludeReports &&
+               string.Equals(original.DefaultComment ?? string.Empty, normalized.DefaultComment ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    private static bool AreEquivalent(RestoreConfigurationSettings original, RestoreConfigurationSettings normalized)
+    {
+        return string.Equals(original.DefaultRestoreDirectory ?? string.Empty, normalized.DefaultRestoreDirectory ?? string.Empty, StringComparison.Ordinal) &&
+               original.AutoSelectLatestBackup == normalized.AutoSelectLatestBackup;
     }
 
     private static GestionaleDatabaseSettings NormalizeGestionaleDatabase(GestionaleDatabaseSettings? settings)
@@ -466,6 +512,82 @@ public sealed class FileApplicationConfigurationService : IApplicationConfigurat
         {
             RootDirectory = rootDirectory,
             ArticleImagesDirectory = articleImagesDirectory
+        };
+    }
+
+    private static BackupConfigurationSettings NormalizeBackupConfiguration(BackupConfigurationSettings? settings)
+    {
+        settings ??= new BackupConfigurationSettings();
+
+        return new BackupConfigurationSettings
+        {
+            DefaultBackupDirectory = string.IsNullOrWhiteSpace(settings.DefaultBackupDirectory)
+                ? @"C:\Facile Manager"
+                : settings.DefaultBackupDirectory.Trim(),
+            RememberLastOptions = settings.RememberLastOptions,
+            DisableBackupPrompt = settings.DisableBackupPrompt,
+            BackupSuggestionDays = settings.BackupSuggestionDays <= 0 ? 7 : settings.BackupSuggestionDays,
+            LastBackupAt = settings.LastBackupAt,
+            UseDifferentialBackupNaming = settings.UseDifferentialBackupNaming,
+            EnabledComputerName = settings.EnabledComputerName?.Trim() ?? string.Empty,
+            RestrictAdminBackup = settings.RestrictAdminBackup,
+            DeleteOldBackupsEnabled = settings.DeleteOldBackupsEnabled,
+            DeleteOldBackupsAfterDays = settings.DeleteOldBackupsAfterDays <= 0 ? 30 : settings.DeleteOldBackupsAfterDays,
+            ScheduledBackupEnabled = settings.ScheduledBackupEnabled,
+            ScheduledRunsPerDay = settings.ScheduledRunsPerDay <= 0 ? 1 : settings.ScheduledRunsPerDay,
+            ScheduledStartTime = NormalizeScheduledStartTime(settings.ScheduledStartTime),
+            ScheduledAdditionalTimes = NormalizeScheduledTimes(settings.ScheduledAdditionalTimes),
+            ScheduledOnMonday = settings.ScheduledOnMonday,
+            ScheduledOnTuesday = settings.ScheduledOnTuesday,
+            ScheduledOnWednesday = settings.ScheduledOnWednesday,
+            ScheduledOnThursday = settings.ScheduledOnThursday,
+            ScheduledOnFriday = settings.ScheduledOnFriday,
+            ScheduledOnSaturday = settings.ScheduledOnSaturday,
+            ScheduledOnSunday = settings.ScheduledOnSunday,
+            IncludeDatabase = settings.IncludeDatabase,
+            IncludeAttachments = settings.IncludeAttachments,
+            IncludeImages = settings.IncludeImages,
+            IncludeLayouts = settings.IncludeLayouts,
+            IncludeReports = settings.IncludeReports,
+            DefaultComment = settings.DefaultComment ?? string.Empty
+        };
+    }
+
+    private static string NormalizeScheduledStartTime(string? scheduledStartTime)
+    {
+        if (string.IsNullOrWhiteSpace(scheduledStartTime))
+        {
+            return "13:00";
+        }
+
+        return TimeSpan.TryParse(scheduledStartTime, out var time)
+            ? $"{time.Hours:00}:{time.Minutes:00}"
+            : "13:00";
+    }
+
+    private static List<string> NormalizeScheduledTimes(IEnumerable<string>? scheduledTimes)
+    {
+        if (scheduledTimes is null)
+        {
+            return [];
+        }
+
+        return scheduledTimes
+            .Select(NormalizeScheduledStartTime)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+    }
+
+    private static RestoreConfigurationSettings NormalizeRestoreConfiguration(RestoreConfigurationSettings? settings)
+    {
+        settings ??= new RestoreConfigurationSettings();
+
+        return new RestoreConfigurationSettings
+        {
+            DefaultRestoreDirectory = string.IsNullOrWhiteSpace(settings.DefaultRestoreDirectory)
+                ? @"C:\Facile Manager"
+                : settings.DefaultRestoreDirectory.Trim(),
+            AutoSelectLatestBackup = settings.AutoSelectLatestBackup
         };
     }
 

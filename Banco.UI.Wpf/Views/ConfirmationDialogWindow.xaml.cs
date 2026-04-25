@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 
 namespace Banco.UI.Wpf.Views;
 
@@ -48,5 +49,13 @@ public partial class ConfirmationDialogWindow : Window
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
+    }
+
+    private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
     }
 }

@@ -1,0 +1,39 @@
+<Styles xmlns="https://github.com/avaloniaui">
+    <Style Selector="Button.labChromeButton">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Background" Value="{DynamicResource SoftSurface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Stroke}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="10,0" />
+    </Style>
+
+    <Style Selector="TextBox.labCommandSearch">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Background" Value="{DynamicResource InputSurface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="32,4,10,4" />
+        <Setter Property="Foreground" Value="{DynamicResource MainText}" />
+    </Style>
+
+    <Style Selector="Button.labRailButton">
+        <Setter Property="Width" Value="72" />
+        <Setter Property="Height" Value="66" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="Border.labPanel">
+        <Setter Property="Background" Value="{DynamicResource PanelSurface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Stroke}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="Padding" Value="14" />
+    </Style>
+</Styles>

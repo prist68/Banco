@@ -4,6 +4,9 @@ namespace Banco.Vendita.Points;
 
 public sealed class PointsRewardRule
 {
+    private static readonly System.Text.RegularExpressions.Regex PointsPattern =
+        new(@"(\d+(?:[.,]\d+)?)\s*Punti", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+
     public Guid Id { get; set; } = Guid.NewGuid();
 
     public int CampaignOid { get; set; }
@@ -13,6 +16,9 @@ public sealed class PointsRewardRule
     public bool IsActive { get; set; } = true;
 
     public decimal? RequiredPoints { get; set; }
+
+    public decimal EffectiveRequiredPoints =>
+        RequiredPoints ?? InferRequiredPointsFromText(RuleName, RewardArticleDescription, RewardArticleCode);
 
     public PointsRewardType RewardType { get; set; } = PointsRewardType.ScontoFisso;
 
@@ -43,7 +49,7 @@ public sealed class PointsRewardRule
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;
 
     public bool IsConfigured => CampaignOid > 0 &&
-                                RequiredPoints.GetValueOrDefault() > 0 &&
+                                EffectiveRequiredPoints > 0 &&
                                 (RewardType switch
                                 {
                                     PointsRewardType.ScontoFisso => DiscountAmount.GetValueOrDefault() > 0,
@@ -70,6 +76,22 @@ public sealed class PointsRewardRule
     public bool RewardArticleUsesNegativeAmount => RewardArticleTipoArticoloOid == 7;
 
     public string StateLabel => IsActive ? "Attiva" : "Disattiva";
+
+    public decimal? EnsureRequiredPoints()
+    {
+        if (RequiredPoints.GetValueOrDefault() > 0)
+        {
+            return RequiredPoints;
+        }
+
+        var inferred = InferRequiredPointsFromText(RuleName, RewardArticleDescription, RewardArticleCode);
+        if (inferred > 0)
+        {
+            RequiredPoints = inferred;
+        }
+
+        return RequiredPoints;
+    }
 
     public void ApplyArticle(GestionaleArticleSearchResult? article)
     {
@@ -117,5 +139,31 @@ public sealed class PointsRewardRule
             Notes = Notes,
             UpdatedAt = UpdatedAt
         };
+    }
+
+    private static decimal InferRequiredPointsFromText(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            var match = PointsPattern.Match(value);
+            if (!match.Success)
+            {
+                continue;
+            }
+
+            var normalized = match.Groups[1].Value.Replace(',', '.');
+            if (decimal.TryParse(normalized, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var parsed) &&
+                parsed > 0)
+            {
+                return parsed;
+            }
+        }
+
+        return 0m;
     }
 }

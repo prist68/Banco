@@ -1,6 +1,11 @@
 ﻿<Application x:Class="Banco.UI.Wpf.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:dashboardViewModels="clr-namespace:Banco.UI.Wpf.DashboardModule"
+             xmlns:dashboardViews="clr-namespace:Banco.UI.Wpf.DashboardModule"
+             xmlns:archiveViewModels="clr-namespace:Banco.UI.Wpf.ArchiveSettingsModule"
+             xmlns:backupViewModels="clr-namespace:Banco.Backup.ViewModels;assembly=Banco.Backup"
+             xmlns:archiveViews="clr-namespace:Banco.UI.Wpf.ArchiveSettingsModule"
              xmlns:posViewModels="clr-namespace:Banco.UI.Wpf.PosModule"
              xmlns:posViews="clr-namespace:Banco.UI.Wpf.PosModule"
              xmlns:magazzinoViewModels="clr-namespace:Banco.Magazzino.ViewModels;assembly=Banco.Magazzino"
@@ -10,8 +15,14 @@
              xmlns:winEcrViews="clr-namespace:Banco.UI.Wpf.WinEcrModule"
              xmlns:viewModels="clr-namespace:Banco.UI.Wpf.ViewModels"
              xmlns:views="clr-namespace:Banco.UI.Wpf.Views"
-             xmlns:sel="clr-namespace:Banco.UI.Wpf.Infrastructure.Selection">
+             xmlns:sel="clr-namespace:Banco.UI.Shared.Selection;assembly=Banco.UI.Shared"
+             xmlns:componentModel="clr-namespace:System.ComponentModel;assembly=WindowsBase">
     <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Banco.UI.Shared;component/Themes/ModalResources.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
         <!-- ═══════════════════════════════════════════ -->
         <!-- ICON GEOMETRIES (Material Design style)    -->
         <!-- ═══════════════════════════════════════════ -->
@@ -28,6 +39,12 @@
         <Geometry x:Key="IconFolder">M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z</Geometry>
         <Geometry x:Key="IconDocOpen">M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M6,4H13V9H18V20H6V4M8,12V14H16V12H8M8,16V18H13V16H8Z</Geometry>
         <Geometry x:Key="IconDocCheck">M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H13.81C13.28,21.09 13,20.05 13,19C13,15.69 15.69,13 19,13C19.34,13 19.67,13.03 20,13.08V8L14,2M13,9V3.5L18.5,9H13M18,18L15,15L16.41,13.58L18,15.17L21.59,11.58L23,13L18,18Z</Geometry>
+        <Geometry x:Key="IconNew">M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z</Geometry>
+        <Geometry x:Key="IconEdit">M14.06,9.02L14.98,9.94L5.92,19H5V18.08M17.66,3C17.41,3 17.16,3.1 16.97,3.29L15.13,5.13L18.87,8.87L20.71,7.03C21.1,6.64 21.1,6 20.71,5.61L18.39,3.29C18.19,3.1 17.94,3 17.66,3M14.06,6.2L3,17.26V21H6.74L17.8,9.94L14.06,6.2Z</Geometry>
+        <Geometry x:Key="IconSaveAction">M17,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M6,8V5H15V8H6Z</Geometry>
+        <Geometry x:Key="IconCancel">M18.3,5.71L12,12L18.3,18.29L16.89,19.7L10.6,13.41L4.31,19.7L2.9,18.29L9.19,12L2.9,5.71L4.31,4.3L10.6,10.59L16.89,4.3L18.3,5.71Z</Geometry>
+        <Geometry x:Key="IconDelete">M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z</Geometry>
+        <Geometry x:Key="IconDuplicate">M8,8H4A2,2 0 0,0 2,10V20A2,2 0 0,0 4,22H14A2,2 0 0,0 16,20V16H14V20H4V10H8V8M20,2H10A2,2 0 0,0 8,4V14A2,2 0 0,0 10,16H20A2,2 0 0,0 22,14V4A2,2 0 0,0 20,2M20,14H10V4H20V14Z</Geometry>
         <Geometry x:Key="IconInfo">M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z</Geometry>
         <Geometry x:Key="IconCash">M5,6H23V18H5V6M14,9A3,3 0 0,1 17,12A3,3 0 0,1 14,15A3,3 0 0,1 11,12A3,3 0 0,1 14,9M9,8A2,2 0 0,1 7,10V14A2,2 0 0,1 9,16H19A2,2 0 0,1 21,14V10A2,2 0 0,1 19,8H9M1,10H3V20H19V22H1V10Z</Geometry>
         <Geometry x:Key="IconPos">M4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H16L12,22L8,18H4A2,2 0 0,1 2,16V4A2,2 0 0,1 4,2M4,4V16H8.83L12,19.17L15.17,16H20V4H4M6,7H18V9H6V7M6,11H16V13H6V11Z</Geometry>
@@ -73,15 +90,6 @@
         <SolidColorBrush x:Key="SidebarTextBrush" Color="#FFF2F6FC" />
         <SolidColorBrush x:Key="SemanticDangerBrush" Color="#FFD44343" />
         <SolidColorBrush x:Key="SemanticSuccessBrush" Color="#FF2E8B57" />
-        <SolidColorBrush x:Key="ModalOverlayBrush" Color="#CC0E1725" />
-        <SolidColorBrush x:Key="ModalChromeBrush" Color="#FFF1F4F9" />
-        <SolidColorBrush x:Key="ModalAccentBorderBrush" Color="#FFE0E8F2" />
-        <SolidColorBrush x:Key="ModalInfoSurfaceBrush" Color="#FFF7FAFF" />
-        <SolidColorBrush x:Key="ModalInfoBorderBrush" Color="#FFD3E0F2" />
-        <SolidColorBrush x:Key="ModalInfoForegroundBrush" Color="#FF2F5EA5" />
-        <SolidColorBrush x:Key="ModalFieldSurfaceBrush" Color="#FFFFFFFF" />
-        <SolidColorBrush x:Key="ModalFieldAltSurfaceBrush" Color="#FFF8FBFF" />
-        <SolidColorBrush x:Key="ModalFieldBorderBrush" Color="#FFD8E4F2" />
         <SolidColorBrush x:Key="BancoInputSurfaceBrush" Color="#FFFFFFFF" />
         <SolidColorBrush x:Key="BancoInputBorderBrush" Color="#FFBFC9D8" />
         <SolidColorBrush x:Key="BancoInputHoverBorderBrush" Color="#FF7A9EC9" />
@@ -155,20 +163,23 @@
         <SolidColorBrush x:Key="ShellRailSearchBorderBrush" Color="#3D86A7C7" />
         <SolidColorBrush x:Key="ShellRailSearchHoverBorderBrush" Color="#5CAFD1F0" />
 
-        <SolidColorBrush x:Key="ShellContextPanelBrush" Color="#FFF4F8FC" />
-        <SolidColorBrush x:Key="ShellContextPanelBorderBrush" Color="#FFD7E1EE" />
-        <SolidColorBrush x:Key="ShellContextMutedBrush" Color="#6B7E99" />
-        <SolidColorBrush x:Key="ShellContextSearchSurfaceBrush" Color="#FFFFFFFF" />
-        <SolidColorBrush x:Key="ShellContextSearchBorderBrush" Color="#D8E4F0" />
-        <SolidColorBrush x:Key="ShellContextSearchHoverBorderBrush" Color="#AABDD8" />
-        <SolidColorBrush x:Key="ShellContextCardBrush" Color="#FFFFFFFF" />
-        <SolidColorBrush x:Key="ShellContextCardBorderBrush" Color="#E2EAF4" />
-        <SolidColorBrush x:Key="ShellContextCardHoverBrush" Color="#FFF7FAFE" />
-        <SolidColorBrush x:Key="ShellContextCardHoverBorderBrush" Color="#CCBFD2E8" />
-        <SolidColorBrush x:Key="ShellContextCardActiveBrush" Color="#FFF2F7FE" />
-        <SolidColorBrush x:Key="ShellContextEmptyStateBrush" Color="#FFFFFFFF" />
-        <SolidColorBrush x:Key="ShellContextOverlayBrush" Color="#F2F7FBFF" />
-        <SolidColorBrush x:Key="ShellContextOverlayBorderBrush" Color="#BFD7E5F4" />
+        <SolidColorBrush x:Key="ShellContextPanelBrush" Color="#FFF0F5FB" />
+        <SolidColorBrush x:Key="ShellContextPanelBorderBrush" Color="#FFD2DDEA" />
+        <SolidColorBrush x:Key="ShellContextMutedBrush" Color="#6C7F98" />
+        <SolidColorBrush x:Key="ShellContextSearchSurfaceBrush" Color="#FCFDFE" />
+        <SolidColorBrush x:Key="ShellContextSearchBorderBrush" Color="#D2DEEB" />
+        <SolidColorBrush x:Key="ShellContextSearchHoverBorderBrush" Color="#A8BDD9" />
+        <SolidColorBrush x:Key="ShellContextCardBrush" Color="#FFFBFDFF" />
+        <SolidColorBrush x:Key="ShellContextCardBorderBrush" Color="#D8E3EF" />
+        <SolidColorBrush x:Key="ShellContextCardHoverBrush" Color="#FFF4F8FD" />
+        <SolidColorBrush x:Key="ShellContextCardHoverBorderBrush" Color="#B9CCE1" />
+        <SolidColorBrush x:Key="ShellContextCardActiveBrush" Color="#FFEEF4FC" />
+        <SolidColorBrush x:Key="ShellContextEmptyStateBrush" Color="#FFF8FBFE" />
+        <LinearGradientBrush x:Key="ShellContextOverlayBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#F3F6FAFE" Offset="0" />
+            <GradientStop Color="#EEF3F9FD" Offset="1" />
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="ShellContextOverlayBorderBrush" Color="#B8CDE0" />
 
         <SolidColorBrush x:Key="ShellAccentBrush" Color="#FF4F86DC" />
         <SolidColorBrush x:Key="ShellAccentStrongBrush" Color="#FF1358A5" />
@@ -674,7 +685,7 @@
 
         <Style x:Key="CompactComboBoxStyle" TargetType="ComboBox">
             <Setter Property="MinHeight" Value="28" />
-            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Padding" Value="8,4,30,4" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Background" Value="#FFFFFFFF" />
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
@@ -686,67 +697,78 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
-                        <Grid>
+                        <Grid SnapsToDevicePixels="True">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="28" />
+                            </Grid.ColumnDefinitions>
+
                             <Border x:Name="ComboBorder"
+                                    Grid.ColumnSpan="2"
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="7"
-                                    SnapsToDevicePixels="True">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="26" />
-                                    </Grid.ColumnDefinitions>
-                                    <ContentPresenter Margin="8,0,4,0"
-                                                      VerticalAlignment="Center"
-                                                      HorizontalAlignment="Stretch"
-                                                      Content="{TemplateBinding SelectionBoxItem}"
-                                                      ContentTemplate="{TemplateBinding ItemTemplate}"
-                                                      ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
-                                    <Border Grid.Column="1"
-                                            Background="#F3F7FB"
-                                            BorderBrush="#D7E3F0"
-                                            BorderThickness="1,0,0,0"
-                                            CornerRadius="0,7,7,0">
-                                        <Path Width="9"
-                                              Height="5"
-                                              HorizontalAlignment="Center"
+                                    CornerRadius="7" />
+
+                            <ContentPresenter Grid.Column="0"
+                                              Margin="{TemplateBinding Padding}"
                                               VerticalAlignment="Center"
-                                              Fill="#4F6782"
-                                              Data="M 0 0 L 9 0 L 4.5 5 Z" />
-                                    </Border>
-                                </Grid>
-                            </Border>
-                            <ToggleButton Background="Transparent"
-                                          BorderThickness="0"
+                                              HorizontalAlignment="Left"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                              RecognizesAccessKey="True" />
+
+                            <ToggleButton Grid.ColumnSpan="2"
                                           Focusable="False"
+                                          Background="Transparent"
+                                          BorderThickness="0"
                                           IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
                                           ClickMode="Press">
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="ToggleButton">
-                                        <Border Background="Transparent"
-                                                BorderThickness="0"
-                                                SnapsToDevicePixels="True" />
+                                        <Grid>
+                                            <Border Background="Transparent"
+                                                    BorderThickness="0" />
+                                            <Border Width="28"
+                                                    HorizontalAlignment="Right"
+                                                    Background="#F3F7FB"
+                                                    BorderBrush="#D7E3F0"
+                                                    BorderThickness="1,0,0,0"
+                                                    CornerRadius="0,7,7,0">
+                                                <Path Width="9"
+                                                      Height="5"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      Fill="#4F6782"
+                                                      Data="M 0 0 L 9 0 L 4.5 5 Z" />
+                                            </Border>
+                                        </Grid>
                                     </ControlTemplate>
                                 </ToggleButton.Template>
                             </ToggleButton>
-                            <Popup x:Name="Popup"
+
+                            <Popup x:Name="PART_Popup"
+                                   Grid.ColumnSpan="2"
                                    Placement="Bottom"
-                                   IsOpen="{TemplateBinding IsDropDownOpen}"
                                    AllowsTransparency="True"
                                    Focusable="False"
-                                   PopupAnimation="Fade">
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   PopupAnimation="None">
                                 <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
                                         MaxHeight="320"
+                                        Margin="0,2,0,0"
                                         Background="#FFFFFFFF"
                                         BorderBrush="#C6D6E8"
                                         BorderThickness="1"
                                         CornerRadius="8"
                                         SnapsToDevicePixels="True">
                                     <ScrollViewer Margin="4"
-                                                  SnapsToDevicePixels="True">
-                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                                  SnapsToDevicePixels="True"
+                                                  CanContentScroll="True">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"
+                                                        SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                                     </ScrollViewer>
                                 </Border>
                             </Popup>
@@ -773,30 +795,59 @@
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource ContextMenuBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="6" />
-            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="FontSize" Value="11.5" />
             <Setter Property="HasDropShadow" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer CanContentScroll="True"
+                                          VerticalScrollBarVisibility="Auto">
+                                <StackPanel IsItemsHost="True"
+                                            KeyboardNavigation.DirectionalNavigation="Cycle" />
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="ThemedContextMenuItemStyle" TargetType="MenuItem">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="Padding" Value="10,6" />
-            <Setter Property="Margin" Value="0,1" />
-            <Setter Property="FontSize" Value="12" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="9,4" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="MinHeight" Value="22" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
             <Style.Triggers>
+                <Trigger Property="Icon" Value="{x:Null}">
+                    <Setter Property="Padding" Value="12,4,9,4" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource ContextMenuDisabledBrush}" />
+                </Trigger>
                 <Trigger Property="IsHighlighted" Value="True">
                     <Setter Property="Background" Value="{StaticResource ContextMenuHoverBrush}" />
                     <Setter Property="BorderBrush" Value="{StaticResource ContextMenuHoverBorderBrush}" />
                 </Trigger>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Foreground" Value="{StaticResource ContextMenuDisabledBrush}" />
+                <Trigger Property="IsSubmenuOpen" Value="True">
+                    <Setter Property="Background" Value="{StaticResource ContextMenuHoverBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource ContextMenuHoverBorderBrush}" />
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <Style x:Key="ThemedContextMenuSeparatorStyle" TargetType="Separator">
-            <Setter Property="Margin" Value="6,4" />
+            <Setter Property="Margin" Value="5,3" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Separator">
@@ -849,6 +900,19 @@
             </Style.Triggers>
         </Style>
 
+        <Style x:Key="ColumnHeaderGripperStyle" TargetType="Thumb">
+            <Setter Property="Width" Value="8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="{TemplateBinding Background}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="CompactDataGridHeaderStyle" TargetType="DataGridColumnHeader">
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="11.5" />
@@ -856,6 +920,10 @@
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrushBase}" />
             <Setter Property="BorderThickness" Value="0,0,1,1" />
             <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="CompactDataGridCellStyle" TargetType="DataGridCell">
@@ -924,6 +992,9 @@
         <!-- ═══════════════════════════════════════════ -->
         <!-- DATA TEMPLATES                              -->
         <!-- ═══════════════════════════════════════════ -->
+        <DataTemplate DataType="{x:Type dashboardViewModels:DashboardViewModel}">
+            <dashboardViews:DashboardView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type viewModels:BancoViewModel}">
             <views:BancoView />
         </DataTemplate>
@@ -933,11 +1004,26 @@
         <DataTemplate DataType="{x:Type viewModels:ReorderListViewModel}">
             <views:ReorderListControl />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type magazzinoViewModels:ArticleManagementViewModel}">
+            <views:ArticleManagementView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type magazzinoViewModels:MagazzinoArticleViewModel}">
             <views:MagazzinoArticleView />
         </DataTemplate>
-        <DataTemplate DataType="{x:Type viewModels:SettingsViewModel}">
-            <views:SettingsView />
+        <DataTemplate DataType="{x:Type archiveViewModels:ArchiveSettingsHostViewModel}">
+            <archiveViews:ArchiveSettingsHostView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type archiveViewModels:ArchiveGeneralSettingsViewModel}">
+            <archiveViews:ArchiveGeneralSettingsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type backupViewModels:BackupConfigurationViewModel}">
+            <archiveViews:BackupConfigurationView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type backupViewModels:RestoreConfigurationViewModel}">
+            <archiveViews:RestoreConfigurationView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type archiveViewModels:SqliteSettingsViewModel}">
+            <archiveViews:SqliteSettingsView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type viewModels:FastReportStudioViewModel}">
             <views:FastReportStudioView />
@@ -951,7 +1037,7 @@
         <DataTemplate DataType="{x:Type viewModels:DiagnosticsViewModel}">
             <views:DiagnosticsView />
         </DataTemplate>
-        <DataTemplate DataType="{x:Type viewModels:BackupImportViewModel}">
+        <DataTemplate DataType="{x:Type backupViewModels:BackupImportViewModel}">
             <views:BackupImportView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type viewModels:ThemeManagementViewModel}">
@@ -960,5 +1046,6 @@
         <DataTemplate DataType="{x:Type puntiViewModels:PuntiViewModel}">
             <puntiViews:PuntiView />
         </DataTemplate>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

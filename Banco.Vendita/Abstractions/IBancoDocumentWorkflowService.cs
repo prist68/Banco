@@ -9,5 +9,6 @@ public interface IBancoDocumentWorkflowService
     Task<FiscalizationResult> PublishAsync(
         DocumentoLocale documento,
         CategoriaDocumentoBanco categoriaDocumentoBanco,
+        BancoPublishOptions? options = null,
         CancellationToken cancellationToken = default);
 }

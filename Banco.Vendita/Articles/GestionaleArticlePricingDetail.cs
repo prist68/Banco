@@ -4,6 +4,12 @@ public sealed class GestionaleArticlePricingDetail
 {
     public int ArticoloOid { get; init; }
 
+    public int? ListinoOid { get; init; }
+
+    public string ListinoNome { get; init; } = string.Empty;
+
+    public DateTime? DataFineDefault { get; init; }
+
     public string UnitaMisuraPrincipale { get; init; } = "PZ";
 
     public string? UnitaMisuraSecondaria { get; init; }
@@ -18,5 +24,9 @@ public sealed class GestionaleArticlePricingDetail
 
     public bool HasSecondaryUnit => !string.IsNullOrWhiteSpace(UnitaMisuraSecondaria) && MoltiplicatoreUnitaSecondaria > 0;
 
-    public bool RichiedeSceltaQuantita => FascePrezzoQuantita.Count > 1 || QuantitaMinimaVendita > 1 || QuantitaMultiplaVendita > 1;
+    public bool HasQuantityPriceOffer => FascePrezzoQuantita.Count > 1;
+
+    public bool HasMandatoryQuantityConstraints => QuantitaMinimaVendita > 1 || QuantitaMultiplaVendita > 1;
+
+    public bool RichiedeSceltaQuantita => HasMandatoryQuantityConstraints || HasQuantityPriceOffer;
 }

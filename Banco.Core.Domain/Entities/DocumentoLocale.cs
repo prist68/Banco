@@ -252,6 +252,20 @@ public sealed class DocumentoLocale
         DataUltimaModifica = DateTimeOffset.Now;
     }
 
+    public void AbilitaCorrezioneFiscalizzata()
+    {
+        if (Stato == StatoDocumentoLocale.Annullato)
+        {
+            throw new InvalidOperationException("Il documento non e` modificabile.");
+        }
+
+        if (Stato == StatoDocumentoLocale.Fiscalizzato)
+        {
+            Stato = StatoDocumentoLocale.ParzialmenteFiscalizzato;
+            DataUltimaModifica = DateTimeOffset.Now;
+        }
+    }
+
     public void ImpostaCliente(int? clienteOid, string clienteLabel)
     {
         if (Stato is StatoDocumentoLocale.Fiscalizzato or StatoDocumentoLocale.Annullato)
@@ -363,6 +377,39 @@ public sealed class DocumentoLocale
         StatoFiscaleBanco = StatoFiscaleBanco.FiscalizzazioneWinEcrFallita;
         DataComandoFiscaleFinale = dataComandoFiscaleFinale;
         Stato = StatoDocumentoLocale.ParzialmenteFiscalizzato;
+        DataUltimaModifica = DateTimeOffset.Now;
+    }
+
+    public void SegnaAggiornatoLegacySenzaNuovaFiscalizzazione(
+        int documentoGestionaleOid,
+        long numeroDocumentoGestionale,
+        int annoDocumentoGestionale,
+        DateTime dataDocumentoGestionale,
+        bool hasComponenteSospeso,
+        DateTimeOffset? dataPagamentoFinale)
+    {
+        if (Stato == StatoDocumentoLocale.Annullato)
+        {
+            throw new InvalidOperationException("Il documento non e` modificabile.");
+        }
+
+        DocumentoGestionaleOid = documentoGestionaleOid;
+        NumeroDocumentoGestionale = numeroDocumentoGestionale;
+        AnnoDocumentoGestionale = annoDocumentoGestionale;
+        DataDocumentoGestionale = dataDocumentoGestionale;
+        CategoriaDocumentoBanco = CategoriaDocumentoBanco.Scontrino;
+        ModalitaChiusura = ModalitaChiusuraDocumento.Scontrino;
+        HasComponenteSospeso = hasComponenteSospeso;
+        DataPagamentoFinale = dataPagamentoFinale;
+
+        if (StatoFiscaleBanco is StatoFiscaleBanco.Nessuno or StatoFiscaleBanco.PubblicatoLegacyNonFiscalizzato)
+        {
+            StatoFiscaleBanco = StatoFiscaleBanco.FiscalizzazioneWinEcrCompletata;
+        }
+
+        Stato = StatoFiscaleBanco == StatoFiscaleBanco.FiscalizzazioneWinEcrCompletata
+            ? StatoDocumentoLocale.Fiscalizzato
+            : StatoDocumentoLocale.ParzialmenteFiscalizzato;
         DataUltimaModifica = DateTimeOffset.Now;
     }
 

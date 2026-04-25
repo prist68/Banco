@@ -32,11 +32,13 @@ public sealed class GestionaleDocumentDetail
 
     public decimal TotalePagatoUfficiale { get; init; }
 
+    public int? Fatturato { get; init; }
+
     public int? ScontrinoNumero { get; init; }
 
-    public bool HasLegacyFiscalSignal => ScontrinoNumero.HasValue && ScontrinoNumero.Value > 0;
+    public bool HasLegacyFiscalSignal => LegacyScontrinoState.IsFiscalizzato(Fatturato);
 
-    public bool IsNonScontrinatoLegacy => !HasLegacyFiscalSignal;
+    public bool IsNonScontrinatoLegacy => LegacyScontrinoState.IsNonScontrinato(Fatturato);
 
     public string Operatore { get; init; } = string.Empty;
 

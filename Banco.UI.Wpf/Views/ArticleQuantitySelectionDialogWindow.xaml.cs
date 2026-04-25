@@ -20,10 +20,11 @@ public partial class ArticleQuantitySelectionDialogWindow : Window
         _pricingDetail = pricingDetail;
         Eyebrow = "Banco / quantita`";
         DialogTitle = $"{articolo.CodiceArticolo} - {articolo.Descrizione}";
-        DialogMessage = "Seleziona la quantita`: il prezzo viene calcolato sulle fasce q.ta` del legacy.";
-        FooterHint = "Selezionando una soglia, il campo quantita` viene aggiornato automaticamente.";
+        DialogMessage = "Seleziona la quantita`: il prezzo viene calcolato sulle fasce quantita` del legacy.";
+        FooterHint = "Selezionando una soglia valida, il campo quantita` viene aggiornato automaticamente.";
         DataContext = this;
 
+        var normalizedInitialQuantity = NormalizeQuantity(initialQuantity);
         QuantityTiers = pricingDetail.FascePrezzoQuantita
             .OrderBy(item => item.QuantitaMinima)
             .Select(item => new ArticleQuantityTierItem(item, pricingDetail.UnitaMisuraPrincipale))
@@ -31,18 +32,22 @@ public partial class ArticleQuantitySelectionDialogWindow : Window
         QuantityTiersListBox.ItemsSource = QuantityTiers;
 
         ArticleRulesTextBlock.Text = BuildRulesLabel(pricingDetail);
-        QuantityTextBox.Text = FormatEditableQuantity(initialQuantity);
+        QuantityTextBox.Text = FormatEditableQuantity(normalizedInitialQuantity);
         Loaded += (_, _) =>
         {
             if (QuantityTiers.Count > 0)
             {
-                QuantityTiersListBox.SelectedIndex = 0;
+                var preferredTierIndex = QuantityTiers
+                    .Select((item, index) => new { item, index })
+                    .FirstOrDefault(entry => entry.item.QuantitaMinima >= normalizedInitialQuantity)?.index
+                    ?? (QuantityTiers.Count - 1);
+                QuantityTiersListBox.SelectedIndex = preferredTierIndex;
                 QuantityTiersListBox.UpdateLayout();
                 QuantityTiersListBox.ScrollIntoView(QuantityTiersListBox.SelectedItem);
 
-                if (QuantityTiersListBox.ItemContainerGenerator.ContainerFromIndex(0) is ListBoxItem firstItem)
+                if (QuantityTiersListBox.ItemContainerGenerator.ContainerFromIndex(preferredTierIndex) is ListBoxItem selectedItem)
                 {
-                    firstItem.Focus();
+                    selectedItem.Focus();
                 }
                 else
                 {
@@ -81,7 +86,9 @@ public partial class ArticleQuantitySelectionDialogWindow : Window
             return;
         }
 
-        SelectedQuantity = quantity.Value;
+        var normalizedQuantity = NormalizeQuantity(quantity.Value);
+        QuantityTextBox.Text = FormatEditableQuantity(normalizedQuantity);
+        SelectedQuantity = normalizedQuantity;
         DialogResult = true;
     }
 
@@ -95,7 +102,15 @@ public partial class ArticleQuantitySelectionDialogWindow : Window
         DialogResult = false;
     }
 
-    private void QuantityTextBox_OnTextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
+    }
+
+    private void QuantityTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
     {
         UpdateAppliedPricePreview();
     }
@@ -111,7 +126,7 @@ public partial class ArticleQuantitySelectionDialogWindow : Window
         e.Handled = true;
     }
 
-    private void QuantityTiersListBox_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private void QuantityTiersListBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (QuantityTiersListBox.SelectedItem is not ArticleQuantityTierItem tier)
         {
@@ -169,18 +184,19 @@ public partial class ArticleQuantitySelectionDialogWindow : Window
             return;
         }
 
+        var normalizedQuantity = NormalizeQuantity(quantity.Value);
         var appliedTier = _pricingDetail.FascePrezzoQuantita
-            .Where(item => quantity.Value >= item.QuantitaMinima)
+            .Where(item => normalizedQuantity >= item.QuantitaMinima)
             .OrderByDescending(item => item.QuantitaMinima)
             .FirstOrDefault();
 
         if (appliedTier is null)
         {
-            AppliedPriceTextBlock.Text = $"Q.ta` {quantity.Value:N2} {_pricingDetail.UnitaMisuraPrincipale} | nessuna fascia specifica";
+            AppliedPriceTextBlock.Text = $"Q.ta` {normalizedQuantity:N2} {_pricingDetail.UnitaMisuraPrincipale} | nessuna fascia specifica";
             return;
         }
 
-        var totale = appliedTier.PrezzoUnitario * quantity.Value;
+        var totale = appliedTier.PrezzoUnitario * normalizedQuantity;
         AppliedPriceTextBlock.Text = $"{appliedTier.PrezzoUnitario:N2} / {_pricingDetail.UnitaMisuraPrincipale} | Totale riga {totale:N2}";
     }
 
@@ -204,6 +220,22 @@ public partial class ArticleQuantitySelectionDialogWindow : Window
     private string FormatEditableQuantity(decimal quantity)
     {
         return quantity.ToString("0.############################", _culture);
+    }
+
+    private decimal NormalizeQuantity(decimal requestedQuantity)
+    {
+        var normalized = requestedQuantity <= 0 ? 1 : requestedQuantity;
+
+        var quantitaMinima = _pricingDetail.QuantitaMinimaVendita <= 0 ? 1 : _pricingDetail.QuantitaMinimaVendita;
+        normalized = Math.Max(normalized, quantitaMinima);
+
+        var quantitaMultipla = _pricingDetail.QuantitaMultiplaVendita <= 0 ? 1 : _pricingDetail.QuantitaMultiplaVendita;
+        if (quantitaMultipla > 1)
+        {
+            normalized = Math.Ceiling(normalized / quantitaMultipla) * quantitaMultipla;
+        }
+
+        return normalized;
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)
@@ -256,8 +288,10 @@ public partial class ArticleQuantitySelectionDialogWindow : Window
 
     private static string BuildRulesLabel(GestionaleArticlePricingDetail pricingDetail)
     {
-        var chunks = new List<string>();
-        chunks.Add($"U.M. principale: {pricingDetail.UnitaMisuraPrincipale}.");
+        var chunks = new List<string>
+        {
+            $"U.M. principale: {pricingDetail.UnitaMisuraPrincipale}."
+        };
 
         if (pricingDetail.HasSecondaryUnit)
         {
@@ -266,12 +300,12 @@ public partial class ArticleQuantitySelectionDialogWindow : Window
 
         if (pricingDetail.QuantitaMinimaVendita > 1)
         {
-            chunks.Add($"Q.ta minima: {pricingDetail.QuantitaMinimaVendita:N0}.");
+            chunks.Add($"Q.ta` minima: {pricingDetail.QuantitaMinimaVendita:N0}.");
         }
 
         if (pricingDetail.QuantitaMultiplaVendita > 1)
         {
-            chunks.Add($"Q.ta multipla: {pricingDetail.QuantitaMultiplaVendita:N0}.");
+            chunks.Add($"Q.ta` multipla: {pricingDetail.QuantitaMultiplaVendita:N0}.");
         }
 
         return string.Join(" ", chunks);
@@ -282,8 +316,11 @@ public partial class ArticleQuantitySelectionDialogWindow : Window
         public ArticleQuantityTierItem(GestionaleArticleQuantityPriceTier tier, string unitaMisuraPrincipale)
         {
             QuantitaMinima = tier.QuantitaMinima;
-            QuantitaLabel = $"Da {tier.QuantitaMinima:N0} {unitaMisuraPrincipale}";
-            PrezzoLabel = $"{tier.PrezzoUnitario:N2} / {unitaMisuraPrincipale}";
+            QuantitaLabel = $"{tier.QuantitaMinima:N0} {unitaMisuraPrincipale}";
+            PrezzoLabel = $"{tier.PrezzoUnitario:N2} €";
+            TotaleLabel = tier.QuantitaMinima > 1
+                ? $"x{tier.QuantitaMinima:N0}"
+                : string.Empty;
         }
 
         public decimal QuantitaMinima { get; }
@@ -291,5 +328,7 @@ public partial class ArticleQuantitySelectionDialogWindow : Window
         public string QuantitaLabel { get; }
 
         public string PrezzoLabel { get; }
+
+        public string TotaleLabel { get; }
     }
 }

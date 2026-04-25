@@ -190,7 +190,18 @@ public sealed class SqliteLocalStoreBootstrapper : ILocalStoreBootstrapper
                 MultiploOrdine REAL NULL,
                 LottoMinimoOrdine REAL NULL,
                 GiorniCopertura INTEGER NULL,
+                PrezzoConfezione REAL NULL,
+                PrezzoSingolo REAL NULL,
+                PrezzoVenditaRiferimento REAL NULL,
+                QuantitaPromo REAL NULL,
+                PrezzoPromo REAL NULL,
                 Note TEXT NOT NULL DEFAULT '',
+                UpdatedAt TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS LocalArticleTags (
+                ArticoloOid INTEGER PRIMARY KEY,
+                TagsText TEXT NOT NULL DEFAULT '',
                 UpdatedAt TEXT NOT NULL
             );
             """;
@@ -277,10 +288,34 @@ public sealed class SqliteLocalStoreBootstrapper : ILocalStoreBootstrapper
         await EnsureReorderSupplierDraftColumnAsync(connection, "FmDocumentOid", "INTEGER NULL", cancellationToken);
         await EnsureReorderSupplierDraftColumnAsync(connection, "FmDocumentNumber", "INTEGER NULL", cancellationToken);
         await EnsureReorderSupplierDraftColumnAsync(connection, "FmDocumentYear", "INTEGER NULL", cancellationToken);
+        await EnsureReorderArticleSettingsColumnAsync(connection, "PrezzoConfezione", "REAL NULL", cancellationToken);
+        await EnsureReorderArticleSettingsColumnAsync(connection, "PrezzoSingolo", "REAL NULL", cancellationToken);
+        await EnsureReorderArticleSettingsColumnAsync(connection, "PrezzoVenditaRiferimento", "REAL NULL", cancellationToken);
+        await EnsureReorderArticleSettingsColumnAsync(connection, "QuantitaPromo", "REAL NULL", cancellationToken);
+        await EnsureReorderArticleSettingsColumnAsync(connection, "PrezzoPromo", "REAL NULL", cancellationToken);
         await EnsureCampaignRewardRuleColumnAsync(connection, "RewardArticleTipoArticoloOid", "INTEGER NULL", cancellationToken);
         await EnsureCampaignRewardRuleColumnAsync(connection, "RewardArticlePrezzoVendita", "REAL NULL", cancellationToken);
         await EnsureLegacyPointsRewardRuleColumnsAsync(connection, cancellationToken);
         await MigrateLegacyRewardRulesAsync(connection, cancellationToken);
+    }
+
+    private static async Task EnsureReorderArticleSettingsColumnAsync(
+        SqliteConnection connection,
+        string columnName,
+        string sqlType,
+        CancellationToken cancellationToken)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = $"ALTER TABLE ReorderArticleSettingsEntries ADD COLUMN {columnName} {sqlType};";
+
+        try
+        {
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+        catch (SqliteException)
+        {
+            // La colonna esiste gia`: non serve alcuna azione.
+        }
     }
 
     private static async Task EnsureReorderListItemColumnAsync(

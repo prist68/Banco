@@ -30,6 +30,8 @@ public sealed class DocumentGridRowViewModel
 
     public decimal Totale { get; init; }
 
+    public decimal? CustomerPoints { get; init; }
+
     public decimal PagContanti { get; init; }
 
     public decimal PagCarta { get; init; }
@@ -61,10 +63,12 @@ public sealed class DocumentGridRowViewModel
     public bool HasLegacyScontrinatoPaymentSignal { get; init; }
 
     public bool IsScontrinato => ResolveIsScontrinato(
+        ModalitaChiusuraDocumento,
         CategoriaDocumentoBanco,
         StatoFiscaleBanco,
         HasLegacyFiscalSignal,
-        HasLegacyScontrinatoPaymentSignal);
+        HasLegacyScontrinatoPaymentSignal,
+        ScontrinoLabel);
 
     public bool IsCortesia => ResolveIsCortesia(CategoriaDocumentoBanco, HasLegacyNonScontrinatoSignal, IsScontrinato);
 
@@ -123,12 +127,24 @@ public sealed class DocumentGridRowViewModel
         var modalitaChiusura = localMetadata?.ModalitaChiusura ?? ModalitaChiusuraDocumento.BozzaLocale;
         var statoFiscale = localMetadata?.StatoFiscaleBanco ?? StatoFiscaleBanco.Nessuno;
         var hasSospeso = document.Pagatosospeso > 0 || (localMetadata?.HasComponenteSospeso ?? false);
-        var scontrinoLabel = localMetadata?.DataComandoFiscaleFinale?.ToString("dd/MM HH:mm") ?? string.Empty;
+        var hasReliableBancoScontrinoSignal = HasReliableBancoScontrinoSignal(localMetadata);
+        var scontrinoLabel = ResolveScontrinoLabel(document.ScontrinoLabel, hasReliableBancoScontrinoSignal);
         var hasLegacyScontrinatoPaymentSignal = HasLegacyScontrinatoPayments(document.PagatoContanti, document.PagatoCarta, document.PagatoWeb);
-        var accessResolution = BancoDocumentoAccessResolver.Resolve(localMetadata, document.Oid, document.DocumentoLabel, hasLegacyScontrinatoPaymentSignal);
-        var hasLegacyFiscalSignal = false;
-        var hasLegacyNonScontrinatoSignal = document.PagatoBuoni > 0;
-        var isScontrinato = ResolveIsScontrinato(categoria, statoFiscale, hasLegacyFiscalSignal, hasLegacyScontrinatoPaymentSignal);
+        var accessResolution = BancoDocumentoAccessResolver.Resolve(
+            localMetadata,
+            document.Oid,
+            document.DocumentoLabel,
+            hasLegacyScontrinatoPaymentSignal,
+            document.HasLegacyFiscalSignal || hasReliableBancoScontrinoSignal);
+        var hasLegacyFiscalSignal = document.HasLegacyFiscalSignal || hasReliableBancoScontrinoSignal;
+        var hasLegacyNonScontrinatoSignal = IsLegacyNonScontrinatoLabel(scontrinoLabel) || document.PagatoBuoni > 0;
+        var isScontrinato = ResolveIsScontrinato(
+            modalitaChiusura,
+            categoria,
+            statoFiscale,
+            hasLegacyFiscalSignal,
+            hasLegacyScontrinatoPaymentSignal,
+            scontrinoLabel);
         var isCortesia = ResolveIsCortesia(categoria, hasLegacyNonScontrinatoSignal, isScontrinato);
         var isPubblicatoBanco = ResolveIsPubblicatoBanco(modalitaChiusura, categoria, statoFiscale, isScontrinato, isCortesia);
 
@@ -143,6 +159,7 @@ public sealed class DocumentGridRowViewModel
             Data = document.Data,
             Cliente = document.ClienteLabel,
             Totale = document.TotaleDocumento,
+            CustomerPoints = document.CustomerPoints,
             PagContanti = document.PagatoContanti,
             PagCarta = document.PagatoCarta,
             PagWeb = document.PagatoWeb,
@@ -171,14 +188,23 @@ public sealed class DocumentGridRowViewModel
         var totalePagato = Math.Max(0, pagamenti.Contanti + pagamenti.Carta + pagamenti.Web + pagamenti.Buoni);
         var totaleDaIncassare = Math.Max(0, document.TotaleDocumento - document.ScontoDocumento);
         var hasSospeso = document.HasComponenteSospeso || pagamenti.Sospeso > 0;
+        var hasReliableBancoScontrinoSignal = HasReliableBancoScontrinoSignal(document);
         var accessResolution = BancoDocumentoAccessResolver.Resolve(
             document,
             document.DocumentoGestionaleOid,
             FormatDocumentNumber(document),
-            pagamenti.Contanti > 0 || pagamenti.Carta > 0 || pagamenti.Web > 0);
-        var hasLegacyFiscalSignal = document.StatoFiscaleBanco == StatoFiscaleBanco.FiscalizzazioneWinEcrCompletata;
+            pagamenti.Contanti > 0 || pagamenti.Carta > 0 || pagamenti.Web > 0,
+            hasReliableBancoScontrinoSignal);
+        var hasLegacyFiscalSignal = hasReliableBancoScontrinoSignal;
         var hasLegacyScontrinatoPaymentSignal = pagamenti.Contanti > 0 || pagamenti.Carta > 0 || pagamenti.Web > 0;
-        var isScontrinato = ResolveIsScontrinato(document.CategoriaDocumentoBanco, document.StatoFiscaleBanco, hasLegacyFiscalSignal, hasLegacyScontrinatoPaymentSignal);
+        var scontrinoLabel = ResolveScontrinoLabel("No", hasReliableBancoScontrinoSignal);
+        var isScontrinato = ResolveIsScontrinato(
+            document.ModalitaChiusura,
+            document.CategoriaDocumentoBanco,
+            document.StatoFiscaleBanco,
+            hasLegacyFiscalSignal,
+            hasLegacyScontrinatoPaymentSignal,
+            scontrinoLabel);
         var isCortesia = ResolveIsCortesia(document.CategoriaDocumentoBanco, false, isScontrinato);
         var isPubblicatoBanco = ResolveIsPubblicatoBanco(document.ModalitaChiusura, document.CategoriaDocumentoBanco, document.StatoFiscaleBanco, isScontrinato, isCortesia);
 
@@ -193,6 +219,7 @@ public sealed class DocumentGridRowViewModel
             Data = document.DataUltimaModifica.LocalDateTime,
             Cliente = document.Cliente,
             Totale = document.TotaleDocumento,
+            CustomerPoints = null,
             PagContanti = pagamenti.Contanti,
             PagCarta = pagamenti.Carta,
             PagWeb = pagamenti.Web,
@@ -209,7 +236,7 @@ public sealed class DocumentGridRowViewModel
             HasLegacyNonScontrinatoSignal = false,
             HasLegacyScontrinatoPaymentSignal = hasLegacyScontrinatoPaymentSignal,
             StatoDocumento = BuildStatoDocumentoLabel(accessResolution, isCortesia, isScontrinato, isPubblicatoBanco, document.StatoFiscaleBanco, hasSospeso),
-            ScontrinoLabel = document.DataComandoFiscaleFinale?.ToString("dd/MM HH:mm") ?? string.Empty,
+            ScontrinoLabel = scontrinoLabel,
             OpenDocumentActionLabel = accessResolution.AzioneLista,
             OpenDocumentActionTooltip = accessResolution.TooltipAzioneLista
         };
@@ -221,14 +248,23 @@ public sealed class DocumentGridRowViewModel
         var totalePagato = Math.Max(0, pagamenti.Contanti + pagamenti.Carta + pagamenti.Web + pagamenti.Buoni);
         var totaleDaIncassare = Math.Max(0, document.TotaleDocumento - document.ScontoDocumento);
         var hasSospeso = document.HasComponenteSospeso || pagamenti.Sospeso > 0;
+        var hasReliableBancoScontrinoSignal = HasReliableBancoScontrinoSignal(document);
         var accessResolution = BancoDocumentoAccessResolver.Resolve(
             document,
             document.DocumentoGestionaleOid,
             FormatDocumentNumber(document),
-            pagamenti.Contanti > 0 || pagamenti.Carta > 0 || pagamenti.Web > 0);
-        var hasLegacyFiscalSignal = document.StatoFiscaleBanco == StatoFiscaleBanco.FiscalizzazioneWinEcrCompletata;
+            pagamenti.Contanti > 0 || pagamenti.Carta > 0 || pagamenti.Web > 0,
+            hasReliableBancoScontrinoSignal);
+        var hasLegacyFiscalSignal = hasReliableBancoScontrinoSignal;
         var hasLegacyScontrinatoPaymentSignal = pagamenti.Contanti > 0 || pagamenti.Carta > 0 || pagamenti.Web > 0;
-        var isScontrinato = ResolveIsScontrinato(document.CategoriaDocumentoBanco, document.StatoFiscaleBanco, hasLegacyFiscalSignal, hasLegacyScontrinatoPaymentSignal);
+        var scontrinoLabel = ResolveScontrinoLabel("No", hasReliableBancoScontrinoSignal);
+        var isScontrinato = ResolveIsScontrinato(
+            document.ModalitaChiusura,
+            document.CategoriaDocumentoBanco,
+            document.StatoFiscaleBanco,
+            hasLegacyFiscalSignal,
+            hasLegacyScontrinatoPaymentSignal,
+            scontrinoLabel);
         var isCortesia = ResolveIsCortesia(document.CategoriaDocumentoBanco, false, isScontrinato);
         var isPubblicatoBanco = ResolveIsPubblicatoBanco(document.ModalitaChiusura, document.CategoriaDocumentoBanco, document.StatoFiscaleBanco, isScontrinato, isCortesia);
 
@@ -243,6 +279,7 @@ public sealed class DocumentGridRowViewModel
             Data = document.DataDocumentoGestionale ?? document.DataUltimaModifica.LocalDateTime,
             Cliente = document.Cliente,
             Totale = document.TotaleDocumento,
+            CustomerPoints = null,
             PagContanti = pagamenti.Contanti,
             PagCarta = pagamenti.Carta,
             PagWeb = pagamenti.Web,
@@ -259,7 +296,7 @@ public sealed class DocumentGridRowViewModel
             HasLegacyNonScontrinatoSignal = false,
             HasLegacyScontrinatoPaymentSignal = hasLegacyScontrinatoPaymentSignal,
             StatoDocumento = BuildStatoDocumentoLabel(accessResolution, isCortesia, isScontrinato, isPubblicatoBanco, document.StatoFiscaleBanco, hasSospeso),
-            ScontrinoLabel = document.DataComandoFiscaleFinale?.ToString("dd/MM HH:mm") ?? string.Empty,
+            ScontrinoLabel = scontrinoLabel,
             OpenDocumentActionLabel = accessResolution.AzioneLista,
             OpenDocumentActionTooltip = accessResolution.TooltipAzioneLista
         };
@@ -325,13 +362,30 @@ public sealed class DocumentGridRowViewModel
     }
 
     private static bool ResolveIsScontrinato(
+        ModalitaChiusuraDocumento modalitaChiusuraDocumento,
         CategoriaDocumentoBanco categoriaDocumentoBanco,
         StatoFiscaleBanco statoFiscaleBanco,
         bool hasLegacyFiscalSignal,
-        bool hasLegacyScontrinatoPaymentSignal)
+        bool hasLegacyScontrinatoPaymentSignal,
+        string? scontrinoLabel = null)
     {
+        if (categoriaDocumentoBanco == CategoriaDocumentoBanco.Cortesia ||
+            modalitaChiusuraDocumento == ModalitaChiusuraDocumento.Cortesia ||
+            statoFiscaleBanco == StatoFiscaleBanco.PubblicatoLegacyNonFiscalizzato)
+        {
+            return false;
+        }
+
+        if (TryResolveLegacyScontrinoLabel(scontrinoLabel, out var legacyIsScontrinato))
+        {
+            return legacyIsScontrinato;
+        }
+
         return categoriaDocumentoBanco == CategoriaDocumentoBanco.Scontrino ||
+               modalitaChiusuraDocumento == ModalitaChiusuraDocumento.Scontrino ||
                statoFiscaleBanco == StatoFiscaleBanco.FiscalizzazioneWinEcrCompletata ||
+               statoFiscaleBanco == StatoFiscaleBanco.FiscalizzazioneWinEcrRichiesta ||
+               statoFiscaleBanco == StatoFiscaleBanco.FiscalizzazioneWinEcrFallita ||
                hasLegacyFiscalSignal ||
                hasLegacyScontrinatoPaymentSignal;
     }
@@ -355,9 +409,63 @@ public sealed class DocumentGridRowViewModel
                (isCortesia || accessMode == BancoDocumentoAccessMode.UfficialeRecuperabile);
     }
 
+    private static bool IsLegacyNonScontrinatoLabel(string? scontrinoLabel)
+    {
+        return TryResolveLegacyScontrinoLabel(scontrinoLabel, out var legacyIsScontrinato) &&
+               !legacyIsScontrinato;
+    }
+
+    private static bool TryResolveLegacyScontrinoLabel(string? scontrinoLabel, out bool isScontrinato)
+    {
+        switch (scontrinoLabel?.Trim())
+        {
+            case "No":
+                isScontrinato = false;
+                return true;
+            case "Si":
+            case "Si!":
+                isScontrinato = true;
+                return true;
+            default:
+                isScontrinato = false;
+                return false;
+        }
+    }
+
     private static bool HasLegacyScontrinatoPayments(decimal pagContanti, decimal pagCarta, decimal pagWeb)
     {
         return pagContanti > 0 || pagCarta > 0 || pagWeb > 0;
+    }
+
+    private static bool HasReliableBancoScontrinoSignal(DocumentoLocale? document)
+    {
+        if (document is null)
+        {
+            return false;
+        }
+
+        return document.CategoriaDocumentoBanco == CategoriaDocumentoBanco.Scontrino ||
+               document.ModalitaChiusura == ModalitaChiusuraDocumento.Scontrino ||
+               document.StatoFiscaleBanco == StatoFiscaleBanco.FiscalizzazioneWinEcrRichiesta ||
+               document.StatoFiscaleBanco == StatoFiscaleBanco.FiscalizzazioneWinEcrCompletata ||
+               document.StatoFiscaleBanco == StatoFiscaleBanco.FiscalizzazioneWinEcrFallita;
+    }
+
+    private static string ResolveScontrinoLabel(string legacyLabel, bool hasReliableBancoScontrinoSignal)
+    {
+        if (string.Equals(legacyLabel, "Si!", StringComparison.Ordinal))
+        {
+            return legacyLabel;
+        }
+
+        if (hasReliableBancoScontrinoSignal)
+        {
+            return "Si";
+        }
+
+        return string.IsNullOrWhiteSpace(legacyLabel)
+            ? "No"
+            : legacyLabel;
     }
 
     private static bool ResolveIsPubblicatoBanco(

@@ -8,10 +8,14 @@ namespace Banco.Core.Infrastructure;
 public sealed class GestionaleBackupImportService : IGestionaleBackupImportService
 {
     private readonly IApplicationConfigurationService _configurationService;
+    private readonly IPosProcessLogService _logService;
 
-    public GestionaleBackupImportService(IApplicationConfigurationService configurationService)
+    public GestionaleBackupImportService(
+        IApplicationConfigurationService configurationService,
+        IPosProcessLogService logService)
     {
         _configurationService = configurationService;
+        _logService = logService;
     }
 
     public async Task<GestionaleBackupImportResult> ImportAsync(
@@ -41,6 +45,7 @@ public sealed class GestionaleBackupImportService : IGestionaleBackupImportServi
 
         try
         {
+            _logService.Info(nameof(GestionaleBackupImportService), $"Avvio restore backup da {backupFilePath}.");
             progress?.Report(new GestionaleBackupImportProgress("Preparazione", "Analisi del backup in corso...", 0, 1));
             var scriptPath = await ResolveScriptPathAsync(backupFilePath, databaseName, tempDirectory, cancellationToken);
             var scriptText = await File.ReadAllTextAsync(scriptPath, Encoding.UTF8, cancellationToken);
@@ -92,11 +97,20 @@ public sealed class GestionaleBackupImportService : IGestionaleBackupImportServi
                 executedStatements,
                 statements.Count));
 
+            _logService.Info(
+                nameof(GestionaleBackupImportService),
+                $"Restore backup completato. File={backupFilePath}, Script={scriptPath}, Database={databaseName}, Statements={executedStatements}.");
+
             return new GestionaleBackupImportResult(
                 backupFilePath,
                 scriptPath,
                 databaseName,
                 executedStatements);
+        }
+        catch (Exception ex)
+        {
+            _logService.Error(nameof(GestionaleBackupImportService), $"Restore backup non completato da {backupFilePath}.", ex);
+            throw;
         }
         finally
         {

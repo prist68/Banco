@@ -1,8 +1,10 @@
+using System.Windows;
+using Banco.Backup;
 using Microsoft.Win32;
 
 namespace Banco.UI.Wpf.Services;
 
-public sealed class BackupImportDialogService
+public sealed class BackupImportDialogService : IBackupDialogService
 {
     public string? SelectBackupFilePath()
     {
@@ -17,5 +19,17 @@ public sealed class BackupImportDialogService
         return dialog.ShowDialog() == true
             ? dialog.FileName
             : null;
+    }
+
+    public bool ConfirmRestoreImport()
+    {
+        var result = MessageBox.Show(
+            "L'importazione sovrascrive il contenuto del db_diltech configurato in questa postazione.\n\nChiudi Banco e Facile Manager sulle altre postazioni prima di procedere.\n\nContinuare?",
+            "Importa backup gestionale",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        return result == MessageBoxResult.Yes;
     }
 }

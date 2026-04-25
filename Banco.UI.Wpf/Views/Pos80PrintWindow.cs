@@ -44,6 +44,7 @@ public sealed class Pos80PrintWindow : Window
         Background = null;
 
         _browser = new WebBrowser();
+        _browser.Navigated += Browser_OnNavigated;
         Content = _browser;
 
         _browser.LoadCompleted += Browser_OnLoadCompleted;
@@ -133,6 +134,30 @@ public sealed class Pos80PrintWindow : Window
         }
     }
 
+    private void Browser_OnNavigated(object? sender, NavigationEventArgs e)
+    {
+        try
+        {
+            var activeX = _browser.GetType().InvokeMember(
+                "ActiveXInstance",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty,
+                binder: null,
+                target: _browser,
+                args: null);
+
+            activeX?.GetType().InvokeMember(
+                "Silent",
+                BindingFlags.SetProperty,
+                binder: null,
+                target: activeX,
+                args: [true]);
+        }
+        catch
+        {
+            // Il flag Silent e` solo una protezione contro warning script del motore IE.
+        }
+    }
+
     private void TimeoutTimer_OnTick(object? sender, EventArgs e)
     {
         Complete("Timeout durante l'invio alla stampante POS80.");
@@ -200,6 +225,7 @@ public sealed class Pos80PrintWindow : Window
     private void OnClosed(object? sender, EventArgs e)
     {
         _timeoutTimer.Stop();
+        _browser.Navigated -= Browser_OnNavigated;
         _browser.LoadCompleted -= Browser_OnLoadCompleted;
         Loaded -= OnLoaded;
         Closed -= OnClosed;

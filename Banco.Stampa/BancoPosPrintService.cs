@@ -181,7 +181,7 @@ public sealed class BancoPosPrintService : IBancoPosPrintService
                 ? []
                 : await _rewardRuleService.GetAsync(campaign.Oid, cancellationToken);
             var summary = _pointsCustomerBalanceService.BuildSummary(customer, campaign, rewardRules, documento);
-            puntiDopo = Math.Max(0m, summary.TotalAvailablePoints - ResolveSpentPoints(documento, rewardRules));
+            puntiDopo = puntiPrima + summary.CurrentDocumentPoints - ResolveSpentPoints(documento, rewardRules);
         }
 
         return new FastReportPreviewCustomer

@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using Banco.Core.Domain.Entities;
 using Banco.Vendita.Fiscal;
 
@@ -92,6 +93,14 @@ public partial class CashRegisterOptionsDialogWindow : Window
     {
         Selection = null;
         DialogResult = false;
+    }
+
+    private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
     }
 
     private CashJournalMode ResolveSelectedJournalMode()

@@ -1,5 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="..\lib\Banco.UI.Controls\Banco.UI.Controls.csproj" />
+    <ProjectReference Include="..\lib\Banco.UI.Shared\Banco.UI.Shared.csproj" />
+    <ProjectReference Include="..\Banco.Backup\Banco.Backup.csproj" />
     <ProjectReference Include="..\Banco.Magazzino\Banco.Magazzino.csproj" />
     <ProjectReference Include="..\Banco.Riordino\Banco.Riordino.csproj" />
     <ProjectReference Include="..\Banco.Vendita\Banco.Vendita.csproj" />
@@ -15,6 +18,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
+    <PackageReference Include="WPF-UI" Version="4.2.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,12 +44,17 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <SatelliteResourceLanguages>it;en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <Target Name="BancoCleanPublishArtifacts" AfterTargets="Publish">
     <ItemGroup>
       <BancoPublishPdb Include="$(PublishDir)*.pdb" />
+      <BancoPublishObsoleteRuntimeDirs Include="$(PublishDir)runtimes\browser-wasm;$(PublishDir)runtimes\linux-arm;$(PublishDir)runtimes\linux-arm64;$(PublishDir)runtimes\linux-armel;$(PublishDir)runtimes\linux-mips64;$(PublishDir)runtimes\linux-musl-arm;$(PublishDir)runtimes\linux-musl-arm64;$(PublishDir)runtimes\linux-musl-x64;$(PublishDir)runtimes\linux-ppc64le;$(PublishDir)runtimes\linux-s390x;$(PublishDir)runtimes\linux-x64;$(PublishDir)runtimes\linux-x86;$(PublishDir)runtimes\maccatalyst-arm64;$(PublishDir)runtimes\maccatalyst-x64;$(PublishDir)runtimes\osx-arm64;$(PublishDir)runtimes\osx-x64;$(PublishDir)runtimes\win-arm;$(PublishDir)runtimes\win-arm64;$(PublishDir)runtimes\win-x86" />
+      <BancoPublishObsoleteCultureDirs Include="$(PublishDir)cs;$(PublishDir)de;$(PublishDir)es;$(PublishDir)fr;$(PublishDir)ja;$(PublishDir)ko;$(PublishDir)pl;$(PublishDir)pt-BR;$(PublishDir)ru;$(PublishDir)tr;$(PublishDir)zh-Hans;$(PublishDir)zh-Hant" />
     </ItemGroup>
     <Delete Files="@(BancoPublishPdb)" TreatErrorsAsWarnings="true" />
+    <RemoveDir Directories="@(BancoPublishObsoleteRuntimeDirs)" ContinueOnError="WarnAndContinue" />
+    <RemoveDir Directories="@(BancoPublishObsoleteCultureDirs)" ContinueOnError="WarnAndContinue" />
   </Target>
 </Project>

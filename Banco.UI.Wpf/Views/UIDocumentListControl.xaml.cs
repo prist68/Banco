@@ -3,7 +3,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using Banco.UI.Wpf.Infrastructure.GridColumns;
+using System.Windows.Media;
+using Banco.Vendita.Articles;
+using Banco.Vendita.Configuration;
+using Banco.UI.Shared.Grid;
 using Banco.UI.Wpf.ViewModels;
 
 namespace Banco.UI.Wpf.Views;
@@ -12,14 +15,19 @@ public partial class UIDocumentListControl : UserControl
 {
     private DataGridColumnManager? _columnManager;
     private SharedGridContextMenuController? _contextMenuController;
+    private DataGridColumnManager? _detailColumnManager;
+    private SharedGridContextMenuController? _detailContextMenuController;
     private bool _columnsInitialized;
     private DocumentListViewModel? _attachedViewModel;
+    private Window? _hostWindow;
     private ScrollViewer? _documentsGridScrollViewer;
     private ScrollViewer? _footerGridScrollViewer;
     private bool _isSyncingPeriodFilterSelection;
     private readonly Dictionary<string, DataGridColumn> _gridColumns;
     private readonly Dictionary<string, DataGridColumn> _footerColumns;
+    private readonly Dictionary<string, DataGridColumn> _detailGridColumns;
     private readonly DocumentListSharedUiSupport _sharedUiSupport;
+    private readonly IReadOnlyList<GestionaleLookupOption> _periodFilterOptions;
 
     public UIDocumentListControl()
     {
@@ -34,6 +42,7 @@ public partial class UIDocumentListControl : UserControl
             ["Operatore"] = OperatoreColumn,
             ["Cliente"] = ClienteColumn,
             ["Totale"] = TotaleColumn,
+            ["Punti"] = PuntiColumn,
             ["PagContanti"] = PagContantiColumn,
             ["PagCarta"] = PagCartaColumn,
             ["Cortesia"] = CortesiaColumn,
@@ -56,6 +65,7 @@ public partial class UIDocumentListControl : UserControl
             ["Operatore"] = FooterOperatoreColumn,
             ["Cliente"] = FooterClienteColumn,
             ["Totale"] = FooterTotaleColumn,
+            ["Punti"] = FooterPuntiColumn,
             ["PagContanti"] = FooterPagContantiColumn,
             ["PagCarta"] = FooterPagCartaColumn,
             ["Cortesia"] = FooterCortesiaColumn,
@@ -68,6 +78,16 @@ public partial class UIDocumentListControl : UserControl
             ["Scontrino"] = FooterScontrinoColumn,
             ["Actions"] = FooterActionsColumn
         };
+        _detailGridColumns = new Dictionary<string, DataGridColumn>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["OrdineRiga"] = DetailOrdineRigaColumn,
+            ["CodiceArticolo"] = DetailCodiceArticoloColumn,
+            ["Descrizione"] = DetailDescrizioneColumn,
+            ["Quantita"] = DetailQuantitaColumn,
+            ["PrezzoUnitario"] = DetailPrezzoUnitarioColumn,
+            ["ScontoPercentuale"] = DetailScontoPercentualeColumn,
+            ["ImportoRiga"] = DetailImportoRigaColumn
+        };
         _sharedUiSupport = new DocumentListSharedUiSupport(
             () => DataContext as DocumentListViewModel,
             () => Window.GetWindow(this),
@@ -78,6 +98,14 @@ public partial class UIDocumentListControl : UserControl
             DeleteSelectedLocalDocumentsCoreAsync,
             DeleteRowCoreAsync,
             SyncGridSelectionToViewModel);
+        _periodFilterOptions =
+        [
+            new GestionaleLookupOption { Oid = 1, Label = "Personalizzato" },
+            new GestionaleLookupOption { Oid = 2, Label = "Oggi" },
+            new GestionaleLookupOption { Oid = 3, Label = "Settimana" },
+            new GestionaleLookupOption { Oid = 4, Label = "Mese" }
+        ];
+        PeriodFilterPicker.ItemsSource = _periodFilterOptions;
         AddHandler(Keyboard.PreviewKeyDownEvent, new KeyEventHandler(Root_OnPreviewKeyDown), true);
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
@@ -101,17 +129,47 @@ public partial class UIDocumentListControl : UserControl
             viewModel.ToggleColumnVisibilityAsync,
             viewModel.SaveColumnDisplayIndexAsync,
             viewModel.SaveColumnWidthAsync,
-            ApplyColumnVisibility);
+            ApplyColumnVisibility,
+            viewModel.GetColumnContentAlignment,
+            viewModel.SaveColumnContentAlignmentAsync,
+            ApplyColumnAlignments,
+            applyFrozenColumnCount: count => DocumentsGrid.FrozenColumnCount = count);
+
+        _detailColumnManager = new DataGridColumnManager(
+            viewModel.DetailColumnDefinitions,
+            viewModel.GetDetailGridLayoutAsync,
+            viewModel.SaveDetailGridLayoutAsync,
+            viewModel.GetDetailColumnVisibility,
+            viewModel.GetDetailColumnDisplayIndex,
+            viewModel.GetDetailColumnWidth,
+            viewModel.ToggleDetailColumnVisibilityAsync,
+            viewModel.SaveDetailColumnDisplayIndexAsync,
+            viewModel.SaveDetailColumnWidthAsync,
+            ApplyDetailColumnVisibility,
+            applyFrozenColumnCount: count => DetailRowsGrid.FrozenColumnCount = count);
 
         await _columnManager.InitializeAsync(_gridColumns);
+        await _detailColumnManager.InitializeAsync(_detailGridColumns);
         _contextMenuController = _sharedUiSupport.CreateContextMenuController(DocumentsGrid, "Documenti");
+        _detailContextMenuController = new SharedGridContextMenuController(new SharedGridContextMenuOptions
+        {
+            Grid = DetailRowsGrid,
+            GridKey = "DocumentiDettaglio",
+            ColumnManager = _detailColumnManager,
+            IncludeAppearanceMenuOnHeader = false,
+            IncludeAppearanceMenuOnBody = false,
+            Actions = []
+        });
         ApplyColumnVisibility();
+        ApplyColumnAlignments();
+        ApplyDetailColumnVisibility();
         RefreshFooterRow();
         SyncFooterColumnsFromGrid();
         InitializeGridViewportSync();
         ApplySplitterProportions(viewModel);
         viewModel.ResetUIDocumentPresentationMode();
         AttachViewModel(viewModel);
+        AttachHostWindow();
         SyncPeriodFilterSelection();
         UpdateSelectionActionButtonsState();
         _columnsInitialized = true;
@@ -121,8 +179,11 @@ public partial class UIDocumentListControl : UserControl
     {
         _contextMenuController?.Dispose();
         _contextMenuController = null;
+        _detailContextMenuController?.Dispose();
+        _detailContextMenuController = null;
         DetachGridViewportSync();
         DetachViewModel();
+        DetachHostWindow();
     }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -138,12 +199,52 @@ public partial class UIDocumentListControl : UserControl
         {
             viewModel.ResetUIDocumentPresentationMode();
             AttachViewModel(viewModel);
+            AttachHostWindow();
             ApplyColumnVisibility();
+            ApplyColumnAlignments();
+            ApplyDetailColumnVisibility();
             RefreshFooterRow();
             SyncFooterColumnsFromGrid();
             SyncPeriodFilterSelection();
             UpdateSelectionActionButtonsState();
         }
+    }
+
+    private void AttachHostWindow()
+    {
+        var hostWindow = Window.GetWindow(this);
+        if (ReferenceEquals(_hostWindow, hostWindow))
+        {
+            return;
+        }
+
+        DetachHostWindow();
+        _hostWindow = hostWindow;
+        if (_hostWindow is not null)
+        {
+            _hostWindow.PreviewKeyDown += HostWindow_OnPreviewKeyDown;
+        }
+    }
+
+    private void DetachHostWindow()
+    {
+        if (_hostWindow is null)
+        {
+            return;
+        }
+
+        _hostWindow.PreviewKeyDown -= HostWindow_OnPreviewKeyDown;
+        _hostWindow = null;
+    }
+
+    private void HostWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (!IsVisible || e.Handled)
+        {
+            return;
+        }
+
+        HandleDocumentShortcutKey(e);
     }
 
     private void AttachViewModel(DocumentListViewModel viewModel)
@@ -193,9 +294,21 @@ public partial class UIDocumentListControl : UserControl
             Dispatcher.Invoke(() =>
             {
                 ApplyColumnVisibility();
+                ApplyColumnAlignments();
                 RefreshFooterRow();
                 SyncFooterColumnsFromGrid();
             });
+        }
+
+        if (e.PropertyName is nameof(DocumentListViewModel.IsDetailOrdineRigaColumnVisible)
+            or nameof(DocumentListViewModel.IsDetailCodiceColumnVisible)
+            or nameof(DocumentListViewModel.IsDetailDescrizioneColumnVisible)
+            or nameof(DocumentListViewModel.IsDetailQuantitaColumnVisible)
+            or nameof(DocumentListViewModel.IsDetailPrezzoColumnVisible)
+            or nameof(DocumentListViewModel.IsDetailScontoColumnVisible)
+            or nameof(DocumentListViewModel.IsDetailImportoColumnVisible))
+        {
+            Dispatcher.Invoke(ApplyDetailColumnVisibility);
         }
 
         if (e.PropertyName is nameof(DocumentListViewModel.CanDeleteSelectedLocalDocuments)
@@ -208,7 +321,7 @@ public partial class UIDocumentListControl : UserControl
 
     private void SyncPeriodFilterSelection()
     {
-        if (PeriodFilterCombo is null || DataContext is not DocumentListViewModel viewModel)
+        if (PeriodFilterPicker is null || DataContext is not DocumentListViewModel viewModel)
         {
             return;
         }
@@ -230,7 +343,9 @@ public partial class UIDocumentListControl : UserControl
         _isSyncingPeriodFilterSelection = true;
         try
         {
-            PeriodFilterCombo.SelectedItem = selectedLabel;
+            PeriodFilterPicker.DisplayText = selectedLabel;
+            PeriodFilterPicker.SelectedItem = _periodFilterOptions.FirstOrDefault(option =>
+                string.Equals(option.Label, selectedLabel, StringComparison.Ordinal));
         }
         finally
         {
@@ -302,6 +417,7 @@ public partial class UIDocumentListControl : UserControl
         ApplyColumnVisibility("Operatore", viewModel.IsOperatoreColumnVisible);
         ApplyColumnVisibility("Cliente", viewModel.IsClienteColumnVisible);
         ApplyColumnVisibility("Totale", viewModel.IsTotaleColumnVisible);
+        ApplyColumnVisibility("Punti", viewModel.IsPuntiColumnVisible);
         ApplyColumnVisibility("PagContanti", viewModel.IsPagContantiColumnVisible);
         ApplyColumnVisibility("PagCarta", viewModel.IsPagCartaColumnVisible);
         ApplyColumnVisibility("Cortesia", viewModel.IsUICortesiaColumnVisible);
@@ -315,6 +431,22 @@ public partial class UIDocumentListControl : UserControl
         ApplyColumnVisibility("Actions", true);
     }
 
+    private void ApplyDetailColumnVisibility()
+    {
+        if (DataContext is not DocumentListViewModel viewModel)
+        {
+            return;
+        }
+
+        ApplyDetailColumnVisibility("OrdineRiga", viewModel.IsDetailOrdineRigaColumnVisible);
+        ApplyDetailColumnVisibility("CodiceArticolo", viewModel.IsDetailCodiceColumnVisible);
+        ApplyDetailColumnVisibility("Descrizione", viewModel.IsDetailDescrizioneColumnVisible);
+        ApplyDetailColumnVisibility("Quantita", viewModel.IsDetailQuantitaColumnVisible);
+        ApplyDetailColumnVisibility("PrezzoUnitario", viewModel.IsDetailPrezzoColumnVisible);
+        ApplyDetailColumnVisibility("ScontoPercentuale", viewModel.IsDetailScontoColumnVisible);
+        ApplyDetailColumnVisibility("ImportoRiga", viewModel.IsDetailImportoColumnVisible);
+    }
+
     private void ApplyColumnVisibility(string key, bool isVisible)
     {
         if (_gridColumns.TryGetValue(key, out var gridColumn))
@@ -325,6 +457,62 @@ public partial class UIDocumentListControl : UserControl
         if (_footerColumns.TryGetValue(key, out var footerColumn))
         {
             footerColumn.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
+    private void ApplyDetailColumnVisibility(string key, bool isVisible)
+    {
+        if (_detailGridColumns.TryGetValue(key, out var gridColumn))
+        {
+            gridColumn.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
+    private void ApplyColumnAlignments()
+    {
+        if (DataContext is not DocumentListViewModel viewModel)
+        {
+            return;
+        }
+
+        foreach (var pair in _gridColumns)
+        {
+            if (string.Equals(pair.Key, "Actions", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var alignment = viewModel.GetColumnContentAlignment(pair.Key);
+            ApplyColumnAlignment(pair.Value, alignment);
+            if (_footerColumns.TryGetValue(pair.Key, out var footerColumn))
+            {
+                ApplyColumnAlignment(footerColumn, alignment, applyHeaderAlignment: false);
+            }
+        }
+    }
+
+    private void ApplyColumnAlignment(DataGridColumn column, GridColumnContentAlignment alignment, bool applyHeaderAlignment = true)
+    {
+        if (applyHeaderAlignment)
+        {
+            column.HeaderStyle = alignment switch
+            {
+                GridColumnContentAlignment.Left => (Style?)FindResource("UIDocumentHeaderLeftStyle"),
+                GridColumnContentAlignment.Right => (Style?)FindResource("UIDocumentHeaderRightStyle"),
+                _ => (Style?)FindResource("UIDocumentHeaderCenterStyle")
+            };
+
+            _contextMenuController?.EnsureHeaderContextMenuForColumn(column);
+        }
+
+        if (column is DataGridTextColumn textColumn)
+        {
+            textColumn.ElementStyle = alignment switch
+            {
+                GridColumnContentAlignment.Left => (Style?)FindResource("UIDocumentCellTextLeftStyle"),
+                GridColumnContentAlignment.Right => (Style?)FindResource("UIDocumentCellTextRightStyle"),
+                _ => (Style?)FindResource("UIDocumentCellTextCenterStyle")
+            };
         }
     }
 
@@ -375,42 +563,89 @@ public partial class UIDocumentListControl : UserControl
 
     private void Root_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (DataContext is DocumentListViewModel viewModel)
+        HandleDocumentShortcutKey(e);
+        if (e.Handled)
         {
-            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.C)
-            {
-                viewModel.CycleUIDocumentPresentationMode();
-                ApplyColumnVisibility();
-                RefreshFooterRow();
-                SyncFooterColumnsFromGrid();
-                SyncGridSelectionToViewModel();
-                e.Handled = true;
-                return;
-            }
+            return;
+        }
 
-            if (Keyboard.Modifiers == ModifierKeys.None && e.Key == Key.Escape)
-            {
-                viewModel.ResetUIDocumentPresentationMode();
-                ApplyColumnVisibility();
-                RefreshFooterRow();
-                SyncFooterColumnsFromGrid();
-                SyncGridSelectionToViewModel();
-                e.Handled = true;
-                return;
-            }
-
-            if (Keyboard.Modifiers == ModifierKeys.None && e.Key == Key.F2)
-            {
-                if (viewModel.OpenDocumentInBancoCommand.CanExecute(null))
-                {
-                    viewModel.OpenDocumentInBancoCommand.Execute(null);
-                    e.Handled = true;
-                    return;
-                }
-            }
+        if (IsStandardTextCommandContext())
+        {
+            _sharedUiSupport.HandleRootPreviewKeyDown(e, TotalsPanel);
+            return;
         }
 
         _sharedUiSupport.HandleRootPreviewKeyDown(e, TotalsPanel);
+    }
+
+    private void HandleDocumentShortcutKey(KeyEventArgs e)
+    {
+        var effectiveKey = e.Key == Key.System ? e.SystemKey : e.Key;
+        if (DataContext is not DocumentListViewModel viewModel)
+        {
+            return;
+        }
+
+        if (Keyboard.Modifiers == ModifierKeys.None && effectiveKey == Key.F9)
+        {
+            viewModel.CycleUIDocumentPresentationMode();
+            ApplyColumnVisibility();
+            RefreshFooterRow();
+            SyncFooterColumnsFromGrid();
+            SyncGridSelectionToViewModel();
+            e.Handled = true;
+            return;
+        }
+
+        if (Keyboard.Modifiers == ModifierKeys.None && effectiveKey == Key.Escape)
+        {
+            viewModel.ResetUIDocumentPresentationMode();
+            ApplyColumnVisibility();
+            RefreshFooterRow();
+            SyncFooterColumnsFromGrid();
+            SyncGridSelectionToViewModel();
+            e.Handled = true;
+            return;
+        }
+
+        if (Keyboard.Modifiers == ModifierKeys.None && effectiveKey == Key.F2 &&
+            viewModel.OpenDocumentInBancoCommand.CanExecute(null))
+        {
+            viewModel.OpenDocumentInBancoCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    private static bool IsStandardTextCommandContext()
+    {
+        var focusedElement = Keyboard.FocusedElement as DependencyObject;
+        if (focusedElement is null)
+        {
+            return false;
+        }
+
+        if (focusedElement is TextBoxBase or PasswordBox or ComboBox)
+        {
+            return true;
+        }
+
+        return FindAncestor<Selector>(focusedElement) is ComboBox;
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? current)
+        where T : DependencyObject
+    {
+        while (current is not null)
+        {
+            if (current is T typed)
+            {
+                return typed;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
     }
 
     private async void NewBancoDocumentButton_OnClick(object sender, RoutedEventArgs e)
@@ -418,16 +653,19 @@ public partial class UIDocumentListControl : UserControl
         await _sharedUiSupport.HandleNewBancoDocumentAsync();
     }
 
-    private void PeriodFilterCombo_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void PeriodFilterPicker_OnSelectedItemChanged(object sender, RoutedEventArgs e)
     {
         if (_isSyncingPeriodFilterSelection || DataContext is not DocumentListViewModel viewModel)
         {
             return;
         }
 
-        var selectedLabel = PeriodFilterCombo.SelectedItem as string;
+        var selectedLabel = (PeriodFilterPicker.SelectedItem as GestionaleLookupOption)?.Label;
         switch (selectedLabel)
         {
+            case "Personalizzato":
+                viewModel.UseCustomDateRangeFilter();
+                break;
             case "Oggi":
                 if (viewModel.FilterOggiCommand.CanExecute(null))
                 {

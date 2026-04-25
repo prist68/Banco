@@ -1,0 +1,1451 @@
+<UserControl x:Class="Banco.UI.Wpf.Views.ArticleManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:Banco.UI.Wpf.Converters"
+             xmlns:controls="clr-namespace:Banco.UI.Controls;assembly=Banco.UI.Controls"
+             xmlns:views="clr-namespace:Banco.UI.Wpf.Views"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <conv:LocalPathToBitmapImageConverter x:Key="LocalPathToBitmapImageConverter" />
+
+        <Style x:Key="HeaderActionButtonStyle" TargetType="Button" BasedOn="{StaticResource CompactSecondaryButtonStyle}">
+            <Setter Property="Padding" Value="10,2" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style x:Key="HeaderPrimaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource CompactPrimaryButtonStyle}">
+            <Setter Property="Padding" Value="10,2" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+        </Style>
+
+        <Style x:Key="CompactInfoLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+        </Style>
+
+        <Style x:Key="CompactInfoValueStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style x:Key="SectionCaptionStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+
+        <Style x:Key="SectionBoxStyle" TargetType="Border" BasedOn="{StaticResource CompactCardStyle}">
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushBase}" />
+        </Style>
+
+        <Style TargetType="TextBox" BasedOn="{StaticResource CompactTextBoxStyle}">
+            <Setter Property="Padding" Value="10,5" />
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="MinHeight" Value="35" />
+            <Setter Property="MaxHeight" Value="35" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style TargetType="ui:TextBox">
+            <Setter Property="Padding" Value="10,5" />
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="MinHeight" Value="35" />
+            <Setter Property="MaxHeight" Value="35" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style TargetType="ComboBox" BasedOn="{StaticResource CompactComboBoxStyle}">
+            <Setter Property="MinHeight" Value="35" />
+            <Setter Property="MaxHeight" Value="35" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style TargetType="controls:InlineLookupPicker">
+            <Setter Property="MinHeight" Value="35" />
+            <Setter Property="MaxHeight" Value="35" />
+        </Style>
+
+        <DataTemplate x:Key="LookupComboItemTemplate">
+            <TextBlock Text="{Binding Label}"
+                       TextTrimming="CharacterEllipsis" />
+        </DataTemplate>
+
+        <Style x:Key="LookupComboStyle" TargetType="ComboBox" BasedOn="{StaticResource CompactComboBoxStyle}">
+            <Setter Property="TextSearch.TextPath" Value="Label" />
+            <Setter Property="IsTextSearchEnabled" Value="True" />
+            <Setter Property="MaxDropDownHeight" Value="320" />
+            <Setter Property="ItemTemplate" Value="{StaticResource LookupComboItemTemplate}" />
+        </Style>
+
+        <Style x:Key="OptionCompactTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource CompactTextBoxStyle}">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="MaxHeight" Value="30" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+        </Style>
+
+        <Style x:Key="OptionInlineLookupPickerStyle" TargetType="controls:InlineLookupPicker">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="MaxHeight" Value="30" />
+        </Style>
+
+        <Style x:Key="ArticleTagChipBorderStyle" TargetType="Border">
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="Margin" Value="0,0,5,4" />
+            <Setter Property="Padding" Value="7,2,5,2" />
+            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushBase}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="7" />
+        </Style>
+
+        <Style x:Key="ArticleTagRemoveButtonStyle" TargetType="Button" BasedOn="{StaticResource CompactSecondaryButtonStyle}">
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="MinWidth" Value="18" />
+            <Setter Property="MinHeight" Value="18" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="5,0,0,0" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="ArticleTagSuggestionComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource CompactComboBoxStyle}">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="MaxHeight" Value="30" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="IsEditable" Value="True" />
+            <Setter Property="IsTextSearchEnabled" Value="False" />
+            <Setter Property="MaxDropDownHeight" Value="180" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="QuickSearchListBoxStyle" TargetType="ListBox" BasedOn="{StaticResource {x:Type ListBox}}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        </Style>
+
+        <Style x:Key="QuickSearchListBoxItemStyle" TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+
+        <Style x:Key="ArticleTabItemStyle" TargetType="TabItem">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="Margin" Value="0,0,0,0" />
+            <Setter Property="Background" Value="{StaticResource WindowBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushBase}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Grid ClipToBounds="False"
+                              SnapsToDevicePixels="True">
+                            <Border x:Name="TabBorder"
+                                    Margin="0,0,10,0"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10,10,8,8"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter Margin="{TemplateBinding Padding}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  ContentSource="Header"
+                                                  RecognizesAccessKey="True" />
+                            </Border>
+                            <Border x:Name="TabTopAccent"
+                                    Height="3"
+                                    Margin="10,0,20,0"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Top"
+                                    Background="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Tag}"
+                                    Opacity="0.24"
+                                    CornerRadius="3,3,0,0" />
+                            <Border x:Name="TabAccent"
+                                    Width="30"
+                                    Height="3"
+                                    Margin="-10,0,0,3"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Bottom"
+                                    Background="Transparent"
+                                    CornerRadius="3" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Panel.ZIndex" Value="2" />
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                <Setter TargetName="TabBorder" Property="Background" Value="{StaticResource SurfaceBrush}" />
+                                <Setter TargetName="TabBorder" Property="Margin" Value="0,0,10,0" />
+                                <Setter TargetName="TabBorder" Property="BorderThickness" Value="1" />
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{StaticResource BorderBrushBase}" />
+                                <Setter TargetName="TabTopAccent" Property="Opacity" Value="1" />
+                                <Setter TargetName="TabTopAccent" Property="Background" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Tag}" />
+                                <Setter TargetName="TabAccent" Property="Background" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Tag}" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                <Setter TargetName="TabBorder" Property="Background" Value="{StaticResource SurfaceBrush}" />
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{StaticResource BorderBrushBase}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="False">
+                                <Setter TargetName="TabBorder" Property="Opacity" Value="0.96" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ArticleTabStripStyle" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+                            <TabPanel IsItemsHost="True"
+                                      Margin="10,0,0,0"
+                                      Background="Transparent"
+                                      KeyboardNavigation.TabIndex="1" />
+                            <Border Height="1"
+                                    VerticalAlignment="Bottom"
+                                    Background="{StaticResource BorderBrushBase}"
+                                    IsHitTestVisible="False" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Border Style="{StaticResource CompactCardStyle}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="520" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Text="Gestione Articolo" />
+                    </StackPanel>
+
+                    <Border Grid.Column="2"
+                            MinHeight="38"
+                            Padding="10,5"
+                            VerticalAlignment="Center"
+                            Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource BorderBrushBase}"
+                            BorderThickness="1"
+                            CornerRadius="6">
+                        <TextBlock VerticalAlignment="Center"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding StatusMessage}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasCodeValidationAlert}" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource SemanticDangerBrush}" />
+                                        </DataTrigger>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+
+                    <WrapPanel Grid.Column="4"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Top">
+                        <ui:Button Content="{Binding CatalogToggleButtonText}"
+                                   Command="{Binding ToggleCatalogCommand}"
+                                   Appearance="Primary"
+                                   Icon="{ui:SymbolIcon List24}"
+                                   Style="{StaticResource HeaderPrimaryActionButtonStyle}" />
+                        <ui:Button Content="Ricarica scheda"
+                                   Command="{Binding RefreshCurrentArticleCommand}"
+                                   Icon="{ui:SymbolIcon ArrowClockwise24}"
+                                   Style="{StaticResource HeaderActionButtonStyle}" />
+                        <ui:Button Content="Chiudi"
+                                   Command="{Binding CloseCurrentArticleCommand}"
+                                   Style="{StaticResource HeaderActionButtonStyle}" />
+                    </WrapPanel>
+                </Grid>
+
+                <Border Grid.Row="2"
+                        Margin="0,8,0,0"
+                        Padding="8"
+                        Background="{StaticResource SurfaceAltBrush}"
+                        BorderBrush="{StaticResource BorderBrushBase}"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                    <controls:ArticleLookupLauncher x:Name="ArticleLookupLauncher"
+                                                    SearchText="{Binding ArticleCodeInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    DescriptionText="{Binding ArticleDescription, Mode=OneWay}"
+                                                    SearchLabel="Codice / barcode / ricerca articolo"
+                                                    DescriptionLabel="Descrizione articolo"
+                                                    SearchTextChanged="ArticleLookupLauncher_OnSearchTextChanged"
+                                                    SearchKeyDown="ArticleLookupLauncher_OnSearchKeyDown"
+                                                    SearchPreviewTextInput="ArticleLookupLauncher_OnPreviewTextInput"
+                                                    SearchLostKeyboardFocus="ArticleLookupLauncher_OnSearchLostKeyboardFocus" Loaded="ArticleLookupLauncher_Loaded" />
+                </Border>
+                <Border Grid.Row="3"
+                        Margin="0,8,0,0"
+                        Padding="8"
+                        Visibility="{Binding IsCatalogVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrushBase}"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="6" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="250" />
+                                <ColumnDefinition Width="180" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <ui:TextBox Grid.Column="0"
+                                        Text="{Binding CatalogSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                        PlaceholderText="Filtra elenco articoli"
+                                        ClearButtonEnabled="True"
+                                        Icon="{ui:SymbolIcon Search24}" />
+
+                            <ComboBox Grid.Column="1"
+                                      Margin="8,0,0,0"
+                                      ItemsSource="{Binding CategoryPaths}"
+                                      SelectedItem="{Binding SelectedCatalogCategoryPath, Mode=TwoWay}"
+                                      Style="{StaticResource CompactComboBoxStyle}" />
+
+                            <CheckBox Grid.Column="2"
+                                      Margin="10,0,0,0"
+                                      Content="Solo disponibili"
+                                      IsChecked="{Binding CatalogOnlyAvailable}"
+                                      Style="{StaticResource CompactCheckBoxStyle}" />
+
+                            <CheckBox Grid.Column="3"
+                                      Margin="10,0,0,0"
+                                      Content="Con immagine"
+                                      IsChecked="{Binding CatalogOnlyWithImage}"
+                                      Style="{StaticResource CompactCheckBoxStyle}" />
+
+                            <TextBlock Grid.Column="4"
+                                       Margin="10,0,0,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding CatalogStatusMessage}" />
+
+                            <ui:Button Grid.Column="5"
+                                       Content="Aggiorna"
+                                       Command="{Binding RefreshCatalogCommand}"
+                                       Icon="{ui:SymbolIcon ArrowClockwise24}"
+                                       Style="{StaticResource HeaderActionButtonStyle}" />
+                        </Grid>
+
+                        <DataGrid Grid.Row="2"
+                                  ItemsSource="{Binding CatalogRows}"
+                                  SelectedItem="{Binding SelectedCatalogRow, Mode=TwoWay}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  CanUserResizeRows="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="None"
+                                  BorderThickness="0"
+                                  Background="Transparent"
+                                  AlternationCount="2"
+                                  RowStyle="{StaticResource CompactDataGridRowStyle}"
+                                  ColumnHeaderStyle="{StaticResource CompactDataGridHeaderStyle}"
+                                  CellStyle="{StaticResource CompactDataGridCellStyle}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Codice" Width="110" Binding="{Binding CodiceArticolo}" />
+                                <DataGridTextColumn Header="Descrizione" Width="*" Binding="{Binding Descrizione}" />
+                                <DataGridTextColumn Header="Categoria" Width="220" Binding="{Binding CategoryPath}" />
+                                <DataGridTextColumn Header="Barcode" Width="130" Binding="{Binding BarcodePrincipale}" />
+                                <DataGridTextColumn Header="Giac." Width="70" Binding="{Binding Giacenza, StringFormat={}{0:N2}}" />
+                                <DataGridTextColumn Header="Prezzo" Width="80" Binding="{Binding PrezzoVendita, StringFormat={}{0:N2} €}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+
+                <TabControl x:Name="ArticleTabs"
+                            Grid.Row="1"
+                            Margin="0,8,0,0"
+                            ItemContainerStyle="{StaticResource ArticleTabItemStyle}"
+                            Style="{StaticResource ArticleTabStripStyle}">
+                        <TabItem Header="Dettagli"
+                                 Tag="#2C67B5">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel Margin="8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="10" />
+                                            <ColumnDefinition Width="250" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0"
+                                                Style="{StaticResource SectionBoxStyle}">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="8" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+
+                                                <Grid Grid.Row="0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <TextBlock Grid.Column="0"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Categoria" />
+                                                    <controls:InlineLookupPicker Grid.Column="1"
+                                                                                 DisplayText="{Binding SelectedCategoryLabel}"
+                                                                                 SearchText="{Binding CategoryPickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                 IsOpen="{Binding IsCategoryPickerOpen, Mode=TwoWay}"
+                                                                                 ItemsSource="{Binding FilteredCategoryOptions}"
+                                                                                 SelectedItem="{Binding SelectedCategoryOption, Mode=TwoWay}"
+                                                                                 SearchPlaceholderText="Filtra categoria legacy"
+                                                                                 EmptyText="Nessuna categoria legacy trovata." />
+
+                                                    <Button Grid.Column="2"
+                                                            Margin="10,0,0,0"
+                                                            MinWidth="34"
+                                                            Padding="8,0"
+                                                            Style="{StaticResource CompactSecondaryButtonStyle}"
+                                                            ToolTip="Gestisci categorie secondarie"
+                                                            Click="ManageSecondaryCategoriesButton_OnClick">
+                                                        <TextBlock Text="Cat."
+                                                                   FontWeight="SemiBold" />
+                                                    </Button>
+                                                </Grid>
+
+                                                <Grid Grid.Row="2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="1.05*" />
+                                                        <ColumnDefinition Width="8" />
+                                                        <ColumnDefinition Width="2.95*" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Grid Grid.Column="0"
+                                                          VerticalAlignment="Top">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="146" />
+                                                        </Grid.RowDefinitions>
+                                                        <TextBlock Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Descrizione breve" />
+                                                        <TextBox Grid.Row="1"
+                                                                 Text="{Binding ShortDescriptionText, Mode=OneWay}"
+                                                                 Style="{StaticResource CompactTextBoxStyle}"
+                                                                 IsReadOnly="True"
+                                                                 TextWrapping="Wrap"
+                                                                 AcceptsReturn="True"
+                                                                 HorizontalContentAlignment="Left"
+                                                                 VerticalScrollBarVisibility="Auto"
+                                                                 VerticalContentAlignment="Top"
+                                                                 TextAlignment="Left"
+                                                                 Padding="12,10,12,10"
+                                                                 MinHeight="146"
+                                                                 MaxHeight="146" />
+                                                    </Grid>
+
+                                                    <Grid Grid.Column="2"
+                                                          VerticalAlignment="Top">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="146" />
+                                                        </Grid.RowDefinitions>
+                                                        <TextBlock Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Descrizione estesa" />
+                                                        <TextBox Grid.Row="1"
+                                                                 Text="{Binding LongDescriptionHtml, Mode=OneWay}"
+                                                                 Style="{StaticResource CompactTextBoxStyle}"
+                                                                 IsReadOnly="True"
+                                                                 TextWrapping="Wrap"
+                                                                 AcceptsReturn="True"
+                                                                 VerticalScrollBarVisibility="Auto"
+                                                                 VerticalContentAlignment="Top"
+                                                                 TextAlignment="Left"
+                                                                 Padding="12,10,12,10"
+                                                                 MinHeight="146"
+                                                                 MaxHeight="146" />
+                                                    </Grid>
+                                                </Grid>
+                                            </Grid>
+                                        </Border>
+
+                                        <Border Grid.Column="2"
+                                                Style="{StaticResource SectionBoxStyle}">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="6" />
+                                                    <RowDefinition Height="*" />
+                                                    <RowDefinition Height="6" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+
+                                                <TextBlock Style="{StaticResource SectionCaptionStyle}"
+                                                           Text="Immagine articolo" />
+
+                                                <Border Grid.Row="2"
+                                                        Padding="8"
+                                                        Background="{StaticResource SurfaceBrush}"
+                                                        BorderBrush="{StaticResource BorderBrushBase}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="8"
+                                                        ClipToBounds="True"
+                                                        MinHeight="150"
+                                                        MaxHeight="150">
+                                                    <Grid>
+                                                        <Image Source="{Binding ArticleImagePath, Converter={StaticResource LocalPathToBitmapImageConverter}, TargetNullValue={x:Null}, FallbackValue={x:Null}}"
+                                                               Stretch="Uniform"
+                                                               Visibility="{Binding HasArticleImage, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <TextBlock HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                                   TextAlignment="Center"
+                                                                   Text="Nessuna immagine presente">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding HasArticleImage}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </Grid>
+                                                </Border>
+
+                                                <Button Grid.Row="4"
+                                                        Style="{StaticResource CompactSecondaryButtonStyle}"
+                                                        Click="ManageImagesButton_OnClick">
+                                                    <StackPanel Orientation="Horizontal"
+                                                                HorizontalAlignment="Center">
+                                                        <ui:SymbolIcon Symbol="Image24"
+                                                                       Margin="0,0,6,0" />
+                                                        <TextBlock Text="Gestisci immagini" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
+
+                                    <Grid Margin="0,8,0,0"
+                                          MinHeight="312">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="1*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="1*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0"
+                                            MinHeight="312"
+                                            Style="{StaticResource SectionBoxStyle}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="6" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="6" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Style="{StaticResource SectionCaptionStyle}"
+                                                       Text="Anagrafica articolo" />
+
+                                            <Border Grid.Row="2"
+                                                    Grid.RowSpan="3"
+                                                    Background="{StaticResource SurfaceBrush}"
+                                                    BorderBrush="{StaticResource BorderBrushBase}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="8"
+                                                    MinHeight="272"
+                                                    MaxHeight="272">
+                                                <Grid Margin="8,6">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="12" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+
+                                                    <TextBlock Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Conto: Costo" />
+                                                    <controls:InlineLookupPicker Grid.Column="1"
+                                                                                 Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                 DisplayText="{Binding SelectedCostAccountLabel}"
+                                                                                 SearchText="{Binding CostAccountPickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                 IsOpen="{Binding IsCostAccountPickerOpen, Mode=TwoWay}"
+                                                                                 ItemsSource="{Binding FilteredCostAccountOptions}"
+                                                                                 SelectedItem="{Binding SelectedCostAccountOption, Mode=TwoWay}"
+                                                                                 SearchPlaceholderText="Filtra conto costo"
+                                                                                 EmptyText="Nessun conto costo legacy trovato." />
+
+                                                    <TextBlock Grid.Column="3"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Conto: Ricavo" />
+                                                    <controls:InlineLookupPicker Grid.Column="4"
+                                                                                 Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                 DisplayText="{Binding SelectedRevenueAccountLabel}"
+                                                                                 SearchText="{Binding RevenueAccountPickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                 IsOpen="{Binding IsRevenueAccountPickerOpen, Mode=TwoWay}"
+                                                                                 ItemsSource="{Binding FilteredRevenueAccountOptions}"
+                                                                                 SelectedItem="{Binding SelectedRevenueAccountOption, Mode=TwoWay}"
+                                                                                 SearchPlaceholderText="Filtra conto ricavo"
+                                                                                 EmptyText="Nessun conto ricavo legacy trovato." />
+
+                                                    <TextBlock Grid.Row="2"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Categoria ricarico" />
+                                                    <controls:InlineLookupPicker Grid.Row="2"
+                                                                                 Grid.Column="1"
+                                                                                 Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                 DisplayText="{Binding SelectedMarkupCategoryLabel}"
+                                                                                 SearchText="{Binding MarkupCategoryPickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                 IsOpen="{Binding IsMarkupCategoryPickerOpen, Mode=TwoWay}"
+                                                                                 ItemsSource="{Binding FilteredMarkupCategoryOptions}"
+                                                                                 SelectedItem="{Binding SelectedMarkupCategoryOption, Mode=TwoWay}"
+                                                                                 SearchPlaceholderText="Filtra categoria ricarico"
+                                                                                 EmptyText="Nessuna categoria ricarico legacy trovata." />
+
+                                                    <TextBlock Grid.Row="2"
+                                                               Grid.Column="3"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Garanzia mesi" />
+                                                    <TextBox Grid.Row="2"
+                                                             Grid.Column="4"
+                                                             Text="{Binding WarrantyMonthsLabel, Mode=OneWay}"
+                                                             Style="{StaticResource OptionCompactTextBoxStyle}"
+                                                             IsReadOnly="True" />
+
+                                                    <TextBlock Grid.Row="4"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Variante 1" />
+                                                    <controls:InlineLookupPicker Grid.Row="4"
+                                                                                 Grid.Column="1"
+                                                                                 Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                 DisplayText="{Binding SelectedVariant1Label}"
+                                                                                 SearchText="{Binding Variant1PickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                 IsOpen="{Binding IsVariant1PickerOpen, Mode=TwoWay}"
+                                                                                 ItemsSource="{Binding FilteredVariant1Options}"
+                                                                                 SelectedItem="{Binding SelectedVariant1Option, Mode=TwoWay}"
+                                                                                 SearchPlaceholderText="Filtra variante 1"
+                                                                                 EmptyText="Nessuna variante legacy trovata." />
+
+                                                    <TextBlock Grid.Row="4"
+                                                               Grid.Column="3"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Variante 2" />
+                                                    <controls:InlineLookupPicker Grid.Row="4"
+                                                                                 Grid.Column="4"
+                                                                                 Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                 DisplayText="{Binding SelectedVariant2Label}"
+                                                                                 SearchText="{Binding Variant2PickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                 IsOpen="{Binding IsVariant2PickerOpen, Mode=TwoWay}"
+                                                                                 ItemsSource="{Binding FilteredVariant2Options}"
+                                                                                 SelectedItem="{Binding SelectedVariant2Option, Mode=TwoWay}"
+                                                                                 SearchPlaceholderText="Filtra variante 2"
+                                                                                 EmptyText="Nessuna variante legacy trovata." />
+
+                                                    <TextBlock Grid.Row="6"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Venduto 1 mese" />
+                                                    <TextBox Grid.Row="6"
+                                                             Grid.Column="1"
+                                                             Text="{Binding SoldLastMonthLabel, Mode=OneWay}"
+                                                             Style="{StaticResource OptionCompactTextBoxStyle}"
+                                                             IsReadOnly="True" />
+
+                                                    <TextBlock Grid.Row="6"
+                                                               Grid.Column="3"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Venduto 3 mesi" />
+                                                    <TextBox Grid.Row="6"
+                                                             Grid.Column="4"
+                                                             Text="{Binding SoldLastThreeMonthsLabel, Mode=OneWay}"
+                                                             Style="{StaticResource OptionCompactTextBoxStyle}"
+                                                             IsReadOnly="True" />
+
+                                                    <TextBlock Grid.Row="8"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Variante" />
+                                                    <TextBox Grid.Row="8"
+                                                             Grid.Column="1"
+                                                             Text="{Binding VariantLabel, Mode=OneWay}"
+                                                             Style="{StaticResource OptionCompactTextBoxStyle}"
+                                                             IsReadOnly="True" />
+
+                                                    <TextBlock Grid.Row="8"
+                                                               Grid.Column="3"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="IVA" />
+                                                    <controls:InlineLookupPicker Grid.Row="8"
+                                                                                 Grid.Column="4"
+                                                                                 Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                 DisplayText="{Binding SelectedVatLabel}"
+                                                                                 SearchText="{Binding VatPickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                 IsOpen="{Binding IsVatPickerOpen, Mode=TwoWay}"
+                                                                                 ItemsSource="{Binding FilteredVatOptions}"
+                                                                                 SelectedItem="{Binding SelectedVatOption, Mode=TwoWay}"
+                                                                                 SearchPlaceholderText="Filtra codice IVA legacy"
+                                                                                 EmptyText="Nessun codice IVA legacy trovato." />
+
+                                                    <TextBlock Grid.Row="10"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Tag legacy" />
+                                                    <ScrollViewer Grid.Row="10"
+                                                                  Grid.Column="1"
+                                                                  Grid.ColumnSpan="4"
+                                                                  MinHeight="30"
+                                                                  MaxHeight="54"
+                                                                  VerticalScrollBarVisibility="Auto"
+                                                                  HorizontalScrollBarVisibility="Disabled">
+                                                        <ItemsControl ItemsSource="{Binding ArticleTags}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <WrapPanel VerticalAlignment="Center" />
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Border Style="{StaticResource ArticleTagChipBorderStyle}">
+                                                                        <StackPanel Orientation="Horizontal"
+                                                                                    VerticalAlignment="Center">
+                                                                            <TextBlock VerticalAlignment="Center"
+                                                                                       FontSize="12"
+                                                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                                                       Text="{Binding}" />
+                                                                            <Button Style="{StaticResource ArticleTagRemoveButtonStyle}"
+                                                                                    Content="x"
+                                                                                    Command="{Binding DataContext.RemoveArticleTagCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                                    CommandParameter="{Binding}" />
+                                                                        </StackPanel>
+                                                                    </Border>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </ScrollViewer>
+
+                                                    <TextBlock Grid.Row="12"
+                                                               Style="{StaticResource FieldLabelStyle}"
+                                                               Text="Nuovo tag" />
+                                                    <ComboBox Grid.Row="12"
+                                                              Grid.Column="1"
+                                                              Grid.ColumnSpan="3"
+                                                              Style="{StaticResource ArticleTagSuggestionComboBoxStyle}"
+                                                              Text="{Binding NewArticleTagText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              ItemsSource="{Binding ArticleTagSuggestions}"
+                                                              IsEnabled="{Binding HasSelectedArticle}" />
+                                                    <Button Grid.Row="12"
+                                                            Grid.Column="4"
+                                                            Content="+"
+                                                            Style="{StaticResource CompactPrimaryButtonStyle}"
+                                                            MinHeight="30"
+                                                            MaxHeight="30"
+                                                            MinWidth="42"
+                                                            Padding="0"
+                                                            Command="{Binding AddArticleTagCommand}" />
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Grid.Column="2"
+                                            MinHeight="312"
+                                            Style="{StaticResource SectionBoxStyle}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="6" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Style="{StaticResource SectionCaptionStyle}"
+                                                        Text="Opzioni" />
+
+                                            <Border Grid.Row="2"
+                                                    Background="{StaticResource SurfaceBrush}"
+                                                    BorderBrush="{StaticResource BorderBrushBase}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="8"
+                                                    MinHeight="272"
+                                                    MaxHeight="272">
+                                                <Grid Margin="8,6">
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="5" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="5" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="110" />
+                                                            <ColumnDefinition Width="16" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="88" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock Grid.Column="0"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Tipo articolo" />
+                                                        <controls:InlineLookupPicker Grid.Column="2"
+                                                                                      Width="110"
+                                                                                      HorizontalAlignment="Left"
+                                                                                      Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                      DisplayText="{Binding SelectedArticleTypeLabel}"
+                                                                                      SearchText="{Binding ArticleTypePickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                     IsOpen="{Binding IsArticleTypePickerOpen, Mode=TwoWay}"
+                                                                                     ItemsSource="{Binding FilteredArticleTypeOptions}"
+                                                                                     SelectedItem="{Binding SelectedArticleTypeOption, Mode=TwoWay}"
+                                                                                     SearchPlaceholderText="Filtra tipo articolo"
+                                                                                     EmptyText="Nessun tipo articolo legacy disponibile." />
+
+                                                        <TextBlock Grid.Column="4"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Fonte" />
+                                                        <TextBox Grid.Column="6"
+                                                                 Width="65"
+                                                                 HorizontalAlignment="Left"
+                                                                 Text="{Binding SourceLabel, Mode=OneWay}"
+                                                                 Style="{StaticResource OptionCompactTextBoxStyle}"
+                                                                 IsReadOnly="True" Margin="24,0,0,0" />
+                                                    </Grid>
+
+                                                    <Grid Grid.Row="2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="110" />
+                                                            <ColumnDefinition Width="18" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="110" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock Grid.Column="0"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Tracciabilità" />
+                                                        <controls:InlineLookupPicker Grid.Column="2"
+                                                                                      Width="110"
+                                                                                      HorizontalAlignment="Left"
+                                                                                      Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                      DisplayText="{Binding SelectedTraceabilityLabel}"
+                                                                                     SearchText="{Binding TraceabilityPickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                     IsOpen="{Binding IsTraceabilityPickerOpen, Mode=TwoWay}"
+                                                                                     ItemsSource="{Binding FilteredTraceabilityOptions}"
+                                                                                     SelectedItem="{Binding SelectedTraceabilityOption, Mode=TwoWay}"
+                                                                                     SearchPlaceholderText="Filtra tracciabilità"
+                                                                                     EmptyText="Nessuna tracciabilità legacy disponibile." />
+
+                                                        <TextBlock Grid.Column="4"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Tipo costo" />
+                                                        <controls:InlineLookupPicker Grid.Column="6"
+                                                                                      Width="110"
+                                                                                      HorizontalAlignment="Left"
+                                                                                      Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                      DisplayText="{Binding SelectedCostTypeLabel}"
+                                                                                     SearchText="{Binding CostTypePickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                     IsOpen="{Binding IsCostTypePickerOpen, Mode=TwoWay}"
+                                                                                     ItemsSource="{Binding FilteredCostTypeOptions}"
+                                                                                     SelectedItem="{Binding SelectedCostTypeOption, Mode=TwoWay}"
+                                                                                     SearchPlaceholderText="Filtra tipo costo"
+                                                                                     EmptyText="Nessun tipo costo legacy disponibile." />
+                                                    </Grid>
+
+                                                    <Grid Grid.Row="4">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="20" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="1" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="1" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="1" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="1" />
+                                                            <RowDefinition Height="Auto" />
+                                                        </Grid.RowDefinitions>
+
+                                                        <TextBlock Grid.Column="0"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Usa per vendita al banco Touch" />
+                                                        <CheckBox Grid.Column="2"
+                                                                  HorizontalAlignment="Left"
+                                                                  IsChecked="{Binding UsesBancoTouch, Mode=OneWay}"
+                                                                  IsHitTestVisible="False"
+                                                                  Focusable="False"
+                                                                  Style="{StaticResource CompactCheckBoxStyle}" />
+                                                        <TextBlock Grid.Column="4"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Esporta" />
+                                                        <CheckBox Grid.Column="6"
+                                                                  HorizontalAlignment="Left"
+                                                                  IsChecked="{Binding ExportsArticle, Mode=OneWay}"
+                                                                  IsHitTestVisible="False"
+                                                                  Focusable="False"
+                                                                  Style="{StaticResource CompactCheckBoxStyle}" />
+
+                                                        <TextBlock Grid.Row="2"
+                                                                   Grid.Column="0"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Escludi inventario" />
+                                                        <CheckBox Grid.Row="2"
+                                                                  Grid.Column="2"
+                                                                  HorizontalAlignment="Left"
+                                                                  IsChecked="{Binding ExcludesInventory, Mode=OneWay}"
+                                                                  IsHitTestVisible="False"
+                                                                  Focusable="False"
+                                                                  Style="{StaticResource CompactCheckBoxStyle}" />
+                                                        <TextBlock Grid.Row="2"
+                                                                   Grid.Column="4"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Escludi scontrino" />
+                                                        <CheckBox Grid.Row="2"
+                                                                  Grid.Column="6"
+                                                                  HorizontalAlignment="Left"
+                                                                  IsChecked="{Binding ExcludesReceipt, Mode=OneWay}"
+                                                                  IsHitTestVisible="False"
+                                                                  Focusable="False"
+                                                                  Style="{StaticResource CompactCheckBoxStyle}" />
+
+                                                        <TextBlock Grid.Row="4"
+                                                                   Grid.Column="0"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Escludi dal totale documento" />
+                                                        <CheckBox Grid.Row="4"
+                                                                  Grid.Column="2"
+                                                                  HorizontalAlignment="Left"
+                                                                  IsChecked="{Binding ExcludesDocumentTotal, Mode=OneWay}"
+                                                                  IsHitTestVisible="False"
+                                                                  Focusable="False"
+                                                                  Style="{StaticResource CompactCheckBoxStyle}" />
+                                                        <TextBlock Grid.Row="4"
+                                                                   Grid.Column="4"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Obsoleto" />
+                                                        <CheckBox Grid.Row="4"
+                                                                  Grid.Column="6"
+                                                                  HorizontalAlignment="Left"
+                                                                  IsChecked="{Binding IsObsoleteArticle, Mode=OneWay}"
+                                                                  IsHitTestVisible="False"
+                                                                  Focusable="False"
+                                                                  Style="{StaticResource CompactCheckBoxStyle}" />
+
+                                                        <TextBlock Grid.Row="6"
+                                                                   Grid.Column="0"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Escludi sconto soggetto" />
+                                                        <StackPanel Grid.Row="6"
+                                                                    Grid.Column="2"
+                                                                    Grid.ColumnSpan="2"
+                                                                    Orientation="Horizontal"
+                                                                    VerticalAlignment="Center">
+                                                            <CheckBox HorizontalAlignment="Left"
+                                                                      IsChecked="{Binding ExcludesSubjectDiscount, Mode=OneWay}"
+                                                                      IsHitTestVisible="False"
+                                                                      Focusable="False"
+                                                                      Style="{StaticResource CompactCheckBoxStyle}" />
+                                                            <TextBlock Margin="6,0,0,0"
+                                                                       VerticalAlignment="Center"
+                                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                                       FontSize="10"
+                                                                       Text="(Su riga documento)" />
+                                                        </StackPanel>
+
+                                                    </Grid>
+
+                                                    <Grid Grid.Row="6">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="10" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="12" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="6" />
+                                                            <ColumnDefinition Width="74" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <CheckBox Grid.Column="0"
+                                                                  Content="Usa tassa"
+                                                                  IsChecked="{Binding UsesTax, Mode=OneWay}"
+                                                                  IsHitTestVisible="False"
+                                                                  Focusable="False"
+                                                                  Style="{StaticResource CompactCheckBoxStyle}" />
+
+                                                        <TextBlock Grid.Column="2"
+                                                                   HorizontalAlignment="Right"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Accisa" />
+
+                                                        <controls:InlineLookupPicker Grid.Column="4"
+                                                                                      Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                      DisplayText="{Binding SelectedTaxLabel}"
+                                                                                      SearchText="{Binding TaxPickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                      IsOpen="{Binding IsTaxPickerOpen, Mode=TwoWay}"
+                                                                                      ItemsSource="{Binding FilteredTaxOptions}"
+                                                                                      SelectedItem="{Binding SelectedTaxOption, Mode=TwoWay}"
+                                                                                      SearchPlaceholderText="Filtra accisa legacy"
+                                                                                      EmptyText="Nessuna accisa legacy trovata." />
+
+                                                        <TextBlock Grid.Column="6"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Molt." />
+
+                                                        <TextBox Grid.Column="8"
+                                                                  Text="{Binding TaxMultiplierLabel, Mode=OneWay}"
+                                                                  Style="{StaticResource OptionCompactTextBoxStyle}"
+                                                                  HorizontalContentAlignment="Center"
+                                                                  IsReadOnly="True"
+                                                                  MaxHeight="30" />
+                                                    </Grid>
+
+                                                    <Grid Grid.Row="8">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="10" />
+                                                            <ColumnDefinition Width="140" />
+                                                            <ColumnDefinition Width="14" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock Grid.Column="0"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Ultima vendita" />
+                                                        <TextBox Grid.Column="2"
+                                                                 Text="{Binding LastSaleDateLabel, Mode=OneWay}"
+                                                                 Style="{StaticResource OptionCompactTextBoxStyle}"
+                                                                 IsReadOnly="True"
+                                                                 MaxHeight="30" />
+
+                                                        <TextBlock Grid.Column="4"
+                                                                   VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Carta fedeltÃ " />
+                                                        <controls:InlineLookupPicker Grid.Column="6"
+                                                                                      Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                      DisplayText="{Binding SelectedLoyaltyOperationLabel}"
+                                                                                      SearchText="{Binding LoyaltyOperationPickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                      IsOpen="{Binding IsLoyaltyOperationPickerOpen, Mode=TwoWay}"
+                                                                                      ItemsSource="{Binding FilteredLoyaltyOperationOptions}"
+                                                                                      SelectedItem="{Binding SelectedLoyaltyOperationOption, Mode=TwoWay}"
+                                                                                      SearchPlaceholderText="Filtra operazione carta fedeltÃ "
+                                                                                      EmptyText="Nessuna operazione carta fedeltÃ  legacy disponibile." />
+                                                    </Grid>
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Grid.Column="4"
+                                            MinHeight="312"
+                                            Style="{StaticResource SectionBoxStyle}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="6" />
+                                                <RowDefinition Height="*" />
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Style="{StaticResource SectionCaptionStyle}"
+                                                       Text="E-commerce e codifiche" />
+
+                                            <Border Grid.Row="2"
+                                                    Background="{StaticResource SurfaceBrush}"
+                                                    BorderBrush="{StaticResource BorderBrushBase}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="8"
+                                                    MinHeight="272"
+                                                    MaxHeight="272">
+                                                <Grid Margin="8,6">
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="5" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="5" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="4" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+
+                                                    <TextBlock Grid.Row="0"
+                                                               Style="{StaticResource CompactInfoLabelStyle}"
+                                                               Text="Codifica fattura elettronica" />
+
+                                                    <Grid Grid.Row="2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="10" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="120" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock Grid.Column="0"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Cod.tipo" />
+                                                        <TextBox Grid.Column="2"
+                                                                 Text="{Binding InvoiceCodeTypeLabel, Mode=OneWay}"
+                                                                 Style="{StaticResource OptionCompactTextBoxStyle}"
+                                                                 IsReadOnly="True" />
+
+                                                        <TextBlock Grid.Column="4"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Valore" />
+                                                        <TextBox Grid.Column="6"
+                                                                 Text="{Binding InvoiceCodeValueLabel, Mode=OneWay}"
+                                                                 Style="{StaticResource OptionCompactTextBoxStyle}"
+                                                                 IsReadOnly="True" />
+                                                    </Grid>
+
+                                                    <StackPanel Grid.Row="4"
+                                                                Orientation="Horizontal"
+                                                                VerticalAlignment="Center">
+                                                        <TextBlock VerticalAlignment="Center"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Descr. br. altri dati gest." />
+                                                        <CheckBox Margin="4,0,0,0"
+                                                                  VerticalAlignment="Center"
+                                                                  IsChecked="{Binding AddsShortDescriptionToDescription, Mode=OneWay}"
+                                                                  IsHitTestVisible="False"
+                                                                  Focusable="False"
+                                                                  Style="{StaticResource CompactCheckBoxStyle}" />
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Row="6"
+                                                               Style="{StaticResource CompactInfoLabelStyle}"
+                                                               Text="E-commerce" />
+
+                                                    <Grid Grid.Row="8">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="14" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock Grid.Column="0"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="On line" />
+                                                        <CheckBox Grid.Column="2"
+                                                                  VerticalAlignment="Center"
+                                                                  IsChecked="{Binding IsOnlineArticle, Mode=OneWay}"
+                                                                  IsHitTestVisible="False"
+                                                                  Focusable="False"
+                                                                  Style="{StaticResource CompactCheckBoxStyle}" />
+
+                                                        <TextBlock Grid.Column="4"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Disponibilità" />
+                                                        <TextBox Grid.Column="6"
+                                                                 Text="{Binding EcommerceAvailabilityLabel, Mode=OneWay}"
+                                                                 Style="{StaticResource OptionCompactTextBoxStyle}"
+                                                                 IsReadOnly="True" />
+                                                    </Grid>
+
+                                                    <Grid Grid.Row="10">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock Grid.Column="0"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Avvertenze" />
+                                                        <TextBox Grid.Column="2"
+                                                                 Text="{Binding LegacyWarningsLabel, Mode=OneWay}"
+                                                                 Style="{StaticResource OptionCompactTextBoxStyle}"
+                                                                 IsReadOnly="True" />
+                                                    </Grid>
+
+                                                    <Grid Grid.Row="12">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="8" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock Grid.Column="0"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="Condizione" />
+                                                        <controls:InlineLookupPicker Grid.Column="2"
+                                                                                      Style="{StaticResource OptionInlineLookupPickerStyle}"
+                                                                                      DisplayText="{Binding SelectedConditionLabel}"
+                                                                                      SearchText="{Binding ConditionPickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                      IsOpen="{Binding IsConditionPickerOpen, Mode=TwoWay}"
+                                                                                      ItemsSource="{Binding FilteredConditionOptions}"
+                                                                                      SelectedItem="{Binding SelectedConditionOption, Mode=TwoWay}"
+                                                                                      SearchPlaceholderText="Filtra condizione"
+                                                                                      EmptyText="Nessuna condizione legacy disponibile." />
+                                                    </Grid>
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+
+                        <TabItem Header="Confezione"
+                                 Tag="#2E8B57">
+                            <Border Margin="8"
+                                    Style="{StaticResource SectionBoxStyle}"
+                                    Padding="0">
+                                <ContentControl x:Name="EmbeddedMagazzinoArticleHost" />
+                            </Border>
+                        </TabItem>
+
+                        <TabItem Header="Scheda tecnica"
+                                 Tag="#C47F1F">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <Border Margin="8"
+                                        Style="{StaticResource SectionBoxStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="6" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Style="{StaticResource SectionCaptionStyle}"
+                                                   Text="{Binding SpecificationsStatusText}" />
+
+                                        <ItemsControl Grid.Row="2"
+                                                      Margin="0,4,0,0"
+                                                      ItemsSource="{Binding Specifications}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Margin="0,0,0,4"
+                                                            Padding="8,5"
+                                                            Background="{StaticResource SurfaceBrush}"
+                                                            BorderBrush="{StaticResource BorderBrushBase}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="6">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="190" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock FontWeight="SemiBold"
+                                                                       Text="{Binding Name}" />
+                                                            <TextBlock Grid.Column="1"
+                                                                       Margin="8,0,0,0"
+                                                                       TextWrapping="Wrap"
+                                                                       Text="{Binding Value}" />
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                </Border>
+                            </ScrollViewer>
+                        </TabItem>
+
+                        <TabItem Header="Listini"
+                                 Tag="#8E5BBE">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <Border Margin="8"
+                                        Style="{StaticResource SectionBoxStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="6" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Style="{StaticResource SectionCaptionStyle}"
+                                                   Text="{Binding PriceTiersStatusText}" />
+
+                                        <DataGrid Grid.Row="2"
+                                                  Margin="0,4,0,0"
+                                                  ItemsSource="{Binding PriceTierRows}"
+                                                  AutoGenerateColumns="False"
+                                                  CanUserAddRows="False"
+                                                  CanUserDeleteRows="False"
+                                                  CanUserResizeRows="False"
+                                                  HeadersVisibility="Column"
+                                                  GridLinesVisibility="None"
+                                                  BorderThickness="0"
+                                                  Background="Transparent"
+                                                  RowStyle="{StaticResource CompactDataGridRowStyle}"
+                                                  ColumnHeaderStyle="{StaticResource CompactDataGridHeaderStyle}"
+                                                  CellStyle="{StaticResource CompactDataGridCellStyle}">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Q.ta minima"
+                                                                    Width="110"
+                                                                    Binding="{Binding QuantitaMinimaLabel}" />
+                                                <DataGridTextColumn Header="Prezzo unitario"
+                                                                    Width="130"
+                                                                    Binding="{Binding PrezzoUnitarioLabel}" />
+                                                <DataGridTextColumn Header="Valido fino"
+                                                                    Width="120"
+                                                                    Binding="{Binding DataFineLabel}" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </Grid>
+                                </Border>
+                            </ScrollViewer>
+                        </TabItem>
+                </TabControl>
+
+                <ContentPresenter Grid.Row="4"
+                                  Margin="0,8,0,0"
+                                  Content="{Binding SelectedContent, ElementName=ArticleTabs}" />
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
+

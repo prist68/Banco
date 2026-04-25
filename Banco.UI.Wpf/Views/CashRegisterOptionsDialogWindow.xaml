@@ -21,22 +21,15 @@
         </Style>
     </Window.Resources>
 
-    <Grid>
-        <Rectangle Fill="{DynamicResource SidebarBackgroundBrush}"
-                   Opacity="0.58" />
-
+    <Border Style="{StaticResource ModalOverlayHostStyle}">
         <Border Width="517"
-                Padding="20"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                Background="{DynamicResource SurfaceBrush}"
-                BorderBrush="{DynamicResource BorderBrushBase}"
-                BorderThickness="1"
-                CornerRadius="10">
+                Style="{StaticResource ModalSurfaceCardStyle}">
             <StackPanel>
 
                 <!-- Header -->
-                <StackPanel Margin="0,0,0,14">
+                <StackPanel Margin="0,0,0,14" MouseLeftButtonDown="Header_OnMouseLeftButtonDown">
                     <TextBlock Text="Opzioni cassa"
                                FontSize="15"
                                FontWeight="Bold"
@@ -222,5 +215,5 @@
 
             </StackPanel>
         </Border>
-    </Grid>
+    </Border>
 </Window>

@@ -26,7 +26,7 @@ public sealed class GestionaleCustomerSummary
 
     public string? ClienteListinoNome { get; init; }
 
-    public decimal? PuntiDisponibili => PuntiAssegnati ?? PuntiIniziali;
+    public decimal? PuntiDisponibili => PuntiAssegnati ?? PuntiTotali ?? PuntiIniziali;
 
     public decimal? Punti => PuntiDisponibili;
 

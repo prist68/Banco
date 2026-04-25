@@ -5,7 +5,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using Banco.Core.Domain.Entities;
 using Banco.Core.Domain.Enums;
-using Banco.UI.Wpf.Infrastructure.GridColumns;
+using Banco.UI.Shared.Grid;
 using Banco.Vendita.Abstractions;
 using Banco.Vendita.Configuration;
 using Banco.Vendita.Documents;
@@ -24,6 +24,7 @@ public sealed class DocumentListViewModel : ViewModelBase
         int FilteredCount,
         int FilteredOfficialCount,
         decimal Totale,
+        decimal Punti,
         decimal Contanti,
         decimal Carta,
         decimal Web,
@@ -42,6 +43,7 @@ public sealed class DocumentListViewModel : ViewModelBase
     private readonly IPosProcessLogService _logService;
     private readonly ReorderListViewModel _reorderListViewModel;
     private readonly Dictionary<string, GridColumnLayoutState> _columns = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, GridColumnLayoutState> _detailColumns = new(StringComparer.OrdinalIgnoreCase);
     private readonly CollectionViewSource _uiDocumentsViewSource = new();
     private string _statusMessage = "Caricamento documenti in corso...";
     private string _uiStatusMessage = "Caricamento documenti in corso...";
@@ -61,6 +63,7 @@ public sealed class DocumentListViewModel : ViewModelBase
     private DocumentGridRowViewModel? _selectedDocument;
     private DocumentGridDetailViewModel? _selectedDocumentDetail;
     private decimal _filteredTotale;
+    private decimal _filteredPunti;
     private decimal _filteredContanti;
     private decimal _filteredCarta;
     private decimal _filteredWeb;
@@ -74,7 +77,9 @@ public sealed class DocumentListViewModel : ViewModelBase
     private int _filteredCount;
     private int _filteredOfficialCount;
     private UIDocumentPresentationMode _uiDocumentPresentationMode = UIDocumentPresentationMode.Default;
+    private bool _completeModeNextCycleShowsOnlySi;
     private decimal _uiFilteredTotale;
+    private decimal _uiFilteredPunti;
     private decimal _uiFilteredContanti;
     private decimal _uiFilteredCarta;
     private decimal _uiFilteredBuoni;
@@ -148,6 +153,11 @@ public sealed class DocumentListViewModel : ViewModelBase
     }
 
     public string Titolo => "Documenti";
+
+    public string IncludeTechnicalRecordsLabel => "Includi record tecnici";
+
+    public string IncludeTechnicalRecordsTooltip =>
+        "Mostra anche i supporti tecnici locali ancora presenti nella lista, oltre ai documenti ufficiali letti dal db_diltech.";
 
     public ReorderListViewModel ReorderList => _reorderListViewModel;
 
@@ -368,9 +378,9 @@ public sealed class DocumentListViewModel : ViewModelBase
 
     public string UIDocumentPresentationModeLabel => UIDocumentPresentationMode switch
     {
-        UIDocumentPresentationMode.OnlyCortesia => "Solo cortesia",
-        UIDocumentPresentationMode.CompleteWithCortesia => "Completa con cortesia",
-        _ => "Solo scontrinati"
+        UIDocumentPresentationMode.OnlyCortesia => "Solo No",
+        UIDocumentPresentationMode.CompleteWithCortesia => "Lista completa",
+        _ => "Solo Si"
     };
 
     public bool IsUIDefaultPresentationMode => UIDocumentPresentationMode == UIDocumentPresentationMode.Default;
@@ -481,6 +491,12 @@ public sealed class DocumentListViewModel : ViewModelBase
         private set => SetProperty(ref _filteredTotale, value);
     }
 
+    public decimal FilteredPunti
+    {
+        get => _filteredPunti;
+        private set => SetProperty(ref _filteredPunti, value);
+    }
+
     public decimal FilteredContanti
     {
         get => _filteredContanti;
@@ -545,6 +561,12 @@ public sealed class DocumentListViewModel : ViewModelBase
     {
         get => _uiFilteredTotale;
         private set => SetProperty(ref _uiFilteredTotale, value);
+    }
+
+    public decimal UIFilteredPunti
+    {
+        get => _uiFilteredPunti;
+        private set => SetProperty(ref _uiFilteredPunti, value);
     }
 
     public decimal UIFilteredContanti
@@ -653,6 +675,7 @@ public sealed class DocumentListViewModel : ViewModelBase
     {
         Status = FilteredOfficialCount.ToString("N0"),
         Totale = FilteredTotale.ToString("N2"),
+        Punti = string.Empty,
         PagContanti = FilteredContanti.ToString("N2"),
         PagCarta = FilteredCarta.ToString("N2"),
         PagWeb = FilteredWeb.ToString("N2"),
@@ -668,6 +691,7 @@ public sealed class DocumentListViewModel : ViewModelBase
     {
         Status = UIFilteredOfficialCount.ToString("N0"),
         Totale = UIFilteredTotale.ToString("N2"),
+        Punti = string.Empty,
         PagContanti = UIFilteredContanti.ToString("N2"),
         PagCarta = IsUICartaSummaryVisible ? UIFilteredCarta.ToString("N2") : string.Empty,
         Cortesia = IsUICortesiaSummaryVisible ? UIFilteredCortesia.ToString("N2") : string.Empty,
@@ -678,6 +702,7 @@ public sealed class DocumentListViewModel : ViewModelBase
     public IReadOnlyList<DocumentGridFooterViewModel> UIFooterRows => [UIFooterRow];
 
     public IReadOnlyList<GridColumnDefinition> ColumnDefinitions => DocumentColumnDefinitions.All;
+    public IReadOnlyList<GridColumnDefinition> DetailColumnDefinitions => DocumentDetailColumnDefinitions.All;
 
     public bool IsStatusColumnVisible => GetEffectiveColumnVisibility("Status");
     public bool IsOidColumnVisible => GetEffectiveColumnVisibility("Oid");
@@ -686,6 +711,7 @@ public sealed class DocumentListViewModel : ViewModelBase
     public bool IsOperatoreColumnVisible => GetEffectiveColumnVisibility("Operatore");
     public bool IsClienteColumnVisible => GetEffectiveColumnVisibility("Cliente");
     public bool IsTotaleColumnVisible => GetEffectiveColumnVisibility("Totale");
+    public bool IsPuntiColumnVisible => GetEffectiveColumnVisibility("Punti");
     public bool IsPagContantiColumnVisible => GetEffectiveColumnVisibility("PagContanti");
     public bool IsPagCartaColumnVisible => GetEffectiveColumnVisibility("PagCarta");
     public bool IsPagWebColumnVisible => GetEffectiveColumnVisibility("PagWeb");
@@ -696,6 +722,13 @@ public sealed class DocumentListViewModel : ViewModelBase
     public bool IsOrigineColumnVisible => GetEffectiveColumnVisibility("Origine");
     public bool IsStatoColumnVisible => GetEffectiveColumnVisibility("StatoDocumento");
     public bool IsScontrinoColumnVisible => GetEffectiveColumnVisibility("Scontrino");
+    public bool IsDetailOrdineRigaColumnVisible => GetDetailColumnVisibility("OrdineRiga");
+    public bool IsDetailCodiceColumnVisible => GetDetailColumnVisibility("CodiceArticolo");
+    public bool IsDetailDescrizioneColumnVisible => GetDetailColumnVisibility("Descrizione");
+    public bool IsDetailQuantitaColumnVisible => GetDetailColumnVisibility("Quantita");
+    public bool IsDetailPrezzoColumnVisible => GetDetailColumnVisibility("PrezzoUnitario");
+    public bool IsDetailScontoColumnVisible => GetDetailColumnVisibility("ScontoPercentuale");
+    public bool IsDetailImportoColumnVisible => GetDetailColumnVisibility("ImportoRiga");
 
     public async Task<GridLayoutSettings> GetGridLayoutAsync()
     {
@@ -714,11 +747,35 @@ public sealed class DocumentListViewModel : ViewModelBase
         await _configurationService.SaveAsync(settings);
     }
 
+    public async Task<GridLayoutSettings> GetDetailGridLayoutAsync()
+    {
+        var settings = await _configurationService.LoadAsync();
+        var layout = GridLayoutMigration.GetOrCreateDocumentDetailLayout(settings, DetailColumnDefinitions);
+        SyncDetailColumnsFromLayout(layout);
+        return layout;
+    }
+
+    public async Task SaveDetailGridLayoutAsync(GridLayoutSettings layout)
+    {
+        var settings = await _configurationService.LoadAsync();
+        settings.GridLayouts[GridLayoutMigration.DocumentDetailGridId] = layout;
+        await _configurationService.SaveAsync(settings);
+    }
+
     public double GetColumnWidth(string key) => _columns.TryGetValue(key, out var state) ? state.Width : 120;
 
     public int GetColumnDisplayIndex(string key) => _columns.TryGetValue(key, out var state) ? state.DisplayIndex : 0;
 
     public bool GetColumnVisibility(string key) => _columns.TryGetValue(key, out var state) ? state.IsVisible : true;
+
+    public GridColumnContentAlignment GetColumnContentAlignment(string key) =>
+        _columns.TryGetValue(key, out var state) ? state.ContentAlignment : GridColumnContentAlignment.Center;
+
+    public double GetDetailColumnWidth(string key) => _detailColumns.TryGetValue(key, out var state) ? state.Width : 120;
+
+    public int GetDetailColumnDisplayIndex(string key) => _detailColumns.TryGetValue(key, out var state) ? state.DisplayIndex : 0;
+
+    public bool GetDetailColumnVisibility(string key) => _detailColumns.TryGetValue(key, out var state) ? state.IsVisible : true;
 
     public async Task ToggleColumnVisibilityAsync(string key)
     {
@@ -765,6 +822,64 @@ public sealed class DocumentListViewModel : ViewModelBase
         await SaveGridLayoutAsync(layout);
     }
 
+    public async Task SaveColumnContentAlignmentAsync(string key, GridColumnContentAlignment alignment)
+    {
+        var layout = await GetGridLayoutAsync();
+        if (!layout.Columns.TryGetValue(key, out var state))
+        {
+            return;
+        }
+
+        state.ContentAlignment = alignment;
+        _columns[key] = state;
+        await SaveGridLayoutAsync(layout);
+    }
+
+    public async Task ToggleDetailColumnVisibilityAsync(string key)
+    {
+        var layout = await GetDetailGridLayoutAsync();
+        if (!layout.Columns.TryGetValue(key, out var state))
+        {
+            return;
+        }
+
+        state.IsVisible = !state.IsVisible;
+        _detailColumns[key] = state;
+        RaiseDetailColumnVisibilityNotifications();
+        await SaveDetailGridLayoutAsync(layout);
+    }
+
+    public async Task SaveDetailColumnWidthAsync(string key, double width)
+    {
+        if (width <= 0)
+        {
+            return;
+        }
+
+        var layout = await GetDetailGridLayoutAsync();
+        if (!layout.Columns.TryGetValue(key, out var state))
+        {
+            return;
+        }
+
+        state.Width = width;
+        _detailColumns[key] = state;
+        await SaveDetailGridLayoutAsync(layout);
+    }
+
+    public async Task SaveDetailColumnDisplayIndexAsync(string key, int displayIndex)
+    {
+        var layout = await GetDetailGridLayoutAsync();
+        if (!layout.Columns.TryGetValue(key, out var state))
+        {
+            return;
+        }
+
+        state.DisplayIndex = displayIndex;
+        _detailColumns[key] = state;
+        await SaveDetailGridLayoutAsync(layout);
+    }
+
     public string GetFooterLabel(string key)
     {
         return key switch
@@ -804,6 +919,7 @@ public sealed class DocumentListViewModel : ViewModelBase
 
     public void ResetUIDocumentPresentationMode()
     {
+        _completeModeNextCycleShowsOnlySi = false;
         UIDocumentPresentationMode = UIDocumentPresentationMode.Default;
     }
 
@@ -811,17 +927,42 @@ public sealed class DocumentListViewModel : ViewModelBase
     {
         UIDocumentPresentationMode = UIDocumentPresentationMode switch
         {
-            UIDocumentPresentationMode.Default => UIDocumentPresentationMode.OnlyCortesia,
-            UIDocumentPresentationMode.OnlyCortesia => UIDocumentPresentationMode.CompleteWithCortesia,
-            _ => UIDocumentPresentationMode.OnlyCortesia
+            UIDocumentPresentationMode.CompleteWithCortesia => CycleFromCompleteMode(),
+            UIDocumentPresentationMode.OnlyCortesia => CycleFromOnlyNoMode(),
+            _ => CycleFromOnlySiMode()
         };
+    }
+
+    private UIDocumentPresentationMode CycleFromCompleteMode()
+    {
+        if (_completeModeNextCycleShowsOnlySi)
+        {
+            _completeModeNextCycleShowsOnlySi = false;
+            return UIDocumentPresentationMode.Default;
+        }
+
+        return UIDocumentPresentationMode.OnlyCortesia;
+    }
+
+    private UIDocumentPresentationMode CycleFromOnlyNoMode()
+    {
+        _completeModeNextCycleShowsOnlySi = true;
+        return UIDocumentPresentationMode.CompleteWithCortesia;
+    }
+
+    private UIDocumentPresentationMode CycleFromOnlySiMode()
+    {
+        _completeModeNextCycleShowsOnlySi = false;
+        return UIDocumentPresentationMode.OnlyCortesia;
     }
 
     private async Task InitializeAsync()
     {
         var settings = await _configurationService.LoadAsync();
         var layout = GridLayoutMigration.GetOrCreateDocumentListLayout(settings, ColumnDefinitions);
+        var detailLayout = GridLayoutMigration.GetOrCreateDocumentDetailLayout(settings, DetailColumnDefinitions);
         SyncColumnsFromLayout(layout);
+        SyncDetailColumnsFromLayout(detailLayout);
         IncludeLocalDocuments = layout.Flags.TryGetValue("includeLocalDocuments", out var includeLocal)
             ? includeLocal
             : settings.DocumentListIncludeLocalDocuments;
@@ -1147,6 +1288,19 @@ public sealed class DocumentListViewModel : ViewModelBase
         RefreshFilter();
     }
 
+    public void UseCustomDateRangeFilter()
+    {
+        if (!IsFilterOggiActive && !IsFilterSettimanaActive && !IsFilterMeseCorrenteActive)
+        {
+            return;
+        }
+
+        IsFilterOggiActive = false;
+        IsFilterSettimanaActive = false;
+        IsFilterMeseCorrenteActive = false;
+        RefreshFilter();
+    }
+
     private async Task PersistFlagsAsync()
     {
         var settings = await _configurationService.LoadAsync();
@@ -1321,8 +1475,8 @@ public sealed class DocumentListViewModel : ViewModelBase
 
         return UIDocumentPresentationMode switch
         {
-            UIDocumentPresentationMode.OnlyCortesia => row.IsCortesia,
-            UIDocumentPresentationMode.CompleteWithCortesia => row.IsScontrinato || row.IsCortesia,
+            UIDocumentPresentationMode.OnlyCortesia => row.IsNonScontrinato,
+            UIDocumentPresentationMode.CompleteWithCortesia => row.IsScontrinato || row.IsNonScontrinato,
             _ => row.IsScontrinato
         };
     }
@@ -1343,6 +1497,7 @@ public sealed class DocumentListViewModel : ViewModelBase
         FilteredCount = totals.FilteredCount;
         FilteredOfficialCount = totals.FilteredOfficialCount;
         FilteredTotale = totals.Totale;
+        FilteredPunti = totals.Punti;
         FilteredContanti = totals.Contanti;
         FilteredCarta = totals.Carta;
         FilteredWeb = totals.Web;
@@ -1367,6 +1522,7 @@ public sealed class DocumentListViewModel : ViewModelBase
             filtered.Count,
             filteredOfficial.Count,
             filteredOfficial.Sum(item => item.Totale),
+            0m,
             filteredOfficial.Sum(item => item.PagContanti),
             filteredOfficial.Sum(item => item.PagCarta),
             filteredOfficial.Sum(item => item.PagWeb),
@@ -1385,6 +1541,7 @@ public sealed class DocumentListViewModel : ViewModelBase
         UIFilteredCount = totals.FilteredCount;
         UIFilteredOfficialCount = totals.FilteredOfficialCount;
         UIFilteredTotale = totals.Totale;
+        UIFilteredPunti = totals.Punti;
         UIFilteredContanti = totals.Contanti;
         UIFilteredCarta = totals.Carta;
         UIFilteredBuoni = totals.Buoni;
@@ -1646,6 +1803,32 @@ public sealed class DocumentListViewModel : ViewModelBase
         RaiseColumnVisibilityNotifications();
     }
 
+    private void SyncDetailColumnsFromLayout(GridLayoutSettings layout)
+    {
+        _detailColumns.Clear();
+        foreach (var pair in layout.Columns)
+        {
+            _detailColumns[pair.Key] = pair.Value;
+        }
+
+        foreach (var definition in DetailColumnDefinitions)
+        {
+            if (_detailColumns.ContainsKey(definition.Key))
+            {
+                continue;
+            }
+
+            _detailColumns[definition.Key] = new GridColumnLayoutState
+            {
+                Width = definition.DefaultWidth,
+                DisplayIndex = definition.DefaultDisplayIndex,
+                IsVisible = definition.IsVisibleByDefault
+            };
+        }
+
+        RaiseDetailColumnVisibilityNotifications();
+    }
+
     private bool GetEffectiveColumnVisibility(string key)
     {
         return GetColumnVisibility(key);
@@ -1660,6 +1843,7 @@ public sealed class DocumentListViewModel : ViewModelBase
         NotifyPropertyChanged(nameof(IsOperatoreColumnVisible));
         NotifyPropertyChanged(nameof(IsClienteColumnVisible));
         NotifyPropertyChanged(nameof(IsTotaleColumnVisible));
+        NotifyPropertyChanged(nameof(IsPuntiColumnVisible));
         NotifyPropertyChanged(nameof(IsPagContantiColumnVisible));
         NotifyPropertyChanged(nameof(IsPagCartaColumnVisible));
         NotifyPropertyChanged(nameof(IsPagWebColumnVisible));
@@ -1671,29 +1855,55 @@ public sealed class DocumentListViewModel : ViewModelBase
         NotifyPropertyChanged(nameof(IsStatoColumnVisible));
         NotifyPropertyChanged(nameof(IsScontrinoColumnVisible));
     }
+
+    private void RaiseDetailColumnVisibilityNotifications()
+    {
+        NotifyPropertyChanged(nameof(IsDetailOrdineRigaColumnVisible));
+        NotifyPropertyChanged(nameof(IsDetailCodiceColumnVisible));
+        NotifyPropertyChanged(nameof(IsDetailDescrizioneColumnVisible));
+        NotifyPropertyChanged(nameof(IsDetailQuantitaColumnVisible));
+        NotifyPropertyChanged(nameof(IsDetailPrezzoColumnVisible));
+        NotifyPropertyChanged(nameof(IsDetailScontoColumnVisible));
+        NotifyPropertyChanged(nameof(IsDetailImportoColumnVisible));
+    }
 }
 
 internal static class DocumentColumnDefinitions
 {
     public static IReadOnlyList<GridColumnDefinition> All { get; } =
     [
-        new GridColumnDefinition { Key = "Status", Header = "#", IsVisibleByDefault = true, DefaultWidth = 56, DefaultDisplayIndex = 0 },
-        new GridColumnDefinition { Key = "Origine", Header = "Origine", IsVisibleByDefault = false, DefaultWidth = 90, DefaultDisplayIndex = 1, IsPresetUnscontrinati = true },
-        new GridColumnDefinition { Key = "Oid", Header = "OID", IsVisibleByDefault = true, DefaultWidth = 80, DefaultDisplayIndex = 2 },
-        new GridColumnDefinition { Key = "Documento", Header = "Numero", IsVisibleByDefault = true, DefaultWidth = 110, DefaultDisplayIndex = 3 },
-        new GridColumnDefinition { Key = "Data", Header = "Data", IsVisibleByDefault = true, DefaultWidth = 110, DefaultDisplayIndex = 4 },
-        new GridColumnDefinition { Key = "Operatore", Header = "Operatore", IsVisibleByDefault = true, DefaultWidth = 120, DefaultDisplayIndex = 5 },
-        new GridColumnDefinition { Key = "Cliente", Header = "Ragione sociale", IsVisibleByDefault = true, DefaultWidth = 260, DefaultDisplayIndex = 6 },
-        new GridColumnDefinition { Key = "Totale", Header = "Totale", IsVisibleByDefault = true, DefaultWidth = 100, DefaultDisplayIndex = 7, IsNumeric = true },
-        new GridColumnDefinition { Key = "PagContanti", Header = "Pag. Contanti", IsVisibleByDefault = true, DefaultWidth = 100, DefaultDisplayIndex = 8, IsNumeric = true },
-        new GridColumnDefinition { Key = "PagCarta", Header = "Pag. Carta", IsVisibleByDefault = true, DefaultWidth = 100, DefaultDisplayIndex = 9, IsNumeric = true },
-        new GridColumnDefinition { Key = "PagWeb", Header = "Pag. Web", IsVisibleByDefault = true, DefaultWidth = 100, DefaultDisplayIndex = 10, IsNumeric = true },
-        new GridColumnDefinition { Key = "PagBuoni", Header = "Pag. Buoni", IsVisibleByDefault = true, DefaultWidth = 100, DefaultDisplayIndex = 11, IsNumeric = true },
-        new GridColumnDefinition { Key = "PagSospeso", Header = "Pag. Sospeso", IsVisibleByDefault = false, DefaultWidth = 100, DefaultDisplayIndex = 12, IsNumeric = true, IsPresetUnscontrinati = true },
-        new GridColumnDefinition { Key = "ResiduoPagamento", Header = "Residuo", IsVisibleByDefault = false, DefaultWidth = 100, DefaultDisplayIndex = 13, IsNumeric = true, IsPresetUnscontrinati = true },
-        new GridColumnDefinition { Key = "DaFiscalizzare", Header = "Da fiscalizzare", IsVisibleByDefault = false, DefaultWidth = 120, DefaultDisplayIndex = 14, IsNumeric = true, IsPresetUnscontrinati = true },
-        new GridColumnDefinition { Key = "StatoDocumento", Header = "Stato documento", IsVisibleByDefault = false, DefaultWidth = 140, DefaultDisplayIndex = 15, IsPresetUnscontrinati = true },
-        new GridColumnDefinition { Key = "Scontrino", Header = "Scontrino", IsVisibleByDefault = false, DefaultWidth = 100, DefaultDisplayIndex = 16, IsPresetUnscontrinati = true }
+        new GridColumnDefinition { Key = "Status", Header = "#", IsVisibleByDefault = true, DefaultWidth = 56, DefaultDisplayIndex = 0, Group = "Documento", Description = "Indicatore sintetico di origine/stato.", MinWidth = 48, MaxWidth = 72, IsFrozen = true, TextAlignment = GridColumnContentAlignment.Center },
+        new GridColumnDefinition { Key = "Origine", Header = "Origine", IsVisibleByDefault = false, DefaultWidth = 90, DefaultDisplayIndex = 1, Group = "Documento", Description = "Origine del record mostrato in lista.", MinWidth = 76, IsPresetUnscontrinati = true, TextAlignment = GridColumnContentAlignment.Center, PresetKey = "unscontrinati" },
+        new GridColumnDefinition { Key = "Oid", Header = "OID", IsVisibleByDefault = true, DefaultWidth = 80, DefaultDisplayIndex = 2, Group = "Documento", Description = "Identificativo legacy del documento.", MinWidth = 72, IsFrozen = true, TextAlignment = GridColumnContentAlignment.Center },
+        new GridColumnDefinition { Key = "Documento", Header = "Numero", IsVisibleByDefault = true, DefaultWidth = 110, DefaultDisplayIndex = 3, Group = "Documento", Description = "Numero documento ufficiale.", MinWidth = 96, IsFrozen = true, TextAlignment = GridColumnContentAlignment.Center },
+        new GridColumnDefinition { Key = "Data", Header = "Data", IsVisibleByDefault = true, DefaultWidth = 110, DefaultDisplayIndex = 4, Group = "Documento", Description = "Data del documento.", MinWidth = 92, TextAlignment = GridColumnContentAlignment.Center },
+        new GridColumnDefinition { Key = "Operatore", Header = "Operatore", IsVisibleByDefault = true, DefaultWidth = 120, DefaultDisplayIndex = 5, Group = "Documento", Description = "Operatore registrato sul documento.", MinWidth = 100, TextAlignment = GridColumnContentAlignment.Center },
+        new GridColumnDefinition { Key = "Cliente", Header = "Ragione sociale", IsVisibleByDefault = true, DefaultWidth = 260, DefaultDisplayIndex = 6, Group = "Documento", Description = "Cliente o nominativo collegato.", MinWidth = 180, TextAlignment = GridColumnContentAlignment.Left },
+        new GridColumnDefinition { Key = "Totale", Header = "Totale", IsVisibleByDefault = true, DefaultWidth = 100, DefaultDisplayIndex = 7, Group = "Pagamenti", Description = "Totale documento.", IsNumeric = true, MinWidth = 88, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "Punti", Header = "Punti", IsVisibleByDefault = true, DefaultWidth = 76, DefaultDisplayIndex = 8, Group = "Pagamenti", Description = "Punti fedelta` associati.", IsNumeric = true, MinWidth = 68, Format = "N0", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "PagContanti", Header = "Pag. Contanti", IsVisibleByDefault = true, DefaultWidth = 100, DefaultDisplayIndex = 9, Group = "Pagamenti", Description = "Quota incassata in contanti.", IsNumeric = true, MinWidth = 92, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "PagCarta", Header = "Pag. Carta", IsVisibleByDefault = true, DefaultWidth = 100, DefaultDisplayIndex = 10, Group = "Pagamenti", Description = "Quota incassata con carta.", IsNumeric = true, MinWidth = 92, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "PagWeb", Header = "Pag. Web", IsVisibleByDefault = true, DefaultWidth = 100, DefaultDisplayIndex = 11, Group = "Pagamenti", Description = "Quota incassata via web.", IsNumeric = true, MinWidth = 92, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "PagBuoni", Header = "Pag. Buoni", IsVisibleByDefault = true, DefaultWidth = 100, DefaultDisplayIndex = 12, Group = "Pagamenti", Description = "Quota incassata in buoni.", IsNumeric = true, MinWidth = 92, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "PagSospeso", Header = "Pag. Sospeso", IsVisibleByDefault = false, DefaultWidth = 100, DefaultDisplayIndex = 13, Group = "Pagamenti", Description = "Quota legata a sospeso.", IsNumeric = true, MinWidth = 92, Format = "N2", IsPresetUnscontrinati = true, TextAlignment = GridColumnContentAlignment.Right, PresetKey = "unscontrinati" },
+        new GridColumnDefinition { Key = "ResiduoPagamento", Header = "Residuo", IsVisibleByDefault = false, DefaultWidth = 100, DefaultDisplayIndex = 14, Group = "Pagamenti", Description = "Residuo ancora da regolare.", IsNumeric = true, MinWidth = 92, Format = "N2", IsPresetUnscontrinati = true, TextAlignment = GridColumnContentAlignment.Right, PresetKey = "unscontrinati" },
+        new GridColumnDefinition { Key = "DaFiscalizzare", Header = "Da fiscalizzare", IsVisibleByDefault = false, DefaultWidth = 120, DefaultDisplayIndex = 15, Group = "Stato fiscale", Description = "Importo ancora da fiscalizzare.", IsNumeric = true, MinWidth = 108, Format = "N2", IsPresetUnscontrinati = true, TextAlignment = GridColumnContentAlignment.Right, PresetKey = "unscontrinati" },
+        new GridColumnDefinition { Key = "StatoDocumento", Header = "Stato documento", IsVisibleByDefault = false, DefaultWidth = 140, DefaultDisplayIndex = 16, Group = "Stato fiscale", Description = "Stato operativo del documento.", IsPresetUnscontrinati = true, MinWidth = 120, TextAlignment = GridColumnContentAlignment.Left, PresetKey = "unscontrinati" },
+        new GridColumnDefinition { Key = "Scontrino", Header = "Scontrino", IsVisibleByDefault = false, DefaultWidth = 100, DefaultDisplayIndex = 17, Group = "Stato fiscale", Description = "Esito legacy della colonna scontrino FM.", IsPresetUnscontrinati = true, MinWidth = 88, TextAlignment = GridColumnContentAlignment.Center, PresetKey = "unscontrinati" }
+    ];
+}
+
+internal static class DocumentDetailColumnDefinitions
+{
+    public static IReadOnlyList<GridColumnDefinition> All { get; } =
+    [
+        new GridColumnDefinition { Key = "OrdineRiga", Header = "Riga", IsVisibleByDefault = true, DefaultWidth = 42, DefaultDisplayIndex = 0, Group = "Dettaglio", Description = "Ordine progressivo della riga.", IsNumeric = true, MinWidth = 40, MaxWidth = 56, TextAlignment = GridColumnContentAlignment.Center },
+        new GridColumnDefinition { Key = "CodiceArticolo", Header = "Codice", IsVisibleByDefault = true, DefaultWidth = 80, DefaultDisplayIndex = 1, Group = "Dettaglio", Description = "Codice articolo.", MinWidth = 72, TextAlignment = GridColumnContentAlignment.Left },
+        new GridColumnDefinition { Key = "Descrizione", Header = "Descrizione", IsVisibleByDefault = true, DefaultWidth = 240, DefaultDisplayIndex = 2, Group = "Dettaglio", Description = "Descrizione riga.", MinWidth = 180, TextAlignment = GridColumnContentAlignment.Left },
+        new GridColumnDefinition { Key = "Quantita", Header = "Qta`", IsVisibleByDefault = true, DefaultWidth = 58, DefaultDisplayIndex = 3, Group = "Valori", Description = "Quantita` della riga.", IsNumeric = true, MinWidth = 54, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "PrezzoUnitario", Header = "Prezzo", IsVisibleByDefault = true, DefaultWidth = 70, DefaultDisplayIndex = 4, Group = "Valori", Description = "Prezzo unitario.", IsNumeric = true, MinWidth = 66, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "ScontoPercentuale", Header = "Sc.%", IsVisibleByDefault = true, DefaultWidth = 58, DefaultDisplayIndex = 5, Group = "Valori", Description = "Sconto percentuale.", IsNumeric = true, MinWidth = 54, Format = "N2", TextAlignment = GridColumnContentAlignment.Right },
+        new GridColumnDefinition { Key = "ImportoRiga", Header = "Importo", IsVisibleByDefault = true, DefaultWidth = 78, DefaultDisplayIndex = 6, Group = "Valori", Description = "Importo complessivo di riga.", IsNumeric = true, MinWidth = 70, Format = "N2", TextAlignment = GridColumnContentAlignment.Right }
     ];
 }
 

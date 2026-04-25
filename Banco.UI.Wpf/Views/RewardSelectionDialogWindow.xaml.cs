@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using Banco.Vendita.Points;
 
 namespace Banco.UI.Wpf.Views;
@@ -53,6 +54,14 @@ public partial class RewardSelectionDialogWindow : Window
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
+    }
+
+    private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
     }
 
     public sealed class RewardSelectionItem

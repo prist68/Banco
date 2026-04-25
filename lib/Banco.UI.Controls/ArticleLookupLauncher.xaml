@@ -1,0 +1,42 @@
+<UserControl x:Class="Banco.UI.Controls.ArticleLookupLauncher"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="10" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0">
+            <TextBlock Margin="0,0,0,2"
+                       FontSize="11"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       Text="{Binding SearchLabel, ElementName=Root}" />
+            <TextBox x:Name="SearchTextBox"
+                     Text="{Binding SearchText, ElementName=Root, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     Style="{StaticResource CompactTextBoxStyle}"
+                     MinHeight="30"
+                     Padding="10,4"
+                     VerticalContentAlignment="Center"
+                     TextChanged="SearchTextBox_OnTextChanged"
+                     PreviewKeyDown="SearchTextBox_OnPreviewKeyDown"
+                     PreviewTextInput="SearchTextBox_OnPreviewTextInput"
+                     LostKeyboardFocus="SearchTextBox_OnLostKeyboardFocus" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="2">
+            <TextBlock Margin="0,0,0,2"
+                       FontSize="11"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       Text="{Binding DescriptionLabel, ElementName=Root}" />
+            <TextBox Text="{Binding DescriptionText, ElementName=Root}"
+                     Style="{StaticResource CompactTextBoxStyle}"
+                     MinHeight="30"
+                     Padding="10,4"
+                     VerticalContentAlignment="Center"
+                     IsReadOnly="True" />
+        </StackPanel>
+    </Grid>
+</UserControl>

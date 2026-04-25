@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddSingleton<IPromotionEventRepository, SqlitePromotionEventRepository>();
         services.AddSingleton<IReorderListRepository, SqliteReorderListRepository>();
         services.AddSingleton<IReorderArticleSettingsRepository, SqliteReorderArticleSettingsRepository>();
+        services.AddSingleton<ILocalArticleTagRepository, SqliteLocalArticleTagRepository>();
 
         return services;
     }

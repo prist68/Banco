@@ -10,14 +10,9 @@
         Background="Transparent"
         WindowStyle="None"
         AllowsTransparency="True">
-    <Border Background="{DynamicResource ModalOverlayBrush}">
+    <Border Style="{StaticResource ModalOverlayHostStyle}">
         <Border Width="500"
-                Margin="24"
-                Padding="20"
-                Background="{StaticResource SurfaceBrush}"
-                BorderBrush="{StaticResource BorderBrushBase}"
-                BorderThickness="1"
-                CornerRadius="16">
+                Style="{StaticResource ModalSurfaceCardStyle}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -26,25 +21,17 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <DockPanel Grid.Row="0" LastChildFill="True">
+                <DockPanel Grid.Row="0" LastChildFill="True" MouseLeftButtonDown="Header_OnMouseLeftButtonDown">
                     <TextBlock Text="Banco / scheda"
                                FontSize="11"
                                FontWeight="Bold"
                                Foreground="{StaticResource TextMutedBrush}"
                                VerticalAlignment="Center" />
                     <Button DockPanel.Dock="Right"
-                            Width="28"
-                            Height="28"
-                            Margin="12,0,0,0"
+                            Style="{StaticResource ModalHeaderCloseButtonStyle}"
                             Click="CloseButton_OnClick"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Cursor="Hand"
-                            ToolTip="Chiudi">
-                        <Border Background="{DynamicResource ModalChromeBrush}"
-                                BorderBrush="{StaticResource BorderBrushBase}"
-                                BorderThickness="1"
-                                CornerRadius="7">
+                            >
+                        <Border Style="{StaticResource ModalHeaderCloseChromeStyle}">
                             <TextBlock Text="✕"
                                        FontSize="11"
                                        FontWeight="Bold"

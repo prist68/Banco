@@ -30,6 +30,7 @@ public sealed class SidebarHostViewModel : ViewModelBase
     private bool _isContextPanelOpen;
     private string _searchText = string.Empty;
     private string? _highlightedEntryKey;
+    private double _contextPanelVerticalOffset = 14;
     private SidebarMacroCategoryViewModel? _selectedMacroCategory;
 
     public SidebarHostViewModel(IApplicationConfigurationService configurationService, INavigationRegistry navigationRegistry)
@@ -50,6 +51,8 @@ public sealed class SidebarHostViewModel : ViewModelBase
     public ObservableCollection<SidebarMacroCategoryViewModel> MacroCategories { get; } = [];
 
     public ObservableCollection<SidebarSearchResultViewModel> SearchResults { get; } = [];
+
+    public bool HasSearchResults => SearchResults.Count > 0;
 
     public ObservableCollection<SidebarCustomizationEntryViewModel> CustomizableEntries { get; } = [];
 
@@ -75,6 +78,12 @@ public sealed class SidebarHostViewModel : ViewModelBase
     }
 
     public bool IsContextPanelVisible => _isContextPanelOpen && SelectedMacroCategory?.Groups.Count > 0;
+
+    public double ContextPanelVerticalOffset
+    {
+        get => _contextPanelVerticalOffset;
+        private set => SetProperty(ref _contextPanelVerticalOffset, Math.Max(14, value));
+    }
 
     public SidebarMacroCategoryViewModel? SelectedMacroCategory
     {
@@ -147,7 +156,7 @@ public sealed class SidebarHostViewModel : ViewModelBase
         await Task.CompletedTask;
     }
 
-    public void OpenContextPanelForMacro(string macroCategoryKey)
+    public void OpenContextPanelForMacro(string macroCategoryKey, double? verticalOffset = null)
     {
         var macroCategory = MacroCategories.FirstOrDefault(item => string.Equals(item.Key, macroCategoryKey, StringComparison.OrdinalIgnoreCase));
         if (macroCategory is null)
@@ -156,7 +165,28 @@ public sealed class SidebarHostViewModel : ViewModelBase
         }
 
         ActivateMacroCategory(macroCategory, persistSelection: false);
+        if (verticalOffset.HasValue)
+        {
+            ContextPanelVerticalOffset = verticalOffset.Value;
+        }
+
         SetContextPanelOpen(true);
+    }
+
+    public double EstimateContextPanelHeight(string macroCategoryKey)
+    {
+        var macroCategory = MacroCategories.FirstOrDefault(item => string.Equals(item.Key, macroCategoryKey, StringComparison.OrdinalIgnoreCase));
+        if (macroCategory is null || macroCategory.Groups.Count == 0)
+        {
+            return 120;
+        }
+
+        var groupCount = macroCategory.Groups.Count;
+        var itemCount = macroCategory.Groups.Sum(group => group.Items.Count);
+        var informationalCount = macroCategory.Groups.SelectMany(group => group.Items).Count(item => item.IsInformational);
+
+        var estimatedHeight = 74 + groupCount * 27 + itemCount * 38 + informationalCount * 22;
+        return Math.Clamp(estimatedHeight, 160, 680);
     }
 
     public void KeepContextPanelOpen()
@@ -194,6 +224,20 @@ public sealed class SidebarHostViewModel : ViewModelBase
         if (macroCategory is not null)
         {
             ActivateMacroCategory(macroCategory, persistSelection: false);
+        }
+    }
+
+    public void ClearActiveDestination()
+    {
+        foreach (var item in MacroCategories.SelectMany(category => category.Groups).SelectMany(group => group.Items))
+        {
+            item.IsActive = false;
+            item.IsHighlighted = string.Equals(item.EntryKey, _highlightedEntryKey, StringComparison.OrdinalIgnoreCase);
+        }
+
+        foreach (var macroCategory in MacroCategories)
+        {
+            macroCategory.IsActive = false;
         }
     }
 
@@ -449,6 +493,7 @@ public sealed class SidebarHostViewModel : ViewModelBase
         SearchResults.Clear();
         if (string.IsNullOrWhiteSpace(SearchText))
         {
+            NotifyPropertyChanged(nameof(HasSearchResults));
             return;
         }
 
@@ -476,6 +521,8 @@ public sealed class SidebarHostViewModel : ViewModelBase
                 : $"{ResolveMacroTitle(entry.MacroCategoryKey)} / {entry.GroupTitle}";
             SearchResults.Add(new SidebarSearchResultViewModel(destination.Key, title, subtitle, entry.MacroCategoryKey, entry.Key));
         }
+
+        NotifyPropertyChanged(nameof(HasSearchResults));
     }
 
     private void RebuildCustomizationEntries()

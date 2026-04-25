@@ -1,8 +1,12 @@
 using Banco.Core.Contracts.Navigation;
 using Banco.Core.Infrastructure;
+using Banco.Backup.ViewModels;
 using Banco.Magazzino.ViewModels;
 using Banco.Punti.ViewModels;
 using Banco.Sidebar.ViewModels;
+using Banco.UI.Wpf.DesktopModule;
+using Banco.UI.Wpf.DashboardModule;
+using Banco.UI.Wpf.ArchiveSettingsModule;
 using Banco.UI.Wpf.PosModule;
 using Banco.UI.Wpf.WinEcrModule;
 using Banco.Vendita.Abstractions;
@@ -17,11 +21,14 @@ namespace Banco.UI.Wpf.ViewModels;
 public sealed class ShellViewModel : ViewModelBase
 {
     private const string BancoDestinationKey = "banco.vendita";
+    private const string NewBancoEntryKey = "banco.nuovo-documento";
+    private const string BancoWorkspaceKey = "workspace.banco";
     private const string DocumentsDestinationKey = "documenti.lista";
     private const string ReorderDestinationKey = "magazzino.riordino";
+    private const string ArticleManagementDestinationKey = "magazzino.gestione-articolo";
     private const string MagazzinoArticleDestinationKey = "magazzino.articolo";
     private const string PuntiDestinationKey = "anagrafiche.punti";
-    private const string SettingsDestinationKey = "impostazioni.db";
+    private const string ArchiveSettingsDestinationKey = "impostazioni.archivio";
     private const string FastReportDestinationKey = "impostazioni.fastreport";
     private const string PosDestinationKey = "impostazioni.pos";
     private const string FiscaleDestinationKey = "impostazioni.fiscale";
@@ -38,7 +45,7 @@ public sealed class ShellViewModel : ViewModelBase
     private bool _isRestoringPreferences;
     private AppSettings? _currentSettings;
     private int _bancoTabSequence = 1;
-    private double _sidebarWidth = 348;
+    private double _sidebarWidth = 248;
     private ShellWorkspaceTabViewModel? _activeTab;
 
     public ShellViewModel(
@@ -46,12 +53,15 @@ public sealed class ShellViewModel : ViewModelBase
         IServiceProvider serviceProvider,
         INavigationRegistry navigationRegistry,
         SidebarHostViewModel sidebar,
+        DesktopHomeViewModel desktopHomeViewModel,
+        DashboardViewModel dashboardViewModel,
         BancoViewModel bancoViewModel,
         DocumentListViewModel documentListViewModel,
         UIDocumentListHostViewModel uiDocumentListHostViewModel,
         ReorderListViewModel reorderListViewModel,
+        ArticleManagementViewModel articleManagementViewModel,
         MagazzinoArticleViewModel magazzinoArticleViewModel,
-        SettingsViewModel settingsViewModel,
+        ArchiveSettingsHostViewModel archiveSettingsViewModel,
         FastReportStudioViewModel fastReportStudioViewModel,
         PosConfigurationViewModel posConfigurationViewModel,
         WinEcrConfigurationViewModel winEcrConfigurationViewModel,
@@ -64,16 +74,19 @@ public sealed class ShellViewModel : ViewModelBase
         _serviceProvider = serviceProvider;
         _navigationRegistry = navigationRegistry;
         Sidebar = sidebar;
+        DesktopHomeViewModel = desktopHomeViewModel;
         _configurationService.SettingsChanged += OnSettingsChanged;
         Sidebar.NavigateRequested += OnSidebarNavigateRequested;
         Sidebar.PropertyChanged += OnSidebarPropertyChanged;
 
+        DashboardViewModel = dashboardViewModel;
         BancoViewModel = bancoViewModel;
         DocumentListViewModel = documentListViewModel;
         UIDocumentListHostViewModel = uiDocumentListHostViewModel;
         ReorderListViewModel = reorderListViewModel;
+        ArticleManagementViewModel = articleManagementViewModel;
         MagazzinoArticleViewModel = magazzinoArticleViewModel;
-        SettingsViewModel = settingsViewModel;
+        ArchiveSettingsViewModel = archiveSettingsViewModel;
         FastReportStudioViewModel = fastReportStudioViewModel;
         PosConfigurationViewModel = posConfigurationViewModel;
         WinEcrConfigurationViewModel = winEcrConfigurationViewModel;
@@ -85,11 +98,15 @@ public sealed class ShellViewModel : ViewModelBase
         RegisterWorkspaceDescriptors();
         ValidateDestinationResolution();
 
+        DesktopHomeViewModel.OpenDestinationRequested += OnDesktopOpenDestinationRequested;
+        DashboardViewModel.OpenDestinationRequested += OnDashboardOpenDestinationRequested;
+        DashboardViewModel.OpenDocumentInBancoRequested += OnOpenDocumentInBancoRequested;
         DocumentListViewModel.OpenDocumentInBancoRequested += OnOpenDocumentInBancoRequested;
         DocumentListViewModel.OpenLocalDocumentInBancoRequested += OnOpenLocalDocumentInBancoRequested;
         DocumentListViewModel.NewBancoDocumentRequested += OnNewBancoDocumentRequested;
         SubscribeBancoViewModel(BancoViewModel);
         PuntiViewModel.PromotionsConfigurationSaved += OnPromotionsConfigurationSaved;
+        PuntiViewModel.OpenDocumentInBancoRequested += OnOpenDocumentInBancoRequested;
 
         BuildInitialWorkspace();
         _ = InitializeAsync();
@@ -101,6 +118,10 @@ public sealed class ShellViewModel : ViewModelBase
 
     public SidebarHostViewModel Sidebar { get; }
 
+    public DesktopHomeViewModel DesktopHomeViewModel { get; }
+
+    public DashboardViewModel DashboardViewModel { get; }
+
     public BancoViewModel BancoViewModel { get; }
 
     public BancoViewModel CurrentBancoViewModel => ActiveTab?.Content as BancoViewModel ?? BancoViewModel;
@@ -111,9 +132,11 @@ public sealed class ShellViewModel : ViewModelBase
 
     public ReorderListViewModel ReorderListViewModel { get; }
 
+    public ArticleManagementViewModel ArticleManagementViewModel { get; }
+
     public MagazzinoArticleViewModel MagazzinoArticleViewModel { get; }
 
-    public SettingsViewModel SettingsViewModel { get; }
+    public ArchiveSettingsHostViewModel ArchiveSettingsViewModel { get; }
 
     public FastReportStudioViewModel FastReportStudioViewModel { get; }
 
@@ -131,6 +154,10 @@ public sealed class ShellViewModel : ViewModelBase
 
     public ObservableCollection<ShellWorkspaceTabViewModel> OpenTabs { get; } = [];
 
+    public bool HasOpenTabs => OpenTabs.Count > 0;
+
+    public bool IsDesktopHomeVisible => !HasOpenTabs;
+
     public double SidebarRailWidth => 164;
 
     public double SidebarWidth
@@ -138,7 +165,7 @@ public sealed class ShellViewModel : ViewModelBase
         get => _sidebarWidth;
         set
         {
-            if (SetProperty(ref _sidebarWidth, Math.Clamp(value, 240, 360)))
+            if (SetProperty(ref _sidebarWidth, Math.Clamp(value, 220, 300)))
             {
                 NotifyPropertyChanged(nameof(SidebarContextPanelWidth));
                 if (!_isRestoringPreferences)
@@ -149,7 +176,7 @@ public sealed class ShellViewModel : ViewModelBase
         }
     }
 
-    public double SidebarContextPanelWidth => SidebarWidth;
+    public double SidebarContextPanelWidth => Math.Clamp(SidebarWidth, 232, 252);
 
     public ShellWorkspaceTabViewModel? ActiveTab
     {
@@ -187,7 +214,7 @@ public sealed class ShellViewModel : ViewModelBase
 
     private void BuildInitialWorkspace()
     {
-        OpenDestination(BancoDestinationKey);
+        ActiveTab = null;
     }
 
     private async Task InitializeAsync()
@@ -197,7 +224,7 @@ public sealed class ShellViewModel : ViewModelBase
         try
         {
             _currentSettings = settings;
-            SidebarWidth = Math.Clamp(settings.ShellUi.SidebarWidth, 240, 360);
+            SidebarWidth = Math.Clamp(settings.ShellUi.SidebarWidth, 220, 300);
         }
         finally
         {
@@ -210,12 +237,14 @@ public sealed class ShellViewModel : ViewModelBase
 
     private void RegisterWorkspaceDescriptors()
     {
-        _workspaceDescriptors["workspace.banco"] = new ShellWorkspaceDescriptor("workspace.banco", CanClose: true, ResolveContent: () => BancoViewModel);
+        _workspaceDescriptors["workspace.dashboard"] = new ShellWorkspaceDescriptor("workspace.dashboard", CanClose: true, ResolveContent: () => DashboardViewModel);
+        _workspaceDescriptors[BancoWorkspaceKey] = new ShellWorkspaceDescriptor(BancoWorkspaceKey, CanClose: true, ResolveContent: () => BancoViewModel);
         _workspaceDescriptors["workspace.documenti"] = new ShellWorkspaceDescriptor("workspace.documenti", CanClose: true, ResolveContent: () => UIDocumentListHostViewModel);
         _workspaceDescriptors["workspace.riordino"] = new ShellWorkspaceDescriptor("workspace.riordino", CanClose: true, ResolveContent: () => ReorderListViewModel);
+        _workspaceDescriptors["workspace.gestione-articolo"] = new ShellWorkspaceDescriptor("workspace.gestione-articolo", CanClose: true, ResolveContent: () => ArticleManagementViewModel);
         _workspaceDescriptors["workspace.magazzino-articolo"] = new ShellWorkspaceDescriptor("workspace.magazzino-articolo", CanClose: true, ResolveContent: () => MagazzinoArticleViewModel);
         _workspaceDescriptors["workspace.punti"] = new ShellWorkspaceDescriptor("workspace.punti", CanClose: true, ResolveContent: () => PuntiViewModel);
-        _workspaceDescriptors["workspace.configurazioni-generali"] = new ShellWorkspaceDescriptor("workspace.configurazioni-generali", CanClose: true, ResolveContent: () => SettingsViewModel);
+        _workspaceDescriptors["workspace.impostazioni-archivio"] = new ShellWorkspaceDescriptor("workspace.impostazioni-archivio", CanClose: true, ResolveContent: () => ArchiveSettingsViewModel);
         _workspaceDescriptors["workspace.fastreport"] = new ShellWorkspaceDescriptor("workspace.fastreport", CanClose: true, ResolveContent: () => FastReportStudioViewModel);
         _workspaceDescriptors["workspace.pos"] = new ShellWorkspaceDescriptor("workspace.pos", CanClose: true, ResolveContent: () => PosConfigurationViewModel);
         _workspaceDescriptors["workspace.fiscale"] = new ShellWorkspaceDescriptor("workspace.fiscale", CanClose: true, ResolveContent: () => WinEcrConfigurationViewModel);
@@ -240,7 +269,29 @@ public sealed class ShellViewModel : ViewModelBase
 
     private void OnSidebarNavigateRequested(object? sender, SidebarNavigateRequestedEventArgs e)
     {
+        if (string.Equals(e.EntryKey, NewBancoEntryKey, StringComparison.OrdinalIgnoreCase))
+        {
+            if (!HasAnyBancoTabOpen())
+            {
+                OpenDestination(BancoDestinationKey);
+                return;
+            }
+
+            OpenFreshBancoTab();
+            return;
+        }
+
         OpenDestination(e.DestinationKey);
+    }
+
+    private void OnDashboardOpenDestinationRequested(string destinationKey)
+    {
+        OpenDestination(destinationKey);
+    }
+
+    private void OnDesktopOpenDestinationRequested(string destinationKey)
+    {
+        OpenDestination(destinationKey);
     }
 
     private void OpenDestination(string destinationKey, bool activate = true)
@@ -341,6 +392,9 @@ public sealed class ShellViewModel : ViewModelBase
         var tab = new ShellWorkspaceTabViewModel(key, destinationKey, title, content, canClose, CloseTab);
         _tabsByKey[key] = tab;
         OpenTabs.Add(tab);
+        RenumberBancoVisibleTabs();
+        NotifyPropertyChanged(nameof(HasOpenTabs));
+        NotifyPropertyChanged(nameof(IsDesktopHomeVisible));
 
         if (activate)
         {
@@ -359,11 +413,42 @@ public sealed class ShellViewModel : ViewModelBase
         }
 
         var key = $"{destination.WorkspaceKey}-{++_bancoTabSequence}";
-        var title = $"Banco {_bancoTabSequence}";
+        var title = $"Banco {ResolveNextBancoVisibleTabIndex()}";
         var bancoViewModel = ActivatorUtilities.CreateInstance<BancoViewModel>(_serviceProvider);
         SubscribeBancoViewModel(bancoViewModel);
         OpenTab(key, destination.Key, title, bancoViewModel, descriptor.CanClose, activate: true);
         return bancoViewModel;
+    }
+
+    public IReadOnlyList<ShellWorkspaceTabViewModel> GetTabsToLeft(ShellWorkspaceTabViewModel pivot)
+    {
+        var index = OpenTabs.IndexOf(pivot);
+        if (index <= 0)
+        {
+            return [];
+        }
+
+        return OpenTabs.Take(index)
+            .Where(tab => tab.CanClose)
+            .ToList();
+    }
+
+    public IReadOnlyList<ShellWorkspaceTabViewModel> GetTabsToRight(ShellWorkspaceTabViewModel pivot)
+    {
+        var index = OpenTabs.IndexOf(pivot);
+        if (index < 0 || index >= OpenTabs.Count - 1)
+        {
+            return [];
+        }
+
+        return OpenTabs.Skip(index + 1)
+            .Where(tab => tab.CanClose)
+            .ToList();
+    }
+
+    public IReadOnlyList<ShellWorkspaceTabViewModel> GetClosableTabs()
+    {
+        return OpenTabs.Where(tab => tab.CanClose).ToList();
     }
 
     public BancoViewModel GetPreferredBancoViewModel()
@@ -387,7 +472,7 @@ public sealed class ShellViewModel : ViewModelBase
     private void SubscribeBancoViewModel(BancoViewModel bancoViewModel)
     {
         bancoViewModel.ShowDocumentListRequested += () => OpenDestination(DocumentsDestinationKey);
-        bancoViewModel.OpenSettingsRequested += () => OpenDestination(SettingsDestinationKey);
+        bancoViewModel.OpenSettingsRequested += () => OpenArchiveSettingsWorkspace(ArchiveSettingsSection.General);
         bancoViewModel.OfficialDocumentPublished += OnOfficialDocumentPublished;
         bancoViewModel.OfficialDocumentDeleted += OnOfficialDocumentDeleted;
         bancoViewModel.OfficialDocumentMissing += OnOfficialDocumentMissing;
@@ -403,12 +488,16 @@ public sealed class ShellViewModel : ViewModelBase
 
         var tabIndex = OpenTabs.IndexOf(tab);
         OpenTabs.Remove(tab);
+        RenumberBancoVisibleTabs();
+        NotifyPropertyChanged(nameof(HasOpenTabs));
+        NotifyPropertyChanged(nameof(IsDesktopHomeVisible));
 
         if (ReferenceEquals(ActiveTab, tab))
         {
             if (OpenTabs.Count == 0)
             {
-                OpenDestination(BancoDestinationKey);
+                ActiveTab = null;
+                UpdateSidebarActiveState();
                 return;
             }
 
@@ -424,12 +513,49 @@ public sealed class ShellViewModel : ViewModelBase
 
     public void OpenSettingsWorkspace()
     {
-        OpenDestination(SettingsDestinationKey);
+        OpenArchiveSettingsWorkspace(ArchiveSettingsSection.General);
+    }
+
+    public void OpenArchiveSettingsWorkspace(ArchiveSettingsSection section)
+    {
+        ArchiveSettingsViewModel.SelectSection(section);
+        OpenDestination(ArchiveSettingsDestinationKey);
     }
 
     private void UpdateSidebarActiveState()
     {
-        Sidebar.SetActiveDestination(ActiveTab?.DestinationKey ?? BancoDestinationKey);
+        if (ActiveTab is null)
+        {
+            Sidebar.ClearActiveDestination();
+            return;
+        }
+
+        Sidebar.SetActiveDestination(ActiveTab.DestinationKey);
+    }
+
+    private int ResolveNextBancoVisibleTabIndex()
+    {
+        return OpenTabs.Count(IsAdditionalBancoTab) + 2;
+    }
+
+    private bool HasAnyBancoTabOpen()
+    {
+        return OpenTabs.Any(tab => tab.Content is global::Banco.UI.Wpf.ViewModels.BancoViewModel);
+    }
+
+    private void RenumberBancoVisibleTabs()
+    {
+        var nextVisibleIndex = 2;
+        foreach (var tab in OpenTabs.Where(IsAdditionalBancoTab))
+        {
+            tab.UpdateDisplayTitle($"Banco {nextVisibleIndex++}");
+        }
+    }
+
+    private static bool IsAdditionalBancoTab(ShellWorkspaceTabViewModel tab)
+    {
+        return tab.Content is global::Banco.UI.Wpf.ViewModels.BancoViewModel &&
+               tab.Key.StartsWith($"{BancoWorkspaceKey}-", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task PersistSidebarPreferencesAsync()

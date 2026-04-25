@@ -1,0 +1,124 @@
+<UserControl x:Class="Banco.UI.Controls.CompactGridCommandBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root">
+    <UserControl.Resources>
+        <Style x:Key="IconGlyphStyle" TargetType="Path">
+            <Setter Property="Width" Value="14" />
+            <Setter Property="Height" Value="14" />
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="Fill" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+        </Style>
+
+        <Style x:Key="BarBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushBase}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="0,0,8,8" />
+            <Setter Property="Padding" Value="8,6" />
+        </Style>
+
+        <Style x:Key="BarButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="PrimaryBarButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="DangerBarButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{StaticResource SemanticDangerBrush}" />
+            <Setter Property="BorderBrush" Value="#FFE6C7C7" />
+            <Setter Property="Background" Value="#FFFFF7F7" />
+        </Style>
+
+        <Style x:Key="OptionalIconButtonStyle" TargetType="Button" BasedOn="{StaticResource BarButtonStyle}">
+            <Setter Property="Visibility" Value="Visible" />
+            <Style.Triggers>
+                <Trigger Property="Command" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Border Style="{StaticResource BarBorderStyle}">
+        <Grid VerticalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock VerticalAlignment="Center"
+                       FontSize="11"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       Text="{Binding SummaryText, ElementName=Root}" />
+
+            <WrapPanel Grid.Column="1"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center">
+                <Button Command="{Binding NewCommand, ElementName=Root}"
+                        Style="{StaticResource PrimaryBarButtonStyle}"
+                        ToolTip="Nuova riga">
+                    <Path Data="{StaticResource IconNew}"
+                          Style="{StaticResource IconGlyphStyle}" />
+                </Button>
+                <Button Command="{Binding EditCommand, ElementName=Root}"
+                        Style="{StaticResource BarButtonStyle}"
+                        ToolTip="Modifica riga selezionata">
+                    <Path Data="{StaticResource IconEdit}"
+                          Style="{StaticResource IconGlyphStyle}" />
+                </Button>
+                <Button Command="{Binding SaveCommand, ElementName=Root}"
+                        Style="{StaticResource PrimaryBarButtonStyle}"
+                        ToolTip="Salva modifiche">
+                    <Path Data="{StaticResource IconSaveAction}"
+                          Style="{StaticResource IconGlyphStyle}" />
+                </Button>
+                <Button Command="{Binding CancelCommand, ElementName=Root}"
+                        Style="{StaticResource BarButtonStyle}"
+                        ToolTip="Annulla modifiche correnti">
+                    <Path Data="{StaticResource IconCancel}"
+                          Style="{StaticResource IconGlyphStyle}" />
+                </Button>
+                <Button Command="{Binding PrintCommand, ElementName=Root}"
+                        Style="{StaticResource OptionalIconButtonStyle}"
+                        ToolTip="Stampa">
+                    <Path Data="{StaticResource IconPrint}"
+                          Style="{StaticResource IconGlyphStyle}" />
+                </Button>
+                <Button Command="{Binding DuplicateCommand, ElementName=Root}"
+                        Style="{StaticResource BarButtonStyle}"
+                        ToolTip="Duplica riga selezionata">
+                    <Path Data="{StaticResource IconDuplicate}"
+                          Style="{StaticResource IconGlyphStyle}" />
+                </Button>
+                <Button Command="{Binding DeleteCommand, ElementName=Root}"
+                        Style="{StaticResource DangerBarButtonStyle}"
+                        Margin="0"
+                        ToolTip="Elimina riga selezionata">
+                    <Path Data="{StaticResource IconDelete}"
+                          Style="{StaticResource IconGlyphStyle}" />
+                </Button>
+            </WrapPanel>
+        </Grid>
+    </Border>
+</UserControl>

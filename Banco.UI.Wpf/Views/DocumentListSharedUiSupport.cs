@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using Banco.UI.Wpf.Infrastructure.GridColumns;
+using Banco.UI.Shared.Grid;
 using Banco.UI.Wpf.Shell;
 using Banco.UI.Wpf.ViewModels;
 

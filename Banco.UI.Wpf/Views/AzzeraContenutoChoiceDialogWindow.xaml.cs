@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 
 namespace Banco.UI.Wpf.Views;
 
@@ -40,5 +41,13 @@ public partial class AzzeraContenutoChoiceDialogWindow : Window
     {
         Choice = AzzeraContenutoChoice.Rimanda;
         DialogResult = false;
+    }
+
+    private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
     }
 }

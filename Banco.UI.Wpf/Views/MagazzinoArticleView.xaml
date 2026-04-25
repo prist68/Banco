@@ -1,7 +1,9 @@
-<UserControl x:Class="Banco.UI.Wpf.Views.MagazzinoArticleView"
+﻿<UserControl x:Class="Banco.UI.Wpf.Views.MagazzinoArticleView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:input="clr-namespace:Banco.UI.Wpf.Infrastructure.Input">
+             xmlns:controls="clr-namespace:Banco.UI.Controls;assembly=Banco.UI.Controls"
+        xmlns:input="clr-namespace:Banco.UI.Shared.Input;assembly=Banco.UI.Shared"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
     <UserControl.InputBindings>
         <KeyBinding Key="F4"
                     Command="{Binding PasteLocalSettingsCommand}" />
@@ -14,26 +16,193 @@
         </Style>
         <Style x:Key="CompactLabelStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Margin" Value="0,0,0,2" />
         </Style>
         <Style x:Key="CompactFieldTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Padding" Value="8,5" />
-            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="MaxHeight" Value="30" />
             <Setter Property="BorderBrush" Value="#D6E2EF" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="controls:InlineLookupPicker">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="MaxHeight" Value="30" />
+        </Style>
+        <Style x:Key="CompactReadonlyFieldTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource CompactFieldTextBoxStyle}">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="Background" Value="#FFF8FBFE" />
+        </Style>
+        <Style x:Key="InlineFieldLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource CompactLabelStyle}">
+            <Setter Property="MinWidth" Value="96" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="InlineFieldValueStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style x:Key="CompactToolButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="MaxHeight" Value="30" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+        </Style>
+        <Style x:Key="HeaderSecondaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="MaxHeight" Value="30" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+        <Style x:Key="HeaderPrimaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="MaxHeight" Value="30" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+        <Style x:Key="InfoIconButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="BorderBrush" Value="#C8D7E8" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="#FFF7FBFF" />
+            <Setter Property="Foreground" Value="#356CA5" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Cursor" Value="Help" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="11">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style x:Key="LegacyOfferHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CompactLabelStyle}">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="LegacyOfferCellTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style x:Key="StatusCardTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        </Style>
+        <Style x:Key="StatusCardValueStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="LegacyTierNetPriceTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource CompactFieldTextBoxStyle}">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="Background" Value="#FFF8FBFE" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CanEditPrezzoNetto}" Value="True">
+                    <Setter Property="IsReadOnly" Value="False" />
+                    <Setter Property="Background" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="LegacyTierQuantityTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource CompactFieldTextBoxStyle}">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="Background" Value="#FFF8FBFE" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CanEditQuantitaMinima}" Value="True">
+                    <Setter Property="IsReadOnly" Value="False" />
+                    <Setter Property="Background" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="LegacyTierPriceTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource CompactFieldTextBoxStyle}">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="Background" Value="#FFF8FBFE" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CanEditPrezzoIvato}" Value="True">
+                    <Setter Property="IsReadOnly" Value="False" />
+                    <Setter Property="Background" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="LegacyTierDateTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource CompactFieldTextBoxStyle}">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="Background" Value="#FFF8FBFE" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CanEditDataFine}" Value="True">
+                    <Setter Property="IsReadOnly" Value="False" />
+                    <Setter Property="Background" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CompactSectionExpanderStyle" TargetType="Expander">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Expander">
+                        <StackPanel>
+                            <ToggleButton x:Name="HeaderToggle"
+                                          Background="Transparent"
+                                          BorderThickness="0"
+                                          Focusable="False"
+                                          IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <ContentPresenter />
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <ContentPresenter x:Name="ExpandSite"
+                                              Visibility="Collapsed"
+                                              ContentSource="Content" />
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ExpandSite" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </UserControl.Resources>
-    <Grid>
+    <Grid x:Name="RootLayoutGrid">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="330" />
-            <ColumnDefinition Width="12" />
+            <ColumnDefinition x:Name="SearchPaneColumn" Width="300" />
+            <ColumnDefinition x:Name="SearchPaneSpacerColumn" Width="12" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0"
+        <Border x:Name="SearchPaneHost"
+                Grid.Column="0"
                 Style="{StaticResource CardStyle}"
-                Padding="14">
+                Padding="12">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -47,9 +216,12 @@
                     <TextBlock FontSize="17"
                                FontWeight="SemiBold"
                                Text="Articolo magazzino" />
-                    <TextBlock Margin="0,4,0,0"
+                    <TextBlock Margin="0,3,0,0"
                                Foreground="{StaticResource TextSecondaryBrush}"
-                               TextWrapping="Wrap"
+                               MinHeight="20"
+                               MaxHeight="20"
+                               TextWrapping="NoWrap"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding StatusMessage}" />
                 </StackPanel>
 
@@ -59,8 +231,8 @@
                     <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                              input:TextBoxPlaceholderService.Placeholder="Scansione barcode o ricerca manuale"
                              VerticalContentAlignment="Center"
-                             Padding="10,7"
-                             MinHeight="36" />
+                             Padding="8,3"
+                             MinHeight="26" />
                 </StackPanel>
 
                 <Border Grid.Row="4"
@@ -117,7 +289,7 @@
                         </ListBox.ItemTemplate>
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
-                                <Setter Property="Padding" Value="10,6" />
+                                <Setter Property="Padding" Value="8,5" />
                                 <Setter Property="BorderThickness" Value="0,0,0,1" />
                                 <Setter Property="BorderBrush" Value="#FFE5ECF4" />
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -141,105 +313,118 @@
 
         <Border Grid.Column="2"
                 Style="{StaticResource CardStyle}"
-                Padding="14">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                Padding="10">
+            <ScrollViewer x:Name="ContentScrollViewer"
+                          VerticalScrollBarVisibility="Auto"
+                          CanContentScroll="False"
+                          PanningMode="VerticalOnly"
+                          PreviewMouseWheel="NestedScrollableRegion_OnPreviewMouseWheel">
                 <StackPanel>
                     <DockPanel LastChildFill="False">
-                        <StackPanel>
-                            <TextBlock FontSize="17"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding CodiceArticolo}" />
-                            <TextBlock Margin="0,3,0,0"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding DescrizioneArticolo}" />
-                        </StackPanel>
-
+                        <TextBlock DockPanel.Dock="Left"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} - {1}">
+                                    <Binding Path="CodiceArticolo" />
+                                    <Binding Path="DescrizioneArticolo" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
                         <WrapPanel DockPanel.Dock="Right"
-                                   VerticalAlignment="Top">
-                            <Button Content="Aggiorna legacy"
-                                    Command="{Binding RefreshCurrentArticleCommand}"
-                                    Style="{StaticResource SecondaryButtonStyle}" />
-                            <Button Content="Salva legacy"
-                                    Command="{Binding SaveLegacyCommand}"
-                                    Style="{StaticResource SecondaryButtonStyle}" />
-                            <Button Content="Salva locale"
-                                    Command="{Binding SaveLocalSettingsCommand}"
-                                    Style="{StaticResource PrimaryButtonStyle}"
-                                    Margin="0" />
+                                   HorizontalAlignment="Right"
+                                   Orientation="Horizontal">
+                        <Button Content="Aggiorna legacy"
+                                Command="{Binding RefreshCurrentArticleCommand}"
+                                Style="{StaticResource HeaderSecondaryActionButtonStyle}" />
+                        <Button Content="Salva legacy"
+                                Command="{Binding SaveLegacyCommand}"
+                                Style="{StaticResource HeaderSecondaryActionButtonStyle}" />
+                        <Button Content="Salva locale"
+                                Command="{Binding SaveLocalSettingsCommand}"
+                                Style="{StaticResource HeaderPrimaryActionButtonStyle}" />
                         </WrapPanel>
                     </DockPanel>
 
-                    <TextBlock Margin="0,10,0,0"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               FontWeight="SemiBold"
-                               Text="Dati legacy articolo" />
-                    <Border Style="{StaticResource SectionBadgeStyle}"
-                            HorizontalAlignment="Left"
-                            Background="#FFFCE8D9"
-                            BorderBrush="#F0B77B"
+                    <Border Margin="0,6,0,5"
+                            Padding="8"
+                            CornerRadius="8"
+                            Background="{StaticResource SurfaceAltBrush}"
+                            BorderBrush="{StaticResource BorderBrushBase}"
                             BorderThickness="1">
-                        <TextBlock Foreground="#A45712"
-                                   FontSize="11"
-                                   FontWeight="Bold"
-                                   Text="* LEGACY" />
-                    </Border>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="5" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
 
-                    <UniformGrid Margin="0,8,0,0"
-                                 Columns="2">
-                        <Border Margin="0,0,8,8" Padding="10" CornerRadius="10" Background="{StaticResource SurfaceAltBrush}" BorderBrush="{StaticResource BorderBrushBase}" BorderThickness="1">
-                            <StackPanel>
+                            <StackPanel Grid.Row="0" Grid.Column="0">
                                 <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Articolo OID" />
-                                <TextBlock FontWeight="SemiBold" Text="{Binding ArticoloOid}" />
+                                <TextBox Style="{StaticResource CompactReadonlyFieldTextBoxStyle}"
+                                         Text="{Binding ArticoloOid, Mode=OneWay}" />
                             </StackPanel>
-                        </Border>
-                        <Border Margin="0,0,0,8" Padding="10" CornerRadius="10" Background="{StaticResource SurfaceAltBrush}" BorderBrush="{StaticResource BorderBrushBase}" BorderThickness="1">
-                            <StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="2">
                                 <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Giacenza" />
-                                <TextBlock FontWeight="SemiBold" Text="{Binding GiacenzaLabel}" />
+                                <TextBox Style="{StaticResource CompactReadonlyFieldTextBoxStyle}"
+                                         Text="{Binding GiacenzaLabel, Mode=OneWay}" />
                             </StackPanel>
-                        </Border>
-                        <Border Margin="0,0,8,8" Padding="10" CornerRadius="10" Background="{StaticResource SurfaceAltBrush}" BorderBrush="{StaticResource BorderBrushBase}" BorderThickness="1">
-                            <StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="4">
                                 <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Prezzo vendita" />
-                                <TextBox Margin="0"
-                                         Style="{StaticResource CompactFieldTextBoxStyle}"
+                                <TextBox Style="{StaticResource CompactFieldTextBoxStyle}"
                                          Text="{Binding PrezzoVenditaLegacyText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             </StackPanel>
-                        </Border>
-                        <Border Margin="0,0,0,8" Padding="10" CornerRadius="10" Background="{StaticResource SurfaceAltBrush}" BorderBrush="{StaticResource BorderBrushBase}" BorderThickness="1">
-                            <StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="6">
                                 <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Ultimo acquisto" />
-                                <TextBlock FontWeight="SemiBold" Text="{Binding UltimoAcquistoLabel}" TextWrapping="Wrap" />
+                                <TextBox Style="{StaticResource CompactReadonlyFieldTextBoxStyle}"
+                                         Text="{Binding UltimoAcquistoLabel, Mode=OneWay}" />
                             </StackPanel>
-                        </Border>
-                        <Border Margin="0,0,8,8" Padding="10" CornerRadius="10" Background="{StaticResource SurfaceAltBrush}" BorderBrush="{StaticResource BorderBrushBase}" BorderThickness="1">
-                            <StackPanel>
+
+                            <StackPanel Grid.Row="2" Grid.Column="0">
                                 <TextBlock Style="{StaticResource CompactLabelStyle}" Text="U.M. principale" />
-                                <TextBox Margin="0"
-                                         Style="{StaticResource CompactFieldTextBoxStyle}"
-                                         Text="{Binding UnitaPrincipaleLegacyText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <controls:InlineLookupPicker DisplayText="{Binding UnitaPrincipaleLegacyText}"
+                                                             SearchText="{Binding PrimaryUnitPickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             IsOpen="{Binding IsPrimaryUnitPickerOpen, Mode=TwoWay}"
+                                                             ItemsSource="{Binding FilteredPrimaryUnitOptions}"
+                                                             SelectedItem="{Binding SelectedPrimaryUnitOption, Mode=TwoWay}"
+                                                             SearchPlaceholderText="Filtra U.M. principale"
+                                                             EmptyText="Nessuna unità principale trovata." />
                             </StackPanel>
-                        </Border>
-                        <Border Margin="0,0,0,8" Padding="10" CornerRadius="10" Background="{StaticResource SurfaceAltBrush}" BorderBrush="{StaticResource BorderBrushBase}" BorderThickness="1">
-                            <StackPanel>
+
+                            <StackPanel Grid.Row="2" Grid.Column="2">
                                 <TextBlock Style="{StaticResource CompactLabelStyle}" Text="U.M. secondaria" />
-                                <TextBox Margin="0"
-                                         Style="{StaticResource CompactFieldTextBoxStyle}"
-                                         Text="{Binding UnitaSecondariaLegacyText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <controls:InlineLookupPicker DisplayText="{Binding UnitaSecondariaLegacyText}"
+                                                             SearchText="{Binding SecondaryUnitPickerSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             IsOpen="{Binding IsSecondaryUnitPickerOpen, Mode=TwoWay}"
+                                                             ItemsSource="{Binding FilteredSecondaryUnitOptions}"
+                                                             SelectedItem="{Binding SelectedSecondaryUnitOption, Mode=TwoWay}"
+                                                             SearchPlaceholderText="Filtra U.M. secondaria"
+                                                             EmptyText="Nessuna unità secondaria trovata." />
                             </StackPanel>
-                        </Border>
-                        <Border Margin="0,0,8,8" Padding="10" CornerRadius="10" Background="{StaticResource SurfaceAltBrush}" BorderBrush="{StaticResource BorderBrushBase}" BorderThickness="1">
-                            <StackPanel>
+
+                            <StackPanel Grid.Row="2" Grid.Column="4">
                                 <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Rapporto U.M." />
-                                <TextBox Margin="0"
-                                         Style="{StaticResource CompactFieldTextBoxStyle}"
+                                <TextBox Style="{StaticResource CompactFieldTextBoxStyle}"
                                          Text="{Binding RapportoUnitaLegacyText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             </StackPanel>
-                        </Border>
-                        <Border Margin="0,0,0,8" Padding="10" CornerRadius="10" Background="{StaticResource SurfaceAltBrush}" BorderBrush="{StaticResource BorderBrushBase}" BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Vendita minima / multipla" />
+
+                            <StackPanel Grid.Row="2" Grid.Column="6">
+                                <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Vendita min / mult" />
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -247,7 +432,6 @@
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0"
-                                             Margin="0"
                                              Style="{StaticResource CompactFieldTextBoxStyle}"
                                              Text="{Binding QuantitaMinimaVenditaLegacyText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                     <TextBlock Grid.Column="1"
@@ -255,103 +439,391 @@
                                                HorizontalAlignment="Center"
                                                Text="/" />
                                     <TextBox Grid.Column="2"
-                                             Margin="0"
                                              Style="{StaticResource CompactFieldTextBoxStyle}"
                                              Text="{Binding QuantitaMultiplaVenditaLegacyText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </Grid>
                             </StackPanel>
-                        </Border>
-                    </UniformGrid>
 
-                    <Border Margin="0,0,0,8"
-                            Padding="10"
-                            CornerRadius="10"
+                        </Grid>
+                    </Border>
+
+                    <DockPanel Margin="0,2,0,0"
+                               LastChildFill="False">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                       Text="Listini legacy" />
+                            <TextBlock Margin="0,2,0,0"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="11.5"
+                                       Text="{Binding LegacyOfferSectionInfo}" />
+                        </StackPanel>
+
+                        <WrapPanel DockPanel.Dock="Right"
+                                   VerticalAlignment="Top">
+                            <Button Content="+ Offerta"
+                                    Command="{Binding AddLegacyOfferRowCommand}"
+                                    Style="{StaticResource CompactToolButtonStyle}" />
+                            <Button Content="Rimuovi"
+                                    Command="{Binding RemoveLegacyOfferRowCommand}"
+                                    Style="{StaticResource CompactToolButtonStyle}" />
+                            <Button Content="Propaga"
+                                    Command="{Binding PropagateLegacyOfferRowCommand}"
+                                    Style="{StaticResource CompactToolButtonStyle}" />
+                            <Button Content="Aggiorna"
+                                    Command="{Binding RefreshCurrentArticleCommand}"
+                                    Style="{StaticResource CompactToolButtonStyle}" />
+                        </WrapPanel>
+                    </DockPanel>
+
+                    <Border Margin="0,4,0,5"
+                            Padding="5"
+                            CornerRadius="8"
                             Background="{StaticResource SurfaceAltBrush}"
                             BorderBrush="{StaticResource BorderBrushBase}"
                             BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Descrizione articolo" />
-                            <TextBox Margin="0"
-                                     Style="{StaticResource CompactFieldTextBoxStyle}"
-                                     Text="{Binding DescrizioneLegacyText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        </StackPanel>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0"
+                                  Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="78" />
+                                    <ColumnDefinition Width="132" />
+                                    <ColumnDefinition Width="86" />
+                                    <ColumnDefinition Width="78" />
+                                    <ColumnDefinition Width="78" />
+                                    <ColumnDefinition Width="64" />
+                                    <ColumnDefinition Width="88" />
+                                    <ColumnDefinition Width="88" />
+                                    <ColumnDefinition Width="88" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Style="{StaticResource LegacyOfferHeaderTextStyle}" Text="Listino" />
+                                <TextBlock Grid.Column="1" Style="{StaticResource LegacyOfferHeaderTextStyle}" Text="Tipo riga" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource LegacyOfferHeaderTextStyle}" Text="Ult.costo" />
+                                <TextBlock Grid.Column="3" Style="{StaticResource LegacyOfferHeaderTextStyle}" Text="Margine" />
+                                <TextBlock Grid.Column="4" Style="{StaticResource LegacyOfferHeaderTextStyle}" Text="Ricarico" />
+                                <TextBlock Grid.Column="5" Style="{StaticResource LegacyOfferHeaderTextStyle}" Text="Q.tà" />
+                                <TextBlock Grid.Column="6" Style="{StaticResource LegacyOfferHeaderTextStyle}" Text="Valore" />
+                                <TextBlock Grid.Column="7" Style="{StaticResource LegacyOfferHeaderTextStyle}" Text="Val.ivato" />
+                                <TextBlock Grid.Column="8" Style="{StaticResource LegacyOfferHeaderTextStyle}" Text="Valido al" />
+                                <TextBlock Grid.Column="9" Style="{StaticResource LegacyOfferHeaderTextStyle}" Text="Variante / contesto" />
+                            </Grid>
+
+                            <ListView Grid.Row="1"
+                                      ItemsSource="{Binding LegacyOfferRows}"
+                                      SelectedItem="{Binding SelectedLegacyOfferRow, Mode=TwoWay}"
+                                      BorderThickness="0"
+                                      Background="Transparent"
+                                      PreviewMouseWheel="NestedScrollableRegion_OnPreviewMouseWheel"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                      MinHeight="44"
+                                      MaxHeight="108">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        <Setter Property="Padding" Value="0" />
+                                        <Setter Property="Margin" Value="0,0,0,2" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="#FFF1F7FF" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="5,2"
+                                                CornerRadius="7"
+                                                Background="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Background}"
+                                                BorderBrush="#E0E9F4"
+                                                BorderThickness="1">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="78" />
+                                                    <ColumnDefinition Width="132" />
+                                                    <ColumnDefinition Width="86" />
+                                                    <ColumnDefinition Width="78" />
+                                                    <ColumnDefinition Width="78" />
+                                                    <ColumnDefinition Width="64" />
+                                                    <ColumnDefinition Width="88" />
+                                                    <ColumnDefinition Width="88" />
+                                                    <ColumnDefinition Width="88" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Column="0"
+                                                           Style="{StaticResource LegacyOfferCellTextStyle}"
+                                                           Text="{Binding ListinoLabel}"
+                                                           FontWeight="SemiBold" />
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Style="{StaticResource LegacyOfferCellTextStyle}"
+                                                               Text="{Binding TipoRigaLabel}"
+                                                               FontWeight="SemiBold" />
+                                                    <TextBlock Margin="0,1,0,0"
+                                                               Foreground="{StaticResource TextMutedBrush}"
+                                                               FontSize="11"
+                                                               Text="{Binding ScopeLabel}" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2"
+                                                           Style="{StaticResource LegacyOfferCellTextStyle}"
+                                                           Text="{Binding UltimoCostoLabel}" />
+                                                <TextBlock Grid.Column="3"
+                                                           Style="{StaticResource LegacyOfferCellTextStyle}"
+                                                           Text="{Binding MargineLabel}" />
+                                                <TextBlock Grid.Column="4"
+                                                           Style="{StaticResource LegacyOfferCellTextStyle}"
+                                                           Text="{Binding RicaricoLabel}" />
+                                                <TextBox Grid.Column="5"
+                                                         Margin="0,0,6,0"
+                                                         VerticalContentAlignment="Center"
+                                                         Style="{StaticResource LegacyTierQuantityTextBoxStyle}"
+                                                         Text="{Binding QuantitaMinimaText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                <TextBox Grid.Column="6"
+                                                         Margin="0,0,6,0"
+                                                         VerticalContentAlignment="Center"
+                                                         Style="{StaticResource LegacyTierNetPriceTextBoxStyle}"
+                                                         Text="{Binding PrezzoNettoText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                <TextBox Grid.Column="7"
+                                                         Margin="0,0,6,0"
+                                                         VerticalContentAlignment="Center"
+                                                         Style="{StaticResource LegacyTierPriceTextBoxStyle}"
+                                                         Text="{Binding PrezzoIvatoText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                <TextBox Grid.Column="8"
+                                                         Margin="0,0,6,0"
+                                                         VerticalContentAlignment="Center"
+                                                         Style="{StaticResource LegacyTierDateTextBoxStyle}"
+                                                         input:TextBoxPlaceholderService.Placeholder="dd/MM/yyyy"
+                                                         Text="{Binding DataFineText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                <StackPanel Grid.Column="9">
+                                                    <TextBlock Style="{StaticResource LegacyOfferCellTextStyle}"
+                                                               Text="{Binding VarianteDisplayLabel}"
+                                                               FontWeight="SemiBold" />
+                                                    <TextBlock Margin="0,1,0,0"
+                                                               Foreground="{StaticResource TextMutedBrush}"
+                                                               FontSize="11"
+                                                               Text="{Binding TotaleIvatoLabel, StringFormat=Tot. {0} €}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
                     </Border>
 
-                    <TextBlock Margin="0,10,0,0"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               FontWeight="SemiBold"
-                               Text="Parametri locali riordino" />
-                    <Border Style="{StaticResource SectionBadgeStyle}"
-                            HorizontalAlignment="Left"
-                            Background="#FFEAF6EB"
-                            BorderBrush="#9ECEAC"
-                            BorderThickness="1">
-                        <TextBlock Foreground="#246848"
-                                   FontSize="11"
-                                   FontWeight="Bold"
-                                   Text="SQLITE INTERNO" />
-                    </Border>
-                    <TextBlock Margin="0,4,0,0"
-                               Foreground="{StaticResource TextMutedBrush}"
-                               Text="{Binding LocalSettingsInfo}" />
-                    <TextBlock Margin="0,3,0,0"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               TextWrapping="Wrap"
-                               Text="{Binding LocalSettingsScopeInfo}" />
+                    <Expander Margin="0,6,0,0"
+                              Style="{StaticResource CompactSectionExpanderStyle}"
+                              IsExpanded="True">
+                        <Expander.Header>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-                    <WrapPanel Margin="0,8,0,0"
-                               HorizontalAlignment="Right">
-                        <Button Content="Applica ai figli"
-                                Command="{Binding ApplyLocalSettingsToChildrenCommand}"
-                                Style="{StaticResource SecondaryButtonStyle}" />
-                        <Button Content="Copia locale"
-                                Command="{Binding CopyLocalSettingsCommand}"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Margin="8,0,0,0" />
-                        <Button Content="Incolla locale (F4)"
-                                Command="{Binding PasteLocalSettingsCommand}"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Margin="8,0,0,0" />
-                    </WrapPanel>
+                                <StackPanel Grid.Column="0"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                               VerticalAlignment="Center"
+                                               Text="Parametri locali riordino" />
+                                    <TextBlock Margin="8,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="11.5">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="▾ Riduci" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=Expander}}" Value="False">
+                                                        <Setter Property="Text" Value="▸ Espandi" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <Button Style="{StaticResource InfoIconButtonStyle}"
+                                            ToolTipService.ShowDuration="30000"
+                                            ToolTipService.Placement="Right"
+                                            ToolTipService.VerticalOffset="4">
+                                        <Button.ToolTip>
+                                            <ToolTip Placement="Right"
+                                                     DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                <Border Padding="10,8"
+                                                        Background="White"
+                                                        BorderBrush="#C8D7E8"
+                                                        BorderThickness="1"
+                                                        CornerRadius="8">
+                                                    <StackPanel MaxWidth="320">
+                                                        <TextBlock Foreground="{StaticResource TextMutedBrush}"
+                                                                   Text="{Binding LocalSettingsInfo}" />
+                                                        <TextBlock Margin="0,4,0,0"
+                                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                                   TextWrapping="Wrap"
+                                                                   Text="{Binding LocalSettingsScopeInfo}" />
+                                                        <TextBlock Margin="0,6,0,0"
+                                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                                   TextWrapping="Wrap"
+                                                                   Text="Controllo prezzi locali e parametri riordino salvati in SQLite." />
+                                                    </StackPanel>
+                                                </Border>
+                                            </ToolTip>
+                                        </Button.ToolTip>
+                                        <TextBlock Text="i" />
+                                    </Button>
+                                </StackPanel>
 
-                    <Grid Margin="0,10,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="190" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
+                                <WrapPanel Grid.Column="1"
+                                           HorizontalAlignment="Right">
+                                    <Button Content="Applica ai figli"
+                                            Command="{Binding ApplyLocalSettingsToChildrenCommand}"
+                                            Style="{StaticResource CompactToolButtonStyle}" />
+                                    <Button Content="Copia locale"
+                                            Command="{Binding CopyLocalSettingsCommand}"
+                                            Style="{StaticResource CompactToolButtonStyle}" />
+                                    <Button Content="Incolla locale (F4)"
+                                            Command="{Binding PasteLocalSettingsCommand}"
+                                            Style="{StaticResource CompactToolButtonStyle}" />
+                                </WrapPanel>
+                            </Grid>
+                        </Expander.Header>
 
-                        <TextBlock Margin="0,0,10,8" VerticalAlignment="Center" Text="Acquisto a confezione" />
-                        <CheckBox Grid.Column="1" Margin="0,0,0,8" VerticalAlignment="Center" IsChecked="{Binding AcquistoAConfezione, Mode=TwoWay}" />
+                        <Border Margin="0,5,0,0"
+                                Padding="6"
+                                CornerRadius="8"
+                                Background="{StaticResource SurfaceAltBrush}"
+                                BorderBrush="{StaticResource BorderBrushBase}"
+                                BorderThickness="1">
+                            <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="5" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="1" Margin="0,0,10,8" VerticalAlignment="Center" Text="Vendita a pezzo singolo" />
-                        <CheckBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" VerticalAlignment="Center" IsChecked="{Binding VenditaAPezzoSingolo, Mode=TwoWay}" />
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="6" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="6" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="6" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="6" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Row="2" Margin="0,0,10,8" VerticalAlignment="Center" Text="Pezzi per confezione" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding PezziPerConfezioneText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Prezzo confezione" />
+                                    <TextBox Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding PrezzoConfezioneText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Prezzo singolo" />
+                                    <TextBox Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding PrezzoSingoloText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Prezzo vendita" />
+                                    <TextBox Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding PrezzoVenditaLocaleText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="6">
+                                    <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Promo q.tà" />
+                                    <TextBox Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding QuantitaPromoLocaleText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="8">
+                                    <TextBlock Style="{StaticResource CompactLabelStyle}" Text="Prezzo promo" />
+                                    <TextBox Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding PrezzoPromoLocaleText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
 
-                        <TextBlock Grid.Row="3" Margin="0,0,10,8" VerticalAlignment="Center" Text="Multiplo ordine" />
-                        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource CompactFieldTextBoxStyle}" input:TextBoxPlaceholderService.Placeholder="Vuoto = 1" Text="{Binding MultiploOrdineText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.05*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="1.05*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="1.2*" />
+                                </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Row="4" Margin="0,0,10,8" VerticalAlignment="Center" Text="Lotto minimo ordine" />
-                        <TextBox Grid.Row="4" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding LottoMinimoText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <Grid Grid.Column="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="34" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="34" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="5" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="5" Margin="0,0,10,8" VerticalAlignment="Center" Text="Giorni copertura default" />
-                        <TextBox Grid.Row="5" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding GiorniCoperturaText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Acquisto a confezione" />
+                                    <CheckBox Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" IsChecked="{Binding AcquistoAConfezione, Mode=TwoWay}" />
+                                    <TextBlock Grid.Row="0" Grid.Column="3" VerticalAlignment="Center" Text="Vendita a pezzo singolo" />
+                                    <CheckBox Grid.Row="0" Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Center" IsChecked="{Binding VenditaAPezzoSingolo, Mode=TwoWay}" />
 
-                        <TextBlock Grid.Row="6" Margin="0,2,10,0" VerticalAlignment="Top" Text="Note locali" />
-                        <TextBox Grid.Row="6" Grid.Column="1" MinHeight="78" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding Note, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    </Grid>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Pezzi per confezione" />
+                                    <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding PezziPerConfezioneText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </Grid>
+
+                                <Grid Grid.Column="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="5" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="5" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Multiplo ordine" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Style="{StaticResource CompactFieldTextBoxStyle}" input:TextBoxPlaceholderService.Placeholder="Vuoto = 1" Text="{Binding MultiploOrdineText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Lotto minimo ordine" />
+                                    <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding LottoMinimoText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Giorni copertura default" />
+                                    <TextBox Grid.Row="4" Grid.Column="1" Style="{StaticResource CompactFieldTextBoxStyle}" Text="{Binding GiorniCoperturaText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </Grid>
+
+                                <Grid Grid.Column="4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="4" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0"
+                                               Style="{StaticResource CompactLabelStyle}"
+                                               Text="Note locali" />
+                                    <TextBox Grid.Row="2"
+                                             MinHeight="65"
+                                             MaxHeight="65"
+                                             AcceptsReturn="True"
+                                             TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto"
+                                             Style="{StaticResource CompactFieldTextBoxStyle}"
+                                             VerticalContentAlignment="Top"
+                                             Padding="8,5"
+                                             Text="{Binding Note, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                        </Border>
+                    </Expander>
                 </StackPanel>
             </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>
+

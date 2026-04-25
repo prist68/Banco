@@ -1,0 +1,172 @@
+<Window x:Class="Banco.UI.Wpf.Views.ArticleVariantSelectionDialogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
+        MinWidth="760"
+        MaxWidth="860"
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True">
+    <Border Style="{StaticResource ModalOverlayHostStyle}">
+        <Border Width="780"
+                Padding="22"
+                Style="{StaticResource ModalSurfaceCardStyle}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0"
+                           LastChildFill="True"
+                           MouseLeftButtonDown="Header_OnMouseLeftButtonDown">
+                    <TextBlock Text="Banco / variante"
+                               FontSize="11"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               VerticalAlignment="Center" />
+                    <Button DockPanel.Dock="Right"
+                            Style="{StaticResource ModalHeaderCloseButtonStyle}"
+                            Click="CloseButton_OnClick">
+                        <Border Style="{StaticResource ModalHeaderCloseChromeStyle}">
+                            <TextBlock Text="✕"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
+                </DockPanel>
+
+                <Border Grid.Row="1"
+                        Margin="0,14,0,0"
+                        BorderBrush="{DynamicResource ModalAccentBorderBrush}"
+                        BorderThickness="4,0,0,0"
+                        Padding="14,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Scegli la variante da inserire"
+                                   FontSize="19"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock x:Name="ParentArticleTextBlock"
+                                   Margin="0,8,0,0"
+                                   FontSize="13"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Grid.Row="2"
+                           Margin="0,16,0,0"
+                           Text="Il lookup mostra il padre per evitare doppioni. Seleziona ora la variante corretta da caricare nel Banco."
+                           FontSize="12.5"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           TextWrapping="Wrap" />
+
+                <Border Grid.Row="3"
+                        Margin="0,16,0,0"
+                        Padding="10"
+                        Background="{DynamicResource ModalInfoSurfaceBrush}"
+                        BorderBrush="{DynamicResource ModalInfoBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12">
+                    <ListBox x:Name="VariantsListBox"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             PreviewKeyDown="VariantsListBox_OnPreviewKeyDown"
+                             MouseDoubleClick="VariantsListBox_OnMouseDoubleClick"
+                             SelectionChanged="VariantsListBox_OnSelectionChanged"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0,0,0,8" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Focusable" Value="True" />
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="12,10"
+                                        Background="{DynamicResource ModalFieldSurfaceBrush}"
+                                        BorderBrush="{DynamicResource ModalFieldBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="18" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding VariantTitle}"
+                                                       FontSize="13.5"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       TextWrapping="NoWrap"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Margin="0,4,0,0"
+                                                       Text="{Binding VariantSubtitle}"
+                                                       FontSize="11.5"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                       TextWrapping="NoWrap"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2"
+                                                    HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding PriceLabel}"
+                                                       HorizontalAlignment="Right"
+                                                       FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource ModalInfoForegroundBrush}"
+                                                       TextWrapping="NoWrap" />
+                                            <TextBlock Margin="0,4,0,0"
+                                                       Text="{Binding StockLabel}"
+                                                       HorizontalAlignment="Right"
+                                                       FontSize="11.5"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                       TextWrapping="NoWrap" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+
+                <StackPanel Grid.Row="4"
+                            Margin="0,22,0,0"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Content="Annulla"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            MinWidth="104"
+                            Margin="0,0,10,0"
+                            IsCancel="True"
+                            Click="SecondaryButton_OnClick" />
+                    <Button x:Name="ConfirmButton"
+                            Content="Conferma variante"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            MinWidth="150"
+                            IsDefault="True"
+                            IsEnabled="False"
+                            Click="PrimaryButton_OnClick" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</Window>

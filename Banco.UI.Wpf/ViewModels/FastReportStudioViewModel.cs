@@ -50,6 +50,7 @@ public sealed class FastReportStudioViewModel : ViewModelBase
         OpenCatalogFileCommand = new RelayCommand(OpenCatalogFile);
         OpenSelectedLayoutCommand = new RelayCommand(OpenSelectedLayout, () => SelectedLayout is not null && !string.IsNullOrWhiteSpace(SelectedLayout.TemplateFileName));
         SavePrinterAssignmentCommand = new RelayCommand(() => _ = SavePrinterAssignmentAsync(), CanSavePrinterAssignment);
+        AssignPrinterToSelectedLayoutCommand = new RelayCommand<SystemPrinterInfo>(printer => _ = AssignPrinterToSelectedLayoutAsync(printer), printer => SelectedLayout is not null && printer is not null);
         PreviewSelectedLayoutCommand = new RelayCommand(() => _ = PreviewSelectedLayoutAsync(), CanRunLayoutRuntimeCommand);
         OpenDesignerCommand = new RelayCommand(() => _ = OpenDesignerAsync(), CanRunLayoutRuntimeCommand);
         PrintTestCommand = new RelayCommand(() => _ = PrintTestAsync(), CanPrintTest);
@@ -254,6 +255,8 @@ public sealed class FastReportStudioViewModel : ViewModelBase
 
     public RelayCommand SavePrinterAssignmentCommand { get; }
 
+    public RelayCommand<SystemPrinterInfo> AssignPrinterToSelectedLayoutCommand { get; }
+
     public RelayCommand PreviewSelectedLayoutCommand { get; }
 
     public RelayCommand OpenDesignerCommand { get; }
@@ -344,6 +347,7 @@ public sealed class FastReportStudioViewModel : ViewModelBase
             StatusMessage = $"Diagnostica FastReport aggiornata. Layout catalogati: {Layouts.Count}. Schemi documento: {Schemas.Count}. Famiglie report: {ReportFamilies.Count}. Riferimenti legacy: {LegacyReports.Count}. Stampanti: {Printers.Count}.";
             OpenSelectedLayoutCommand.RaiseCanExecuteChanged();
             SavePrinterAssignmentCommand.RaiseCanExecuteChanged();
+            AssignPrinterToSelectedLayoutCommand.RaiseCanExecuteChanged();
             PreviewSelectedLayoutCommand.RaiseCanExecuteChanged();
             OpenDesignerCommand.RaiseCanExecuteChanged();
             PrintTestCommand.RaiseCanExecuteChanged();
@@ -404,18 +408,53 @@ public sealed class FastReportStudioViewModel : ViewModelBase
             return;
         }
 
+        await SavePrinterAssignmentForLayoutAsync(SelectedLayout, SelectedPrinter);
+    }
+
+    private async Task AssignPrinterToSelectedLayoutAsync(SystemPrinterInfo? printer)
+    {
+        if (SelectedLayout is null || printer is null)
+        {
+            return;
+        }
+
+        SelectedPrinter = printer;
+        await SavePrinterAssignmentForLayoutAsync(SelectedLayout, printer);
+    }
+
+    private async Task SavePrinterAssignmentForLayoutAsync(PrintLayoutDefinition layoutToUpdate, SystemPrinterInfo? printer)
+    {
         var layouts = await _layoutCatalogService.GetLayoutsAsync();
         var updatedLayouts = layouts
-            .Select(layout => layout.Id == SelectedLayout.Id
-                ? layout with { AssignedPrinterName = SelectedPrinter?.Name }
+            .Select(layout => layout.Id == layoutToUpdate.Id
+                ? layout with { AssignedPrinterName = printer?.Name }
                 : layout)
             .ToArray();
 
         await _layoutCatalogService.SaveLayoutsAsync(updatedLayouts);
-        SelectedLayout = updatedLayouts.FirstOrDefault(layout => layout.Id == SelectedLayout.Id);
-        StatusMessage = SelectedPrinter is null
+        var updatedLayout = updatedLayouts.FirstOrDefault(layout => layout.Id == layoutToUpdate.Id);
+        if (updatedLayout is not null)
+        {
+            var index = Layouts.IndexOf(layoutToUpdate);
+            if (index < 0)
+            {
+                index = Layouts
+                    .Select((layout, position) => new { layout, position })
+                    .FirstOrDefault(item => item.layout.Id == updatedLayout.Id)
+                    ?.position ?? -1;
+            }
+
+            if (index >= 0)
+            {
+                Layouts[index] = updatedLayout;
+            }
+
+            SelectedLayout = updatedLayout;
+        }
+
+        StatusMessage = printer is null
             ? $"Associazione stampante rimossa dal layout '{SelectedLayout?.DisplayName}'."
-            : $"Stampante '{SelectedPrinter.Name}' associata al layout '{SelectedLayout?.DisplayName}'.";
+            : $"Stampante '{printer.Name}' associata al layout '{SelectedLayout?.DisplayName}'.";
     }
 
     private async Task PreviewSelectedLayoutAsync()

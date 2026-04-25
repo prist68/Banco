@@ -1,236 +1,131 @@
 <UserControl x:Class="Banco.UI.Wpf.Views.FastReportStudioView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled"
-                  CanContentScroll="True">
-        <Grid Margin="0,0,8,0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="16" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="16" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="16" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="16" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="16" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="16" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+    <UserControl.Resources>
+        <Style x:Key="FastReportToolbarButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="MinWidth" Value="92" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+        </Style>
 
-            <StackPanel>
-                <TextBlock FontSize="22"
-                           FontWeight="SemiBold"
-                           Text="{Binding Titolo}" />
-                <TextBlock Margin="0,6,0,0"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           Text="Diagnostica iniziale del runtime FastReport integrato nel programma, con catalogo layout e schema campi documento esposto ai template." />
-            </StackPanel>
+        <Style x:Key="FastReportPrimaryButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource PrimaryButtonStyle}">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="MinWidth" Value="92" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+        </Style>
 
-            <Grid Grid.Row="2">
+        <Style x:Key="FastReportCellButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="MinWidth" Value="96" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+        </Style>
+
+        <Style x:Key="FastReportLabelStyle"
+               TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="0,0,8,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1.2*" />
-                <ColumnDefinition Width="16" />
-                <ColumnDefinition Width="1.2*" />
-                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <Border Style="{StaticResource CardStyle}">
-                <StackPanel>
-                    <TextBlock FontSize="18"
-                               FontWeight="SemiBold"
-                               Text="Runtime FastReport" />
+            <StackPanel>
+                <TextBlock FontSize="20"
+                           FontWeight="SemiBold"
+                           Text="{Binding Titolo}" />
+                <TextBlock Margin="0,3,0,0"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="{Binding StatusMessage}"
+                           TextTrimming="CharacterEllipsis" />
+            </StackPanel>
 
-                    <TextBlock Margin="0,14,0,0"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               Text="Descrizione" />
-                    <TextBlock Margin="0,6,0,0"
-                               Text="{Binding RuntimeDescription}"
-                               TextWrapping="Wrap" />
+            <WrapPanel Grid.Column="1"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Bottom">
+                <Button Content="Aggiorna"
+                        Command="{Binding RefreshCommand}"
+                        Style="{StaticResource FastReportToolbarButtonStyle}" />
+                <Button Content="Layout"
+                        Command="{Binding OpenLayoutsFolderCommand}"
+                        Style="{StaticResource FastReportToolbarButtonStyle}" />
+                <Button Content="Catalogo"
+                        Command="{Binding OpenCatalogFileCommand}"
+                        Style="{StaticResource FastReportToolbarButtonStyle}"
+                        Margin="0" />
+            </WrapPanel>
+        </Grid>
 
-                    <TextBlock Margin="0,12,0,0"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               Text="Blocco / nota" />
-                    <TextBlock Margin="0,6,0,0"
-                               Text="{Binding BlockingReason}"
-                               TextWrapping="Wrap" />
-
-                    <TextBlock Margin="0,12,0,0"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               Text="Modalita` designer" />
-                    <TextBlock Margin="0,6,0,0"
-                               Text="{Binding DesignerModeLabel}" />
-
-                    <TextBlock Margin="0,12,0,0"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               Text="Versione rilevata" />
-                    <TextBlock Margin="0,6,0,0"
-                               Text="{Binding DetectedVersion}" />
-
-                    <UniformGrid Margin="0,16,0,0"
-                                 Columns="3">
-                        <Border Background="{StaticResource SurfaceAltBrush}"
-                                CornerRadius="8"
-                                Padding="12"
-                                Margin="0,0,8,0">
-                            <StackPanel>
-                                <TextBlock FontWeight="SemiBold"
-                                           Text="Designer" />
-                                <TextBlock Margin="0,4,0,0"
-                                           Text="{Binding CanOpenDesigner}" />
-                            </StackPanel>
-                        </Border>
-                        <Border Background="{StaticResource SurfaceAltBrush}"
-                                CornerRadius="8"
-                                Padding="12"
-                                Margin="0,0,8,0">
-                            <StackPanel>
-                                <TextBlock FontWeight="SemiBold"
-                                           Text="Preview" />
-                                <TextBlock Margin="0,4,0,0"
-                                           Text="{Binding CanAttemptPreview}" />
-                            </StackPanel>
-                        </Border>
-                        <Border Background="{StaticResource SurfaceAltBrush}"
-                                CornerRadius="8"
-                                Padding="12">
-                            <StackPanel>
-                                <TextBlock FontWeight="SemiBold"
-                                           Text="Stampa" />
-                                <TextBlock Margin="0,4,0,0"
-                                           Text="{Binding CanAttemptPrint}" />
-                            </StackPanel>
-                        </Border>
-                    </UniformGrid>
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Column="2"
-                    Style="{StaticResource CardStyle}">
-                <StackPanel>
-                    <TextBlock FontSize="18"
-                               FontWeight="SemiBold"
-                               Text="Percorsi e assembly" />
-
-                    <TextBlock Margin="0,14,0,0"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               Text="Cartella layout" />
-                    <TextBlock Margin="0,6,0,0"
-                               Text="{Binding LayoutsDirectory}"
-                               TextWrapping="Wrap" />
-
-                    <TextBlock Margin="0,12,0,0"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               Text="Catalogo layout" />
-                    <TextBlock Margin="0,6,0,0"
-                               Text="{Binding CatalogFilePath}"
-                               TextWrapping="Wrap" />
-
-                    <TextBlock Margin="0,12,0,0"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               Text="Assembly runtime" />
-                    <TextBlock Margin="0,6,0,0"
-                               Text="{Binding RuntimeAssemblyPath}"
-                               TextWrapping="Wrap" />
-
-                    <TextBlock Margin="0,12,0,0"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               Text="Assembly designer" />
-                    <TextBlock Margin="0,6,0,0"
-                               Text="{Binding DesignerAssemblyPath}"
-                               TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Column="4"
-                    Style="{StaticResource CardStyle}"
-                    Padding="16,14">
-                <WrapPanel>
-                    <Button Content="Aggiorna"
-                            Command="{Binding RefreshCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Apri cartella layout"
-                            Command="{Binding OpenLayoutsFolderCommand}"
-                            Style="{StaticResource PrimaryButtonStyle}" />
-                    <Button Content="Apri catalogo"
-                            Command="{Binding OpenCatalogFileCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Apri layout selezionato"
-                            Command="{Binding OpenSelectedLayoutCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Anteprima"
-                            Command="{Binding PreviewSelectedLayoutCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Apri designer"
-                            Command="{Binding OpenDesignerCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Test stampa"
-                            Command="{Binding PrintTestCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}" />
-                </WrapPanel>
-            </Border>
-            </Grid>
-
-            <Grid Grid.Row="4">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1.15*" />
-                <ColumnDefinition Width="16" />
-                <ColumnDefinition Width="1.35*" />
+                <ColumnDefinition Width="2.1*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="0.95*" />
             </Grid.ColumnDefinitions>
 
-            <Border Style="{StaticResource CardStyle}">
+            <Border Style="{StaticResource CardStyle}"
+                    Background="{StaticResource WindowBackgroundBrush}"
+                    Padding="12">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="12" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="12" />
+                        <RowDefinition Height="8" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock FontSize="18"
-                               FontWeight="SemiBold"
-                               Text="Catalogo layout" />
-
-                    <Grid Grid.Row="2">
+                    <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="12" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <ComboBox ItemsSource="{Binding Printers}"
-                                  SelectedItem="{Binding SelectedPrinter, Mode=TwoWay}"
-                                  DisplayMemberPath="Name"
-                                  MinWidth="240" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Text="Report disponibili" />
+                            <Border Margin="10,0,0,0"
+                                    Padding="8,3"
+                                    CornerRadius="8"
+                                    Background="{StaticResource SurfaceAltBrush}"
+                                    BorderBrush="{StaticResource BorderBrushBase}"
+                                    BorderThickness="1">
+                                <TextBlock FontSize="12"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Text="{Binding Layouts.Count, StringFormat={}{0} layout}" />
+                            </Border>
+                        </StackPanel>
 
-                        <Button Grid.Column="2"
-                                Content="Salva stampante"
-                                Command="{Binding SavePrinterAssignmentCommand}"
-                                Style="{StaticResource SecondaryButtonStyle}" />
+                        <TextBlock Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Text="Click sulla stampante per cambiarla" />
                     </Grid>
 
-                    <DataGrid Grid.Row="4"
+                    <DataGrid Grid.Row="2"
                               ItemsSource="{Binding Layouts}"
                               SelectedItem="{Binding SelectedLayout, Mode=TwoWay}"
                               AutoGenerateColumns="False"
@@ -238,312 +133,303 @@
                               HeadersVisibility="Column"
                               CanUserAddRows="False"
                               CanUserDeleteRows="False"
-                              GridLinesVisibility="Horizontal">
+                              CanUserResizeRows="False"
+                              GridLinesVisibility="Horizontal"
+                              RowHeight="32"
+                              ColumnHeaderHeight="30"
+                              SelectionMode="Single"
+                              SelectionUnit="FullRow">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Documento"
-                                                Width="2*"
-                                                Binding="{Binding DocumentKey}" />
-                            <DataGridTextColumn Header="Nome"
-                                                Width="2*"
+                            <DataGridTextColumn Header="Report"
+                                                Width="1.35*"
                                                 Binding="{Binding DisplayName}" />
-                            <DataGridTextColumn Header="Motore"
-                                                Width="*"
-                                                Binding="{Binding Engine}" />
-                            <DataGridTextColumn Header="Template"
-                                                Width="2*"
+                            <DataGridTextColumn Header="Famiglia"
+                                                Width="1.05*"
+                                                Binding="{Binding DocumentKey}" />
+                            <DataGridTextColumn Header="Layout"
+                                                Width="1.15*"
                                                 Binding="{Binding TemplateFileName}" />
-                            <DataGridTextColumn Header="Stampante"
-                                                Width="1.6*"
-                                                Binding="{Binding AssignedPrinterName}" />
+                            <DataGridTemplateColumn Header="Stampante"
+                                                    Width="1.2*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{Binding AssignedPrinterName, TargetNullValue=Seleziona}"
+                                                Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                Click="PrinterMenuButton_Click"
+                                                Style="{StaticResource FastReportCellButtonStyle}">
+                                            <Button.ContextMenu>
+                                                <ContextMenu ItemsSource="{Binding PlacementTarget.Tag.Printers, RelativeSource={RelativeSource Self}}">
+                                                    <ContextMenu.ItemContainerStyle>
+                                                        <Style TargetType="{x:Type MenuItem}">
+                                                            <Setter Property="Header" Value="{Binding Name}" />
+                                                            <Setter Property="Command"
+                                                                    Value="{Binding PlacementTarget.Tag.AssignPrinterToSelectedLayoutCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                            <Setter Property="CommandParameter" Value="{Binding}" />
+                                                        </Style>
+                                                    </ContextMenu.ItemContainerStyle>
+                                                </ContextMenu>
+                                            </Button.ContextMenu>
+                                        </Button>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Motore"
+                                                Width="0.65*"
+                                                Binding="{Binding Engine}" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </Border>
 
             <Border Grid.Column="2"
-                    Style="{StaticResource CardStyle}">
+                    Style="{StaticResource CardStyle}"
+                    Background="{StaticResource WindowBackgroundBrush}"
+                    Padding="12">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="12" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock FontSize="18"
+                    <TextBlock FontSize="16"
                                FontWeight="SemiBold"
-                               Text="Schema campi documento" />
+                               Text="Operazioni" />
 
-                    <Grid Grid.Row="2">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="12" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
+                    <Border Grid.Row="2"
+                            Background="{StaticResource SurfaceAltBrush}"
+                            BorderBrush="{StaticResource BorderBrushBase}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="4" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="8" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="4" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                        <ComboBox ItemsSource="{Binding Schemas}"
-                                  SelectedItem="{Binding SelectedSchema, Mode=TwoWay}"
-                                  DisplayMemberPath="DisplayName" />
+                            <TextBlock Style="{StaticResource FastReportLabelStyle}"
+                                       Text="Report" />
+                            <TextBlock Grid.Row="2"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding SelectedLayout.DisplayName, TargetNullValue=-}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Row="4"
+                                       Style="{StaticResource FastReportLabelStyle}"
+                                       Text="Stampante associata" />
+                            <TextBlock Grid.Row="6"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding SelectedLayout.AssignedPrinterName, TargetNullValue=Nessuna}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                    </Border>
 
-                        <DataGrid Grid.Row="2"
-                                  AutoGenerateColumns="False"
-                                  IsReadOnly="True"
-                                  HeadersVisibility="Column"
-                                  CanUserAddRows="False"
-                                  CanUserDeleteRows="False"
-                                  GridLinesVisibility="Horizontal"
-                                  ItemsSource="{Binding SelectedSchema.DataSources}">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Datasource"
-                                                    Width="1.4*"
-                                                    Binding="{Binding DisplayName}" />
-                                <DataGridTextColumn Header="Chiave"
-                                                    Width="*"
-                                                    Binding="{Binding Key}" />
-                                <DataGridTextColumn Header="Collezione"
-                                                    Width="*"
-                                                    Binding="{Binding IsCollection}" />
-                                <DataGridTextColumn Header="Campi"
-                                                    Width="*"
-                                                    Binding="{Binding Fields.Count}" />
-                            </DataGrid.Columns>
-                        </DataGrid>
+                    <UniformGrid Grid.Row="4"
+                                 Columns="2"
+                                 Rows="2">
+                        <Button Content="Anteprima"
+                                Command="{Binding PreviewSelectedLayoutCommand}"
+                                Style="{StaticResource FastReportPrimaryButtonStyle}" />
+                        <Button Content="Stampa test"
+                                Command="{Binding PrintTestCommand}"
+                                Style="{StaticResource FastReportToolbarButtonStyle}" />
+                        <Button Content="Designer"
+                                Command="{Binding OpenDesignerCommand}"
+                                Style="{StaticResource FastReportToolbarButtonStyle}" />
+                        <Button Content="Apri file"
+                                Command="{Binding OpenSelectedLayoutCommand}"
+                                Style="{StaticResource FastReportToolbarButtonStyle}" />
+                    </UniformGrid>
+
+                    <Grid Grid.Row="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Background="{StaticResource SurfaceAltBrush}"
+                                BorderBrush="{StaticResource BorderBrushBase}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="8">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource FastReportLabelStyle}"
+                                           Text="Preview" />
+                                <TextBlock FontWeight="SemiBold"
+                                           Text="{Binding CanAttemptPreview}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="2"
+                                Background="{StaticResource SurfaceAltBrush}"
+                                BorderBrush="{StaticResource BorderBrushBase}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="8">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource FastReportLabelStyle}"
+                                           Text="Designer" />
+                                <TextBlock FontWeight="SemiBold"
+                                           Text="{Binding CanOpenDesigner}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="4"
+                                Background="{StaticResource SurfaceAltBrush}"
+                                BorderBrush="{StaticResource BorderBrushBase}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="8">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource FastReportLabelStyle}"
+                                           Text="Stampa" />
+                                <TextBlock FontWeight="SemiBold"
+                                           Text="{Binding CanAttemptPrint}" />
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </Grid>
             </Border>
-            </Grid>
+        </Grid>
 
-            <Border Grid.Row="6"
-                    Style="{StaticResource CardStyle}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="12" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="12" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
-                <TextBlock FontSize="18"
-                           FontWeight="SemiBold"
-                           Text="Riferimento REPX legacy" />
-
-                <ComboBox Grid.Row="2"
-                          ItemsSource="{Binding LegacyReports}"
-                          SelectedItem="{Binding SelectedLegacyReport, Mode=TwoWay}"
-                          DisplayMemberPath="DisplayName" />
-
-                <Grid Grid.Row="4">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1.1*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="1.4*" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel>
-                        <TextBlock FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="File sorgente" />
-                        <TextBlock Margin="0,6,0,0"
-                                   Text="{Binding SelectedLegacySourceFilePath}"
-                                   TextWrapping="Wrap" />
-
-                        <TextBlock Margin="0,12,0,0"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="Stampante / carta legacy" />
-                        <TextBlock Margin="0,6,0,0"
-                                   Text="{Binding SelectedLegacyPrinter}" />
-                        <TextBlock Margin="0,4,0,0"
-                                   Text="{Binding SelectedLegacyPaperMode}" />
-
-                        <TextBlock Margin="0,12,0,0"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="Sezioni" />
-                        <TextBlock Margin="0,6,0,0"
-                                   Text="{Binding SelectedLegacyReportSections}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-
-                    <Grid Grid.Column="2">
+        <Expander Grid.Row="4"
+                  Header="Dettagli tecnici"
+                  IsExpanded="False">
+            <Border Margin="0,8,0,0"
+                    Style="{StaticResource CardStyle}"
+                    Background="{StaticResource WindowBackgroundBrush}"
+                    Padding="12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              MaxHeight="320">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.1*" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="1.2*" />
+                        </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="12" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="12" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
                         <StackPanel>
-                            <TextBlock FontSize="13"
+                            <TextBlock FontSize="15"
                                        FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
-                                       Text="Parametri legacy" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Text="{Binding SelectedLegacyReportParameters}"
+                                       Text="Runtime" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Style="{StaticResource FastReportLabelStyle}"
+                                       Text="Descrizione" />
+                            <TextBlock Text="{Binding RuntimeDescription}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Style="{StaticResource FastReportLabelStyle}"
+                                       Text="Blocco / nota" />
+                            <TextBlock Text="{Binding BlockingReason}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Style="{StaticResource FastReportLabelStyle}"
+                                       Text="Versione" />
+                            <TextBlock Text="{Binding DetectedVersion}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Text="Percorsi" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Style="{StaticResource FastReportLabelStyle}"
+                                       Text="Cartella layout" />
+                            <TextBlock Text="{Binding LayoutsDirectory}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Style="{StaticResource FastReportLabelStyle}"
+                                       Text="Catalogo" />
+                            <TextBlock Text="{Binding CatalogFilePath}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Style="{StaticResource FastReportLabelStyle}"
+                                       Text="Assembly runtime" />
+                            <TextBlock Text="{Binding RuntimeAssemblyPath}"
                                        TextWrapping="Wrap" />
                         </StackPanel>
 
-                        <StackPanel Grid.Row="2">
-                            <TextBlock FontSize="13"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
-                                       Text="Binding principali" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Text="{Binding SelectedLegacyReportBindings}"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
+                        <Grid Grid.Row="2"
+                              Grid.ColumnSpan="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.1*" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="1.2*" />
+                            </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Row="4">
-                            <TextBlock FontSize="13"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
-                                       Text="Regole da replicare" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Text="{Binding SelectedLegacyReportRules}"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
+                            <StackPanel>
+                                <TextBlock FontSize="15"
+                                           FontWeight="SemiBold"
+                                           Text="Riferimento REPX legacy" />
+                                <ComboBox Margin="0,8,0,0"
+                                          Height="30"
+                                          ItemsSource="{Binding LegacyReports}"
+                                          SelectedItem="{Binding SelectedLegacyReport, Mode=TwoWay}"
+                                          DisplayMemberPath="DisplayName" />
+                                <TextBlock Margin="0,8,0,0"
+                                           Style="{StaticResource FastReportLabelStyle}"
+                                           Text="File sorgente" />
+                                <TextBlock Text="{Binding SelectedLegacySourceFilePath}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="0,8,0,0"
+                                           Style="{StaticResource FastReportLabelStyle}"
+                                           Text="Stampante / carta legacy" />
+                                <TextBlock Text="{Binding SelectedLegacyPrinter}" />
+                                <TextBlock Text="{Binding SelectedLegacyPaperMode}" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock FontSize="15"
+                                           FontWeight="SemiBold"
+                                           Text="Contratto report" />
+                                <TextBlock Margin="0,8,0,0"
+                                           Style="{StaticResource FastReportLabelStyle}"
+                                           Text="Famiglia" />
+                                <TextBlock Text="{Binding SelectedContractFamily}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="0,8,0,0"
+                                           Style="{StaticResource FastReportLabelStyle}"
+                                           Text="Contesto dominio" />
+                                <TextBlock Text="{Binding SelectedContractDomainContext}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="0,8,0,0"
+                                           Style="{StaticResource FastReportLabelStyle}"
+                                           Text="Mappa campi" />
+                                <TextBlock Text="{Binding SelectedContractMappings}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
                     </Grid>
-                </Grid>
-            </Grid>
+                </ScrollViewer>
             </Border>
+        </Expander>
 
-            <Border Grid.Row="8"
-                    Style="{StaticResource CardStyle}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="12" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
-                <TextBlock FontSize="18"
-                           FontWeight="SemiBold"
-                           Text="Contratto tecnico report" />
-
-                <Grid Grid.Row="2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1.05*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="1.35*" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel>
-                        <TextBlock FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="Famiglia" />
-                        <TextBlock Margin="0,6,0,0"
-                                   Text="{Binding SelectedContractFamily}"
-                                   TextWrapping="Wrap" />
-
-                        <TextBlock Margin="0,12,0,0"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="Contesto dominio" />
-                        <TextBlock Margin="0,6,0,0"
-                                   Text="{Binding SelectedContractDomainContext}"
-                                   TextWrapping="Wrap" />
-
-                        <TextBlock Margin="0,12,0,0"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="Parametri runtime" />
-                        <TextBlock Margin="0,6,0,0"
-                                   Text="{Binding SelectedContractRuntimeParameters}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="2">
-                        <TextBlock FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="Mappa campi" />
-                        <TextBlock Margin="0,6,0,0"
-                                   Text="{Binding SelectedContractMappings}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                </Grid>
-            </Grid>
-            </Border>
-
-            <Border Grid.Row="10"
-                    Style="{StaticResource CardStyle}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="12" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
-                <TextBlock FontSize="18"
-                           FontWeight="SemiBold"
-                           Text="Famiglie report" />
-
-                <Grid Grid.Row="2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1.05*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="1.35*" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel>
-                        <ComboBox ItemsSource="{Binding ReportFamilies}"
-                                  SelectedItem="{Binding SelectedReportFamily, Mode=TwoWay}"
-                                  DisplayMemberPath="DisplayName" />
-
-                        <TextBlock Margin="0,12,0,0"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="Contesto dominio" />
-                        <TextBlock Margin="0,6,0,0"
-                                   Text="{Binding SelectedReportFamilyDomainContext}"
-                                   TextWrapping="Wrap" />
-
-                        <TextBlock Margin="0,12,0,0"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="Modello runtime" />
-                        <TextBlock Margin="0,6,0,0"
-                                   Text="{Binding SelectedReportFamilyRuntimeModel}"
-                                   TextWrapping="Wrap" />
-
-                        <TextBlock Margin="0,12,0,0"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="Documenti supportati" />
-                        <TextBlock Margin="0,6,0,0"
-                                   Text="{Binding SelectedReportFamilySupportedDocuments}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="2">
-                        <TextBlock FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="Gruppi campi disponibili" />
-                        <TextBlock Margin="0,6,0,0"
-                                   Text="{Binding SelectedReportFamilyGroups}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                </Grid>
-            </Grid>
-            </Border>
-
-            <Border Grid.Row="12"
-                    Style="{StaticResource CardStyle}">
-                <TextBlock Text="{Binding StatusMessage}"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           TextWrapping="Wrap" />
-            </Border>
-        </Grid>
-    </ScrollViewer>
+        <Border Grid.Row="6"
+                Style="{StaticResource CardStyle}"
+                Background="{StaticResource WindowBackgroundBrush}"
+                Padding="10,8">
+            <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                       Text="{Binding StatusMessage}"
+                       TextTrimming="CharacterEllipsis" />
+        </Border>
+    </Grid>
 </UserControl>

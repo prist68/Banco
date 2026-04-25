@@ -64,7 +64,7 @@
                                    Placement="Bottom"
                                    StaysOpen="False"
                                    AllowsTransparency="True"
-                                   PopupAnimation="Fade">
+                                   PopupAnimation="None">
                                 <Border Width="540"
                                         Background="#FFFFFFFF"
                                         BorderBrush="{StaticResource BorderBrushBase}"
@@ -197,7 +197,7 @@
                                    Placement="Bottom"
                                    StaysOpen="False"
                                    AllowsTransparency="True"
-                                   PopupAnimation="Fade">
+                                   PopupAnimation="None">
                                 <Border Width="420"
                                         Background="#FFFFFFFF"
                                         BorderBrush="{StaticResource BorderBrushBase}"
@@ -245,7 +245,8 @@
                 Padding="0"
                 ClipToBounds="True">
             <Grid>
-                <DataGrid AutoGenerateColumns="False"
+                <DataGrid x:Name="PurchaseHistoryGrid"
+                          AutoGenerateColumns="False"
                           HeadersVisibility="Column"
                           GridLinesVisibility="Horizontal"
                           CanUserAddRows="False"
@@ -256,15 +257,17 @@
                           Background="{StaticResource SurfaceBrush}"
                           BorderThickness="0"
                           RowHeight="34"
+                          SelectionMode="Single"
+                          SelectionUnit="FullRow"
                           AlternatingRowBackground="#FFF7F9FC">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Data" Binding="{Binding DataDocumento, StringFormat=dd/MM/yyyy}" Width="95" />
-                        <DataGridTextColumn Header="Tipo" Binding="{Binding TipoDocumento}" Width="130" />
-                        <DataGridTextColumn Header="Articolo" Binding="{Binding CodiceArticolo}" Width="100" />
-                        <DataGridTextColumn Header="Descrizione" Binding="{Binding DescrizioneArticolo}" Width="*" />
-                        <DataGridTextColumn Header="Fornitore" Binding="{Binding FornitoreNominativo}" Width="220" />
-                        <DataGridTextColumn Header="FT" Binding="{Binding RiferimentoFattura}" Width="120" />
-                        <DataGridTextColumn Header="Pezzi" Binding="{Binding Quantita, StringFormat={}{0:N2}}" Width="90" />
+                        <DataGridTextColumn x:Name="DataDocumentoColumn" Header="Data" Binding="{Binding DataDocumento, StringFormat=dd/MM/yyyy}" Width="95" />
+                        <DataGridTextColumn x:Name="TipoDocumentoColumn" Header="Tipo" Binding="{Binding TipoDocumento}" Width="130" />
+                        <DataGridTextColumn x:Name="CodiceArticoloColumn" Header="Articolo" Binding="{Binding CodiceArticolo}" Width="100" />
+                        <DataGridTextColumn x:Name="DescrizioneArticoloColumn" Header="Descrizione" Binding="{Binding DescrizioneArticolo}" Width="*" />
+                        <DataGridTextColumn x:Name="FornitoreNominativoColumn" Header="Fornitore" Binding="{Binding FornitoreNominativo}" Width="220" />
+                        <DataGridTextColumn x:Name="RiferimentoFatturaColumn" Header="FT" Binding="{Binding RiferimentoFattura}" Width="120" />
+                        <DataGridTextColumn x:Name="QuantitaColumn" Header="Pezzi" Binding="{Binding Quantita, StringFormat={}{0:N2}}" Width="90" />
                         <DataGridTextColumn Header="Prezzo" Binding="{Binding PrezzoUnitario, StringFormat={}{0:N2} €}" Width="110" />
                         <DataGridTextColumn Header="Totale" Binding="{Binding TotaleRiga, StringFormat={}{0:N2} €}" Width="110" />
                     </DataGrid.Columns>

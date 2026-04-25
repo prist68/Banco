@@ -30,6 +30,16 @@ public sealed class ReorderArticleSettings
 
     public int? GiorniCopertura { get; set; }
 
+    public decimal? PrezzoConfezione { get; set; }
+
+    public decimal? PrezzoSingolo { get; set; }
+
+    public decimal? PrezzoVenditaRiferimento { get; set; }
+
+    public decimal? QuantitaPromo { get; set; }
+
+    public decimal? PrezzoPromo { get; set; }
+
     public string Note { get; set; } = string.Empty;
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;

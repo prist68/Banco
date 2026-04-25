@@ -35,6 +35,7 @@ public sealed class GestionaleDocumentWriter : IGestionaleDocumentWriter
             await DeleteDocumentoChildrenAsync(connection, transaction, effectiveDocumentOid, cancellationToken);
             await InsertRigheAsync(connection, transaction, effectiveDocumentOid, request, modelDefaults.CausaleMagazzinoOid, modelDefaults.MagazzinoOid, cancellationToken);
             await InsertDocumentoIvaAsync(connection, transaction, effectiveDocumentOid, totals.IvaRows, cancellationToken);
+            await ApplyPointsSettlementAsync(connection, transaction, request.PointsSettlement, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
             return new FiscalizationResult
@@ -55,6 +56,32 @@ public sealed class GestionaleDocumentWriter : IGestionaleDocumentWriter
         }
     }
 
+    public async Task MarkLegacyReceiptCompletedAsync(
+        int documentoGestionaleOid,
+        CancellationToken cancellationToken = default)
+    {
+        if (documentoGestionaleOid <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(documentoGestionaleOid));
+        }
+
+        var settings = await _configurationService.LoadAsync(cancellationToken);
+        await using var connection = await GestionaleConnectionFactory.CreateOpenConnectionAsync(settings, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            UPDATE documento
+            SET
+                Fatturato = 1,
+                Stampato = 1,
+                Dataaggiornamento = @Dataaggiornamento
+            WHERE OID = @DocumentoOid;
+            """;
+        command.Parameters.AddWithValue("@DocumentoOid", documentoGestionaleOid);
+        command.Parameters.AddWithValue("@Dataaggiornamento", DateTime.Now);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     private static async Task<int> UpdateDocumentoAsync(
         MySqlConnection connection,
         MySqlTransaction transaction,
@@ -66,6 +93,10 @@ public sealed class GestionaleDocumentWriter : IGestionaleDocumentWriter
     {
         await using var command = connection.CreateCommand();
         command.Transaction = transaction;
+        var acconto = request.Pagamenti.Contanti +
+                      request.Pagamenti.Carta +
+                      request.Pagamenti.Web +
+                      request.Pagamenti.Buoni;
         command.CommandText =
             """
             UPDATE documento
@@ -77,11 +108,28 @@ public sealed class GestionaleDocumentWriter : IGestionaleDocumentWriter
                 Totaledocumento = @Totaledocumento,
                 Totaleimponibile = @Totaleimponibile,
                 Totaleiva = @Totaleiva,
+                Dataevasione = @Dataevasione,
+                Dataiva = @Dataiva,
+                Dataricezione = @Dataricezione,
+                Dataordinepa = @Dataordinepa,
+                Datatrasporto = @Datatrasporto,
+                Acconto = @Acconto,
                 Pagato = @Pagato,
+                Pagatobancomat = @Pagatobancomat,
                 Pagatocartacredito = @Pagatocartacredito,
                 Pagatoweb = @Pagatoweb,
                 Pagatobuonipasto = @Pagatobuonipasto,
                 Pagatosospeso = @Pagatosospeso,
+                Aspettobeni = COALESCE(Aspettobeni, 1),
+                Ivaspeseaccessorie = COALESCE(Ivaspeseaccessorie, 1),
+                Ivaspeseincasso = COALESCE(Ivaspeseincasso, 1),
+                Ritenuta = COALESCE(Ritenuta, 1),
+                Tipotrasporto = COALESCE(Tipotrasporto, 2),
+                Tipoporto = COALESCE(Tipoporto, 1),
+                Checked = COALESCE(Checked, 0),
+                Modificato = COALESCE(Modificato, 0),
+                Ricalcolodocumentobloccato = COALESCE(Ricalcolodocumentobloccato, 0),
+                Isdifferitoreloaded = 0,
                 Utente = @Utente,
                 Magazzino = @Magazzino,
                 Pagamento = @Pagamento,
@@ -96,7 +144,14 @@ public sealed class GestionaleDocumentWriter : IGestionaleDocumentWriter
         command.Parameters.AddWithValue("@Totaledocumento", totals.TotaleDocumento);
         command.Parameters.AddWithValue("@Totaleimponibile", totals.TotaleImponibile);
         command.Parameters.AddWithValue("@Totaleiva", totals.TotaleIva);
+        command.Parameters.AddWithValue("@Dataevasione", request.DataDocumento);
+        command.Parameters.AddWithValue("@Dataiva", request.DataDocumento);
+        command.Parameters.AddWithValue("@Dataricezione", request.DataDocumento);
+        command.Parameters.AddWithValue("@Dataordinepa", request.DataDocumento);
+        command.Parameters.AddWithValue("@Datatrasporto", DateTime.Now);
+        command.Parameters.AddWithValue("@Acconto", acconto);
         command.Parameters.AddWithValue("@Pagato", request.Pagamenti.Contanti);
+        command.Parameters.AddWithValue("@Pagatobancomat", 0m);
         command.Parameters.AddWithValue("@Pagatocartacredito", request.Pagamenti.Carta);
         command.Parameters.AddWithValue("@Pagatoweb", request.Pagamenti.Web);
         command.Parameters.AddWithValue("@Pagatobuonipasto", request.Pagamenti.Buoni);
@@ -237,6 +292,10 @@ public sealed class GestionaleDocumentWriter : IGestionaleDocumentWriter
     {
         await using var command = connection.CreateCommand();
         command.Transaction = transaction;
+        var acconto = request.Pagamenti.Contanti +
+                      request.Pagamenti.Carta +
+                      request.Pagamenti.Web +
+                      request.Pagamenti.Buoni;
         command.CommandText =
             """
             INSERT INTO documento (
@@ -249,11 +308,28 @@ public sealed class GestionaleDocumentWriter : IGestionaleDocumentWriter
                 Totaledocumento,
                 Totaleimponibile,
                 Totaleiva,
+                Dataevasione,
+                Dataiva,
+                Dataricezione,
+                Dataordinepa,
+                Datatrasporto,
+                Acconto,
                 Pagato,
+                Pagatobancomat,
                 Pagatocartacredito,
                 Pagatoweb,
                 Pagatobuonipasto,
                 Pagatosospeso,
+                Aspettobeni,
+                Ivaspeseaccessorie,
+                Ivaspeseincasso,
+                Ritenuta,
+                Tipotrasporto,
+                Tipoporto,
+                Checked,
+                Modificato,
+                Ricalcolodocumentobloccato,
+                Isdifferitoreloaded,
                 Utente,
                 Magazzino,
                 Pagamento,
@@ -271,11 +347,28 @@ public sealed class GestionaleDocumentWriter : IGestionaleDocumentWriter
                 @Totaledocumento,
                 @Totaleimponibile,
                 @Totaleiva,
+                @Dataevasione,
+                @Dataiva,
+                @Dataricezione,
+                @Dataordinepa,
+                @Datatrasporto,
+                @Acconto,
                 @Pagato,
+                @Pagatobancomat,
                 @Pagatocartacredito,
                 @Pagatoweb,
                 @Pagatobuonipasto,
                 @Pagatosospeso,
+                1,
+                1,
+                1,
+                1,
+                2,
+                1,
+                0,
+                0,
+                0,
+                0,
                 @Utente,
                 @Magazzino,
                 @Pagamento,
@@ -294,7 +387,14 @@ public sealed class GestionaleDocumentWriter : IGestionaleDocumentWriter
         command.Parameters.AddWithValue("@Totaledocumento", totals.TotaleDocumento);
         command.Parameters.AddWithValue("@Totaleimponibile", totals.TotaleImponibile);
         command.Parameters.AddWithValue("@Totaleiva", totals.TotaleIva);
+        command.Parameters.AddWithValue("@Dataevasione", request.DataDocumento);
+        command.Parameters.AddWithValue("@Dataiva", request.DataDocumento);
+        command.Parameters.AddWithValue("@Dataricezione", request.DataDocumento);
+        command.Parameters.AddWithValue("@Dataordinepa", request.DataDocumento);
+        command.Parameters.AddWithValue("@Datatrasporto", DateTime.Now);
+        command.Parameters.AddWithValue("@Acconto", acconto);
         command.Parameters.AddWithValue("@Pagato", request.Pagamenti.Contanti);
+        command.Parameters.AddWithValue("@Pagatobancomat", 0m);
         command.Parameters.AddWithValue("@Pagatocartacredito", request.Pagamenti.Carta);
         command.Parameters.AddWithValue("@Pagatoweb", request.Pagamenti.Web);
         command.Parameters.AddWithValue("@Pagatobuonipasto", request.Pagamenti.Buoni);
@@ -544,5 +644,35 @@ public sealed class GestionaleDocumentWriter : IGestionaleDocumentWriter
             command.Parameters.AddWithValue("@Imposta", ivaRow.Imposta);
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
+    }
+
+    private static async Task ApplyPointsSettlementAsync(
+        MySqlConnection connection,
+        MySqlTransaction transaction,
+        FiscalizationPointsSettlement? settlement,
+        CancellationToken cancellationToken)
+    {
+        if (settlement is null || settlement.CustomerOid <= 0)
+        {
+            return;
+        }
+
+        var deltaPoints = settlement.DeltaPoints;
+        if (deltaPoints == 0)
+        {
+            return;
+        }
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            UPDATE soggetto
+            SET Punticartafedelta = COALESCE(Punticartafedelta, 0) + @DeltaPoints
+            WHERE OID = @CustomerOid;
+            """;
+        command.Parameters.AddWithValue("@DeltaPoints", deltaPoints);
+        command.Parameters.AddWithValue("@CustomerOid", settlement.CustomerOid);
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 }

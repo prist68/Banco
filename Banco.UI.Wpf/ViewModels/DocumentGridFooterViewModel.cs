@@ -18,6 +18,8 @@ public sealed class DocumentGridFooterViewModel
 
     public string Totale { get; init; } = string.Empty;
 
+    public string Punti { get; init; } = string.Empty;
+
     public string PagContanti { get; init; } = string.Empty;
 
     public string PagCarta { get; init; } = string.Empty;

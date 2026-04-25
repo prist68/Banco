@@ -30,6 +30,8 @@ public sealed class GestionaleArticleSearchResult
 
     public string? VarianteDescrizione { get; init; }
 
+    public bool HasVariantChildren { get; init; }
+
     public bool IsVariante => ArticoloPadreOid.HasValue || !string.IsNullOrWhiteSpace(VarianteDescrizione);
 
     public bool IsGiftCardArticle => TipoArticoloOid == 7;

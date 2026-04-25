@@ -38,7 +38,7 @@ public sealed class SqlitePointsRewardRuleRepository : IPointsRewardRuleReposito
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            results.Add(new PointsRewardRule
+            var rule = new PointsRewardRule
             {
                 Id = Guid.Parse(reader.GetString(0)),
                 CampaignOid = reader.GetInt32(1),
@@ -61,7 +61,9 @@ public sealed class SqlitePointsRewardRuleRepository : IPointsRewardRuleReposito
                 EnableSaleCheck = !reader.IsDBNull(16) && reader.GetInt32(16) == 1,
                 Notes = reader.IsDBNull(17) ? null : reader.GetString(17),
                 UpdatedAt = reader.IsDBNull(18) ? DateTimeOffset.Now : DateTimeOffset.Parse(reader.GetString(18))
-            });
+            };
+            rule.EnsureRequiredPoints();
+            results.Add(rule);
         }
 
         return results;
@@ -83,6 +85,7 @@ public sealed class SqlitePointsRewardRuleRepository : IPointsRewardRuleReposito
 
         foreach (var rule in rules)
         {
+            rule.EnsureRequiredPoints();
             await using var command = connection.CreateCommand();
             command.Transaction = (SqliteTransaction)transaction;
             command.CommandText =

@@ -14,6 +14,10 @@ public sealed class AppSettings
 
     public FmContentSettings FmContent { get; set; } = new();
 
+    public BackupConfigurationSettings BackupConfiguration { get; set; } = new();
+
+    public RestoreConfigurationSettings RestoreConfiguration { get; set; } = new();
+
     public Dictionary<string, GridLayoutSettings> GridLayouts { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public DocumentListLayoutSettings DocumentListLayout { get; set; } = new();

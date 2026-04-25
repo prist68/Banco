@@ -1,0 +1,210 @@
+<Window x:Class="Banco.Punti.Views.FidelityHistoryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Storico fidelity"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        ShowInTaskbar="False"
+        Width="1100"
+        Height="760"
+        MinWidth="920"
+        MinHeight="620"
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True">
+    <Border Background="{DynamicResource ModalOverlayBrush}">
+        <Border Margin="24"
+                Padding="18"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrushBase}"
+                BorderThickness="1"
+                CornerRadius="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                        <TextBlock Text="Storico fidelity"
+                                   FontSize="20"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Margin="0,4,0,0"
+                                   Text="{Binding FidelityHistorySummaryLabel}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            Width="28"
+                            Height="28"
+                            Margin="12,0,0,0"
+                            Click="CloseButton_OnClick"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            ToolTip="Chiudi">
+                        <Border Background="{DynamicResource ModalChromeBrush}"
+                                BorderBrush="{StaticResource BorderBrushBase}"
+                                BorderThickness="1"
+                                CornerRadius="7">
+                            <TextBlock Text="×"
+                                       FontSize="13"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.4*" />
+                        <ColumnDefinition Width="0.8*" />
+                        <ColumnDefinition Width="0.8*" />
+                        <ColumnDefinition Width="0.8*" />
+                        <ColumnDefinition Width="0.8*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Margin="0,0,8,0" Padding="10,8" CornerRadius="8"
+                            Background="#FFF8FAFD" BorderBrush="{StaticResource BorderBrushBase}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="Carta fidelity" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" />
+                            <TextBlock Margin="0,3,0,0" Text="{Binding FidelityCardCodeLabel}" FontSize="13" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Margin="0,0,8,0" Padding="10,8" CornerRadius="8"
+                            Background="#FFF8FAFD" BorderBrush="{StaticResource BorderBrushBase}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="Iniziali" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" />
+                            <TextBlock Margin="0,3,0,0" Text="{Binding FidelityInitialPointsLabel}" FontSize="13" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Margin="0,0,8,0" Padding="10,8" CornerRadius="8"
+                            Background="#FFF8FAFD" BorderBrush="{StaticResource BorderBrushBase}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="Legacy corrente" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" />
+                            <TextBlock Margin="0,3,0,0" Text="{Binding FidelityLegacyCurrentPointsLabel}" FontSize="13" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3" Margin="0,0,8,0" Padding="10,8" CornerRadius="8"
+                            Background="#FFF4FAF1" BorderBrush="#FFD6E7C9" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="Ricalcolato" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" />
+                            <TextBlock Margin="0,3,0,0" Text="{Binding FidelityComputedCurrentPointsLabel}" FontSize="13" FontWeight="SemiBold" Foreground="#FF2E6B3E" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="4" Padding="10,8" CornerRadius="8"
+                            Background="#FFFFF7F3" BorderBrush="#FFE8D5C8" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="Delta" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" />
+                            <TextBlock Margin="0,3,0,0" Text="{Binding FidelityDeltaPointsLabel}" FontSize="13" FontWeight="SemiBold" Foreground="#FF9A5A1A" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Grid Grid.Row="2" Margin="0,16,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="110" />
+                    </Grid.RowDefinitions>
+
+                    <ListView x:Name="HistoryEntriesListView"
+                              Grid.Row="0"
+                              ItemsSource="{Binding FidelityHistoryEntries}"
+                              SelectedItem="{Binding SelectedFidelityHistoryEntry, Mode=TwoWay}"
+                              SelectionChanged="HistoryEntriesListView_OnSelectionChanged"
+                              IsSynchronizedWithCurrentItem="True"
+                              BorderBrush="{StaticResource BorderBrushBase}"
+                              BorderThickness="1">
+                        <ListView.View>
+                            <GridView AllowsColumnReorder="False">
+                                <GridViewColumn Header="Data" Width="90" DisplayMemberBinding="{Binding DataDocumento, StringFormat=dd/MM/yyyy}" />
+                                <GridViewColumn Header="Doc." Width="72">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Tag="{Binding}"
+                                                    Click="OpenDocumentInBancoButton_OnClick"
+                                                    Padding="0"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    Cursor="Hand"
+                                                    HorizontalAlignment="Left"
+                                                    Focusable="False">
+                                                <TextBlock Text="{Binding DocumentoShortLabel}"
+                                                           Foreground="#FF2F67B1"
+                                                           TextDecorations="Underline" />
+                                            </Button>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Totale" Width="82" DisplayMemberBinding="{Binding TotaleDocumento, StringFormat=N2}" />
+                                <GridViewColumn Header="+ Punti" Width="70" DisplayMemberBinding="{Binding EarnedPointsLabel}" />
+                                <GridViewColumn Header="- Punti" Width="70" DisplayMemberBinding="{Binding SpentPointsLabel}" />
+                                <GridViewColumn Header="Progressivo" Width="88" DisplayMemberBinding="{Binding ProgressivePointsLabel}" />
+                                <GridViewColumn Header="Esito" Width="110" DisplayMemberBinding="{Binding StatusLabel}" />
+                                <GridViewColumn Header="Dettaglio" Width="430" DisplayMemberBinding="{Binding DetailLines}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                    <Border Grid.Row="2"
+                            Padding="10,8"
+                            CornerRadius="8"
+                            Background="#FFFFFFFF"
+                            BorderBrush="{StaticResource BorderBrushBase}"
+                            BorderThickness="1">
+                        <TextBox Text="{Binding FidelityHistoryDetailText, Mode=OneWay}"
+                                 IsReadOnly="True"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Padding="0"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="True"
+                                 VerticalScrollBarVisibility="Auto"
+                                 VerticalContentAlignment="Top" />
+                    </Border>
+                </Grid>
+
+                <WrapPanel Grid.Row="3"
+                           Margin="0,16,0,0"
+                           HorizontalAlignment="Right">
+                    <Button Content="Ricalcola cliente"
+                            Command="{Binding RecalculateSelectedFidelityBalanceCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Padding="12,6"
+                            Margin="0,0,8,0" />
+                    <Button Content="Ricalcola attivi"
+                            Command="{Binding RecalculateAllFidelityBalancesCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Padding="12,6"
+                            Margin="0,0,8,0" />
+                    <Button Content="Aggiorna storico"
+                            Command="{Binding RefreshFidelityHistoryCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Padding="12,6"
+                            Margin="0,0,8,0" />
+                    <Button Content="Chiudi"
+                            Click="CloseButton_OnClick"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Padding="12,6" />
+                </WrapPanel>
+            </Grid>
+        </Border>
+    </Border>
+</Window>

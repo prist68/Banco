@@ -4,10 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:conv="clr-namespace:Banco.UI.Wpf.Converters"
+        xmlns:sidebarConv="clr-namespace:Banco.Sidebar.Converters;assembly=Banco.Sidebar"
+        xmlns:desktop="clr-namespace:Banco.UI.Wpf.DesktopModule"
         xmlns:sidebar="clr-namespace:Banco.Sidebar.Views;assembly=Banco.Sidebar"
         xmlns:vm="clr-namespace:Banco.UI.Wpf.ViewModels"
         mc:Ignorable="d"
-        PreviewKeyDown="ShellWindow_OnPreviewKeyDown"
         Closing="ShellWindow_OnClosing"
         Title="{Binding TitoloApplicazione}"
         Height="920"
@@ -15,10 +16,14 @@
         MinHeight="760"
         MinWidth="1240"
         WindowStartupLocation="CenterScreen"
-        WindowState="Maximized">
+        WindowState="Maximized"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        Background="{DynamicResource WindowBackgroundBrush}">
     <Window.Resources>
         <conv:DoubleToGridLengthConverter x:Key="DoubleToGridLengthConverter" />
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <sidebarConv:ResourceKeyToGeometryConverter x:Key="ResourceKeyToGeometryConverter" />
 
         <Style x:Key="ShellHeaderCardStyle" TargetType="Border">
             <Setter Property="Padding" Value="12,8" />
@@ -29,19 +34,21 @@
         </Style>
 
         <Style x:Key="WorkspaceTabItemStyle" TargetType="TabItem">
-            <Setter Property="Margin" Value="0,0,3,0" />
+            <Setter Property="Margin" Value="0,0,0,0" />
             <Setter Property="Padding" Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Background" Value="{DynamicResource ShellWorkspaceTabBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource ShellWorkspaceTabBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="MinWidth" Value="130" />
+            <Setter Property="MinWidth" Value="136" />
+            <Setter Property="MinHeight" Value="38" />
             <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="HeaderTemplate">
                 <Setter.Value>
                     <DataTemplate DataType="{x:Type vm:ShellWorkspaceTabViewModel}">
-                        <Grid MinWidth="110"
+                        <Grid MinWidth="22"
                               ClipToBounds="False"
                               SnapsToDevicePixels="True">
                             <Grid.ColumnDefinitions>
@@ -49,6 +56,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock VerticalAlignment="Center"
+                                       Margin="0,0,4,0"
                                        FontSize="12.5"
                                        FontWeight="SemiBold"
                                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}"
@@ -71,37 +79,44 @@
                     <ControlTemplate TargetType="TabItem">
                         <Grid ClipToBounds="False"
                               SnapsToDevicePixels="True">
-                            <Border x:Name="TopAccent"
-                                    Height="3"
-                                    Margin="4,0,4,0"
-                                    VerticalAlignment="Top"
-                                    Background="Transparent"
-                                    CornerRadius="2,20,0,0" />
                             <Border x:Name="TabBorder"
-                                    Margin="0,3,0,0"
+                                    Margin="0,0,0,0"
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="4,4,0,0"
+                                    CornerRadius="10,10,8,8"
+                                    Padding="0"
                                     SnapsToDevicePixels="True">
                                 <ContentPresenter ContentSource="Header"
-                                                  Margin="14,8,10,8"
+                                                  Margin="16,8,14,10"
                                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                   VerticalAlignment="Center"
                                                   RecognizesAccessKey="True" />
                             </Border>
+                            <Border x:Name="ActiveGlow"
+                                    Width="26"
+                                    Height="3"
+                                    VerticalAlignment="Bottom"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,0,0,3"
+                                    Background="Transparent"
+                                    CornerRadius="3" />
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Panel.ZIndex" Value="2" />
                                 <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource ShellWorkspaceSurfaceBrush}" />
                                 <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource ShellAccentBrush}" />
                                 <Setter TargetName="TabBorder" Property="BorderThickness" Value="1,1,1,0" />
-                                <Setter TargetName="TopAccent" Property="Background" Value="{DynamicResource ShellAccentStrongBrush}" />
+                                <Setter TargetName="ActiveGlow" Property="Background" Value="{DynamicResource ShellAccentStrongBrush}" />
                                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource ShellWorkspaceTabHoverBrush}" />
                                 <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource ShellWorkspaceTabHoverBorderBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="False">
+                                <Setter TargetName="TabBorder" Property="Opacity" Value="0.96" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -116,9 +131,9 @@
             <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
             <Setter Property="FontSize" Value="11.5" />
             <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Padding" Value="4,1" />
-            <Setter Property="Margin" Value="8,0,0,0" />
-            <Setter Property="MinWidth" Value="18" />
+            <Setter Property="Padding" Value="5,2" />
+            <Setter Property="Margin" Value="12,0,4,0" />
+            <Setter Property="MinWidth" Value="22" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -155,7 +170,9 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -179,6 +196,41 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="ShellWindowButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ShellWorkspaceChromeBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ShellContextCardHoverBrush}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource ShellContextCardHoverBorderBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ShellContextCardActiveBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -192,22 +244,154 @@
                 Background="{DynamicResource PanelBackgroundBrush}"
                 BorderBrush="{DynamicResource BorderBrushBase}"
                 BorderThickness="0,0,0,1"
-                Effect="{DynamicResource SubtleShadow}">
-            <Grid Margin="20,14,20,12">
+                Effect="{DynamicResource SubtleShadow}"
+                MouseLeftButtonDown="HeaderChrome_OnMouseLeftButtonDown">
+            <Grid Margin="20,14,20,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="16" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <Button Grid.Column="0"
-                        Grid.ColumnSpan="3"
                         Click="HeaderBrandButton_OnClick"
                         Style="{StaticResource HeaderBrandButtonStyle}"
-                        ToolTip="Apri configurazioni generali">
+                        ToolTip="Apri menu archivio">
+                    <Button.ContextMenu>
+                        <ContextMenu Style="{DynamicResource ThemedContextMenuStyle}"
+                                     Placement="Bottom"
+                                     HorizontalOffset="-8">
+                            <MenuItem Click="ArchiveGeneralMenuItem_OnClick"
+                                      Style="{DynamicResource ThemedContextMenuItemStyle}">
+                                <MenuItem.Header>
+                                    <Grid Width="240">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="34" />
+                                            <ColumnDefinition Width="10" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="28"
+                                                Height="28"
+                                                CornerRadius="8"
+                                                Background="{DynamicResource BancoAccentSoftBrush}">
+                                            <Path Width="14"
+                                                  Height="14"
+                                                  Stretch="Uniform"
+                                                  Fill="{DynamicResource BancoAccentSoftForegroundBrush}"
+                                                  Data="{Binding Source=IconSettings, Converter={StaticResource ResourceKeyToGeometryConverter}}" />
+                                        </Border>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       Text="Impostazioni archivio" />
+                                            <TextBlock Margin="0,2,0,0"
+                                                       FontSize="11.5"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Text="Generali, DB legacy e percorsi FM" />
+                                        </StackPanel>
+                                    </Grid>
+                                </MenuItem.Header>
+                            </MenuItem>
+                            <MenuItem Click="ArchiveBackupMenuItem_OnClick"
+                                      Style="{DynamicResource ThemedContextMenuItemStyle}">
+                                <MenuItem.Header>
+                                    <Grid Width="240">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="34" />
+                                            <ColumnDefinition Width="10" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="28"
+                                                Height="28"
+                                                CornerRadius="8"
+                                                Background="{DynamicResource BancoAccentSoftBrush}">
+                                            <Path Width="14"
+                                                  Height="14"
+                                                  Stretch="Uniform"
+                                                  Fill="{DynamicResource BancoAccentSoftForegroundBrush}"
+                                                  Data="{Binding Source=IconSaveAction, Converter={StaticResource ResourceKeyToGeometryConverter}}" />
+                                        </Border>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       Text="Configurazione backup" />
+                                            <TextBlock Margin="0,2,0,0"
+                                                       FontSize="11.5"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Text="Default salvataggio archivio" />
+                                        </StackPanel>
+                                    </Grid>
+                                </MenuItem.Header>
+                            </MenuItem>
+                            <MenuItem Click="ArchiveRestoreMenuItem_OnClick"
+                                      Style="{DynamicResource ThemedContextMenuItemStyle}">
+                                <MenuItem.Header>
+                                    <Grid Width="240">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="34" />
+                                            <ColumnDefinition Width="10" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="28"
+                                                Height="28"
+                                                CornerRadius="8"
+                                                Background="{DynamicResource BancoAccentSoftBrush}">
+                                            <Path Width="14"
+                                                  Height="14"
+                                                  Stretch="Uniform"
+                                                  Fill="{DynamicResource BancoAccentSoftForegroundBrush}"
+                                                  Data="{Binding Source=IconDocOpen, Converter={StaticResource ResourceKeyToGeometryConverter}}" />
+                                        </Border>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       Text="Configurazione restore" />
+                                            <TextBlock Margin="0,2,0,0"
+                                                       FontSize="11.5"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Text="Import e ripristino backup" />
+                                        </StackPanel>
+                                    </Grid>
+                                </MenuItem.Header>
+                            </MenuItem>
+                            <MenuItem Click="ArchiveSqliteMenuItem_OnClick"
+                                      Style="{DynamicResource ThemedContextMenuItemStyle}">
+                                <MenuItem.Header>
+                                    <Grid Width="240">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="34" />
+                                            <ColumnDefinition Width="10" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="28"
+                                                Height="28"
+                                                CornerRadius="8"
+                                                Background="{DynamicResource BancoAccentSoftBrush}">
+                                            <Path Width="14"
+                                                  Height="14"
+                                                  Stretch="Uniform"
+                                                  Fill="{DynamicResource BancoAccentSoftForegroundBrush}"
+                                                  Data="{Binding Source=IconDatabase, Converter={StaticResource ResourceKeyToGeometryConverter}}" />
+                                        </Border>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       Text="SQLite locale" />
+                                            <TextBlock Margin="0,2,0,0"
+                                                       FontSize="11.5"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Text="Supporto tecnico e audit locale" />
+                                        </StackPanel>
+                                    </Grid>
+                                </MenuItem.Header>
+                            </MenuItem>
+                        </ContextMenu>
+                    </Button.ContextMenu>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -264,29 +448,84 @@
                                       VerticalContentAlignment="Center" />
                         </StackPanel>
                     </Border>
-
-                    <Border Style="{StaticResource ShellHeaderCardStyle}">
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <Ellipse Width="8"
-                                     Height="8"
-                                     Margin="0,0,8,0"
-                                     Fill="{DynamicResource ShellWorkspaceStatusBrush}" />
-                            <TextBlock FontSize="11.5"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       Text="Shell ufficiale / registry centrale" />
-                        </StackPanel>
+                    <Border VerticalAlignment="Center"
+                            Style="{StaticResource ShellHeaderCardStyle}"
+                            Effect="{DynamicResource SubtleShadow}"
+                            Margin="0,0,10,0">
+                        <TextBlock FontSize="15"
+                                   FontWeight="Bold"
+                                   Text="{Binding Versione}" />
                     </Border>
+
+                    <Button Style="{StaticResource ShellWindowButtonStyle}"
+                            Click="MinimizeWindowButton_OnClick"
+                            ToolTip="Riduci a icona">
+                        <Path Width="12"
+                              Height="12"
+                              Stretch="Uniform"
+                              Fill="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                              Data="{StaticResource IconMinimize}" />
+                    </Button>
+
+                    <Button Style="{StaticResource ShellWindowButtonStyle}"
+                            Click="ToggleWindowStateButton_OnClick"
+                            ToolTip="Ridimensiona o massimizza">
+                        <Path Width="12"
+                              Height="12"
+                              Stretch="Uniform"
+                              Fill="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                              Data="{StaticResource IconMaximize}" />
+                    </Button>
+
+                    <Button Style="{StaticResource ShellWindowButtonStyle}"
+                            Click="CloseWindowButton_OnClick"
+                            ToolTip="Chiudi">
+                        <Path Width="12"
+                              Height="12"
+                              Stretch="Uniform"
+                              Fill="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                              Data="{StaticResource IconClose}" />
+                    </Button>
                 </StackPanel>
 
-                <Border Grid.Column="5"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ShellHeaderCardStyle}"
-                        Effect="{DynamicResource SubtleShadow}">
-                    <TextBlock FontSize="15"
-                               FontWeight="Bold"
-                               Text="{Binding Versione}" />
+                <Border Grid.Row="1"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="4"
+                        Margin="0,12,0,0"
+                        Background="{DynamicResource ShellWorkspaceFrameBrush}"
+                        BorderBrush="{DynamicResource ShellWorkspaceFrameBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8,8,0,0"
+                        Padding="14,10,14,6"
+                        Effect="{DynamicResource SubtleShadow}"
+                        Visibility="{Binding HasOpenTabs, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TabControl x:Name="WorkspaceTabs"
+                                Margin="0,0,0,1"
+                                ItemsSource="{Binding OpenTabs}"
+                                SelectedItem="{Binding ActiveTab, Mode=TwoWay}"
+                                SelectionChanged="WorkspaceTabs_OnSelectionChanged"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="0"
+                                ClipToBounds="False"
+                                SnapsToDevicePixels="True"
+                                ItemContainerStyle="{StaticResource WorkspaceTabItemStyle}">
+                        <TabControl.Template>
+                            <ControlTemplate TargetType="TabControl">
+                                <Grid SnapsToDevicePixels="True"
+                                      ClipToBounds="False">
+                                    <TabPanel IsItemsHost="True"
+                                              Margin="14,0,10,0"
+                                              ClipToBounds="False"
+                                              KeyboardNavigation.TabIndex="1" />
+                                    <Border Height="1"
+                                            VerticalAlignment="Bottom"
+                                            Background="{DynamicResource ShellWorkspaceFrameBorderBrush}"
+                                            IsHitTestVisible="False" />
+                                </Grid>
+                            </ControlTemplate>
+                        </TabControl.Template>
+                    </TabControl>
                 </Border>
             </Grid>
         </Border>
@@ -305,62 +544,25 @@
 
             <Border Grid.Column="1"
                     Background="{DynamicResource WindowBackgroundBrush}">
-                <Grid Margin="16,14,18,0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
+                <Border Margin="16,6,18,0"
+                        Background="{DynamicResource ShellWorkspaceSurfaceBrush}"
+                        BorderBrush="{DynamicResource ShellWorkspaceFrameBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Effect="{DynamicResource SubtleShadow}">
+                    <Grid Margin="8">
+                        <ContentControl Content="{Binding ActiveTab.Content}"
+                                        Visibility="{Binding HasOpenTabs, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-                    <Border Background="{DynamicResource ShellWorkspaceFrameBrush}"
-                            BorderBrush="{DynamicResource ShellWorkspaceFrameBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="8,8,0,0"
-                            Padding="14,10,14,6"
-                            Effect="{DynamicResource SubtleShadow}">
-                        <TabControl x:Name="WorkspaceTabs"
-                                    Margin="0,0,0,1"
-                                    ItemsSource="{Binding OpenTabs}"
-                                    SelectedItem="{Binding ActiveTab, Mode=TwoWay}"
-                                    SelectionChanged="WorkspaceTabs_OnSelectionChanged"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Padding="0"
-                                    ClipToBounds="False"
-                                    SnapsToDevicePixels="True"
-                                    ItemContainerStyle="{StaticResource WorkspaceTabItemStyle}">
-                            <TabControl.Template>
-                                <ControlTemplate TargetType="TabControl">
-                                    <Grid SnapsToDevicePixels="True"
-                                          ClipToBounds="False">
-                                        <TabPanel IsItemsHost="True"
-                                                  Margin="0,0,6,0"
-                                                  ClipToBounds="False"
-                                                  KeyboardNavigation.TabIndex="1" />
-                                        <Border Height="1"
-                                                VerticalAlignment="Bottom"
-                                                Background="{DynamicResource ShellWorkspaceFrameBorderBrush}"
-                                                IsHitTestVisible="False" />
-                                    </Grid>
-                                </ControlTemplate>
-                            </TabControl.Template>
-                        </TabControl>
-                    </Border>
-
-                    <Border Grid.Row="1"
-                            Background="{DynamicResource ShellWorkspaceSurfaceBrush}"
-                            BorderBrush="{DynamicResource ShellWorkspaceFrameBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="0,8,8,8"
-                            Effect="{DynamicResource SubtleShadow}">
-                        <ContentControl Margin="8"
-                                        Content="{Binding ActiveTab.Content}" />
-                    </Border>
-                </Grid>
+                        <desktop:DesktopHomeView DataContext="{Binding DesktopHomeViewModel}"
+                                                 Visibility="{Binding DataContext.IsDesktopHomeVisible, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    </Grid>
+                </Border>
             </Border>
 
             <Border Grid.ColumnSpan="2"
                     Panel.ZIndex="20"
-                    Margin="164,14,0,0"
+                    Margin="164,0,0,0"
                     Width="{Binding SidebarContextPanelWidth}"
                     MaxHeight="680"
                     HorizontalAlignment="Left"
@@ -369,6 +571,9 @@
                     Background="Transparent"
                     MouseEnter="SidebarHoverHost_OnMouseEnter"
                     MouseLeave="SidebarHoverHost_OnMouseLeave">
+                <Border.RenderTransform>
+                    <TranslateTransform Y="{Binding Sidebar.ContextPanelVerticalOffset}" />
+                </Border.RenderTransform>
                 <sidebar:SidebarContextPanelControl x:Name="SidebarContextOverlayHost"
                                                    DataContext="{Binding Sidebar}" />
             </Border>

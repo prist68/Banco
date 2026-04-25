@@ -2,6 +2,7 @@ using System.Text.Json;
 using Banco.Core.Domain.Entities;
 using Banco.Core.Domain.Enums;
 using Banco.Vendita.Abstractions;
+using Banco.Vendita.Points;
 
 namespace Banco.Vendita.Fiscal;
 
@@ -15,27 +16,47 @@ public sealed class BancoDocumentWorkflowService : IBancoDocumentWorkflowService
 
     private readonly IGestionaleDocumentReadService _documentReadService;
     private readonly IGestionaleDocumentWriter _documentWriter;
+    private readonly IGestionaleDocumentDeleteService _documentDeleteService;
     private readonly ILocalAuditRepository _localAuditRepository;
     private readonly IWinEcrAutoRunService _winEcrAutoRunService;
+    private readonly IGestionaleCustomerReadService _customerReadService;
+    private readonly IGestionalePointsReadService _pointsReadService;
+    private readonly IPointsRewardRuleService _rewardRuleService;
+    private readonly IPointsCustomerBalanceService _pointsCustomerBalanceService;
+    private readonly IGestionaleFidelityHistoryService _fidelityHistoryService;
 
     public BancoDocumentWorkflowService(
         IGestionaleDocumentReadService documentReadService,
         IGestionaleDocumentWriter documentWriter,
+        IGestionaleDocumentDeleteService documentDeleteService,
         ILocalAuditRepository localAuditRepository,
-        IWinEcrAutoRunService winEcrAutoRunService)
+        IWinEcrAutoRunService winEcrAutoRunService,
+        IGestionaleCustomerReadService customerReadService,
+        IGestionalePointsReadService pointsReadService,
+        IPointsRewardRuleService rewardRuleService,
+        IPointsCustomerBalanceService pointsCustomerBalanceService,
+        IGestionaleFidelityHistoryService fidelityHistoryService)
     {
         _documentReadService = documentReadService;
         _documentWriter = documentWriter;
+        _documentDeleteService = documentDeleteService;
         _localAuditRepository = localAuditRepository;
         _winEcrAutoRunService = winEcrAutoRunService;
+        _customerReadService = customerReadService;
+        _pointsReadService = pointsReadService;
+        _rewardRuleService = rewardRuleService;
+        _pointsCustomerBalanceService = pointsCustomerBalanceService;
+        _fidelityHistoryService = fidelityHistoryService;
     }
 
     public async Task<FiscalizationResult> PublishAsync(
         DocumentoLocale documento,
         CategoriaDocumentoBanco categoriaDocumentoBanco,
+        BancoPublishOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        ValidateDocument(documento, categoriaDocumentoBanco);
+        var publishOptions = options ?? BancoPublishOptions.Default;
+        ValidateDocument(documento, categoriaDocumentoBanco, publishOptions);
         var warningMessages = new List<string>();
 
         var paymentBreakdown = BuildPaymentBreakdown(documento);
@@ -62,8 +83,17 @@ public sealed class BancoDocumentWorkflowService : IBancoDocumentWorkflowService
 
         try
         {
+            if (publishOptions.DeleteExistingNonFiscalizedLegacyDocument &&
+                documento.DocumentoGestionaleOid.HasValue)
+            {
+                await _documentDeleteService.DeleteNonFiscalizedDocumentAsync(
+                    documento.DocumentoGestionaleOid.Value,
+                    cancellationToken);
+            }
+
             var (numeroDocumento, annoDocumento, dataDocumento) =
-                await ResolveLegacyNumberingAsync(documento, cancellationToken);
+                await ResolveLegacyNumberingAsync(documento, publishOptions, cancellationToken);
+            var pointsSettlement = await BuildPointsSettlementAsync(documento, cancellationToken);
 
             var request = new FiscalizationRequest
             {
@@ -80,6 +110,7 @@ public sealed class BancoDocumentWorkflowService : IBancoDocumentWorkflowService
                 CausaleMagazzinoOid = CausaleMagazzinoFallbackOid,
                 TotaleDocumento = documento.TotaleDocumento,
                 Pagamenti = paymentBreakdown,
+                PointsSettlement = pointsSettlement,
                 Righe = documento.Righe
                     .OrderBy(row => row.OrdineRiga)
                     .Select(row => new FiscalizationRow
@@ -107,23 +138,69 @@ public sealed class BancoDocumentWorkflowService : IBancoDocumentWorkflowService
 
             var result = await _documentWriter.UpsertFiscalDocumentAsync(
                 request,
-                documento.DocumentoGestionaleOid,
+                publishOptions.ForceNewLegacyDocument ? null : documento.DocumentoGestionaleOid,
                 cancellationToken);
 
-            documento.SegnaPubblicatoLegacy(
-                result.DocumentoGestionaleOid,
-                result.NumeroDocumentoGestionale,
-                result.AnnoDocumentoGestionale,
-                result.DataDocumentoGestionale,
-                categoriaDocumentoBanco,
-                hasComponenteSospeso,
-                dataPagamentoFinale);
+            await TryRecalculateFidelityBalanceAsync(
+                documento,
+                result,
+                warningMessages,
+                cancellationToken);
+
+            if (pointsSettlement is not null)
+            {
+                await TrySaveAuditAsync(new EventoAudit
+                {
+                    EntityType = "DocumentoLocale",
+                    EntityId = documento.Id.ToString("D"),
+                    EventType = "BancoWorkflowPuntiSettlement",
+                    Operatore = documento.Operatore,
+                    PayloadSinteticoJson = JsonSerializer.Serialize(new
+                    {
+                        documento.ClienteOid,
+                        result.DocumentoGestionaleOid,
+                        result.NumeroDocumentoGestionale,
+                        result.AnnoDocumentoGestionale,
+                        pointsSettlement.CampaignOid,
+                        pointsSettlement.StartingCurrentPoints,
+                        pointsSettlement.EarnedPoints,
+                        pointsSettlement.SpentPoints,
+                        pointsSettlement.DeltaPoints,
+                        FinalCurrentPoints = pointsSettlement.StartingCurrentPoints + pointsSettlement.DeltaPoints
+                    }),
+                    Esito = "Ok"
+                }, warningMessages, "Audit settlement punti non disponibile", cancellationToken);
+            }
 
             var winEcrMessage = string.Empty;
             var winEcrExecuted = false;
             string? winEcrErrorDetails = null;
             int? winEcrErrorCode = null;
-            if (categoriaDocumentoBanco == CategoriaDocumentoBanco.Scontrino)
+            if (categoriaDocumentoBanco == CategoriaDocumentoBanco.Scontrino && publishOptions.SkipWinEcr)
+            {
+                documento.SegnaAggiornatoLegacySenzaNuovaFiscalizzazione(
+                    result.DocumentoGestionaleOid,
+                    result.NumeroDocumentoGestionale,
+                    result.AnnoDocumentoGestionale,
+                    result.DataDocumentoGestionale,
+                    hasComponenteSospeso,
+                    dataPagamentoFinale);
+                winEcrExecuted = true;
+                winEcrMessage = "Documento scontrino aggiornato senza nuova stampa fiscale.";
+            }
+            else
+            {
+                documento.SegnaPubblicatoLegacy(
+                    result.DocumentoGestionaleOid,
+                    result.NumeroDocumentoGestionale,
+                    result.AnnoDocumentoGestionale,
+                    result.DataDocumentoGestionale,
+                    categoriaDocumentoBanco,
+                    hasComponenteSospeso,
+                    dataPagamentoFinale);
+            }
+
+            if (categoriaDocumentoBanco == CategoriaDocumentoBanco.Scontrino && !publishOptions.SkipWinEcr)
             {
                 try
                 {
@@ -142,6 +219,17 @@ public sealed class BancoDocumentWorkflowService : IBancoDocumentWorkflowService
                 if (winEcrExecuted)
                 {
                     documento.SegnaFiscalizzazioneWinEcrCompletata(DateTimeOffset.Now);
+
+                    try
+                    {
+                        await _documentWriter.MarkLegacyReceiptCompletedAsync(
+                            result.DocumentoGestionaleOid,
+                            cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        warningMessages.Add($"Allineamento stato scontrino legacy non disponibile: {ex.Message}.");
+                    }
                 }
                 else
                 {
@@ -214,6 +302,63 @@ public sealed class BancoDocumentWorkflowService : IBancoDocumentWorkflowService
         }
     }
 
+    private async Task TryRecalculateFidelityBalanceAsync(
+        DocumentoLocale documento,
+        FiscalizationResult result,
+        ICollection<string> warningMessages,
+        CancellationToken cancellationToken)
+    {
+        var customerOid = documento.ClienteOid.GetValueOrDefault();
+        if (customerOid <= 0)
+        {
+            return;
+        }
+
+        var customer = await _customerReadService.GetCustomerByOidAsync(customerOid, cancellationToken);
+        if (customer?.HaRaccoltaPunti != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var recalculation = await _fidelityHistoryService.RecalculateCustomerBalanceAsync(
+                customerOid,
+                persistToLegacy: true,
+                operatore: string.IsNullOrWhiteSpace(documento.Operatore) ? "Admin Locale" : documento.Operatore.Trim(),
+                cancellationToken: cancellationToken);
+
+            if (recalculation is null)
+            {
+                return;
+            }
+
+            await TrySaveAuditAsync(new EventoAudit
+            {
+                EntityType = "DocumentoLocale",
+                EntityId = documento.Id.ToString("D"),
+                EventType = "BancoWorkflowPuntiRicalcolati",
+                Operatore = documento.Operatore,
+                PayloadSinteticoJson = JsonSerializer.Serialize(new
+                {
+                    documento.ClienteOid,
+                    result.DocumentoGestionaleOid,
+                    result.NumeroDocumentoGestionale,
+                    result.AnnoDocumentoGestionale,
+                    recalculation.PreviousLegacyCurrentPoints,
+                    recalculation.ComputedCurrentPoints,
+                    recalculation.DeltaPoints,
+                    recalculation.LegacyUpdated
+                }),
+                Esito = "Ok"
+            }, warningMessages, "Audit ricalcolo punti non disponibile", cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            warningMessages.Add($"Ricalcolo saldo fidelity non disponibile: {ex.Message}.");
+        }
+    }
+
     private async Task TrySaveAuditAsync(
         EventoAudit evento,
         ICollection<string> warningMessages,
@@ -232,9 +377,11 @@ public sealed class BancoDocumentWorkflowService : IBancoDocumentWorkflowService
 
     private async Task<(long Numero, int Anno, DateTime DataDocumento)> ResolveLegacyNumberingAsync(
         DocumentoLocale documento,
+        BancoPublishOptions options,
         CancellationToken cancellationToken)
     {
-        if (documento.NumeroDocumentoGestionale.HasValue &&
+        if (!options.ForceNewLegacyDocument &&
+            documento.NumeroDocumentoGestionale.HasValue &&
             documento.AnnoDocumentoGestionale.HasValue &&
             documento.DataDocumentoGestionale.HasValue)
         {
@@ -248,6 +395,51 @@ public sealed class BancoDocumentWorkflowService : IBancoDocumentWorkflowService
         return (nextNumber.Numero, nextNumber.Anno, DateTime.Today);
     }
 
+    private async Task<FiscalizationPointsSettlement?> BuildPointsSettlementAsync(
+        DocumentoLocale documento,
+        CancellationToken cancellationToken)
+    {
+        var customerOid = documento.ClienteOid.GetValueOrDefault();
+        if (customerOid <= 0)
+        {
+            return null;
+        }
+
+        var customer = await _customerReadService.GetCustomerByOidAsync(customerOid, cancellationToken);
+        if (customer?.HaRaccoltaPunti != true)
+        {
+            return null;
+        }
+
+        var campaign = (await _pointsReadService.GetCampaignsAsync(cancellationToken))
+            .Where(item => item.Attiva == true)
+            .OrderBy(item => item.Oid)
+            .FirstOrDefault();
+        if (campaign is null)
+        {
+            return null;
+        }
+
+        var rewardRules = await _rewardRuleService.GetAsync(campaign.Oid, cancellationToken);
+        var summary = _pointsCustomerBalanceService.BuildSummary(customer, campaign, rewardRules, documento);
+        var startingCurrentPoints = customer.PuntiAssegnati ?? customer.PuntiTotali ?? customer.PuntiIniziali ?? 0m;
+        var earnedPoints = summary.CurrentDocumentPoints;
+        var spentPoints = ResolveSpentPoints(documento, rewardRules);
+        if (earnedPoints == 0 && spentPoints == 0)
+        {
+            return null;
+        }
+
+        return new FiscalizationPointsSettlement
+        {
+            CustomerOid = customerOid,
+            CampaignOid = campaign.Oid,
+            StartingCurrentPoints = startingCurrentPoints,
+            EarnedPoints = earnedPoints,
+            SpentPoints = spentPoints
+        };
+    }
+
     private static DateTimeOffset? ResolveDataPagamentoFinale(DocumentoLocale documento)
     {
         if (documento.Pagamenti.Count == 0)
@@ -258,7 +450,44 @@ public sealed class BancoDocumentWorkflowService : IBancoDocumentWorkflowService
         return documento.Pagamenti.MaxBy(pagamento => pagamento.DataOra)?.DataOra ?? DateTimeOffset.Now;
     }
 
-    private static void ValidateDocument(DocumentoLocale documento, CategoriaDocumentoBanco categoriaDocumentoBanco)
+    private static decimal ResolveSpentPoints(
+        DocumentoLocale documento,
+        IReadOnlyList<PointsRewardRule> rewardRules)
+    {
+        if (rewardRules.Count == 0)
+        {
+            return 0m;
+        }
+
+        decimal spentPoints = 0m;
+        foreach (var row in documento.Righe.Where(item => item.IsPromoRow))
+        {
+            PointsRewardRule? matchedRule = null;
+            if (!string.IsNullOrWhiteSpace(row.PromoRuleId) &&
+                Guid.TryParse(row.PromoRuleId, out var ruleId))
+            {
+                matchedRule = rewardRules.FirstOrDefault(rule => rule.Id == ruleId);
+            }
+
+            matchedRule ??= rewardRules.FirstOrDefault(rule =>
+                row.PromoCampaignOid.HasValue &&
+                rule.CampaignOid == row.PromoCampaignOid.Value);
+
+            if (matchedRule is null)
+            {
+                continue;
+            }
+
+            spentPoints += matchedRule.RequiredPoints.GetValueOrDefault();
+        }
+
+        return spentPoints;
+    }
+
+    private static void ValidateDocument(
+        DocumentoLocale documento,
+        CategoriaDocumentoBanco categoriaDocumentoBanco,
+        BancoPublishOptions options)
     {
         if (documento.Stato == StatoDocumentoLocale.Annullato)
         {
@@ -282,6 +511,7 @@ public sealed class BancoDocumentWorkflowService : IBancoDocumentWorkflowService
         }
 
         if (categoriaDocumentoBanco == CategoriaDocumentoBanco.Scontrino &&
+            !options.SkipWinEcr &&
             documento.StatoFiscaleBanco == StatoFiscaleBanco.FiscalizzazioneWinEcrCompletata)
         {
             throw new InvalidOperationException("Il documento risulta gia` fiscalizzato via WinEcr.");
