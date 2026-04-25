@@ -1,0 +1,208 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Banco.UI.Avalonia.Banco.Views.ArticleLookupDialog"
+        Title="Ricerca articolo Banco"
+        Width="1180"
+        Height="720"
+        MinWidth="960"
+        MinHeight="620"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="{DynamicResource PageBackground}"
+        FontFamily="Inter">
+    <Border Margin="12"
+            Padding="16"
+            Background="{DynamicResource PanelSurface}"
+            BorderBrush="{DynamicResource Stroke}"
+            BorderThickness="1"
+            CornerRadius="16">
+        <Grid RowDefinitions="Auto,12,* ,14,Auto">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel>
+                    <TextBlock Text="LOOKUP ARTICOLI LEGACY"
+                               FontSize="11"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource MutedText}" />
+                    <TextBlock Text="Ricerca articolo Banco"
+                               Margin="0,4,0,0"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource MainText}" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Classes="bancoSaleButton"
+                        Content="Chiudi"
+                        Click="CloseButton_OnClick" />
+            </Grid>
+
+            <Grid Grid.Row="2"
+                  ColumnDefinitions="446,12,*">
+                <Border Classes="salePanel">
+                    <Grid RowDefinitions="Auto,8,Auto,8,*">
+                        <TextBox x:Name="SearchTextBox"
+                                 Classes="bancoSaleInput"
+                                 Watermark="Cerca nel catalogo legacy"
+                                 Text="{Binding SearchText, Mode=TwoWay}"
+                                 KeyDown="SearchTextBox_OnKeyDown" />
+                        <TextBlock Grid.Row="2"
+                                   Text="Risultati ricerca"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource MutedText}" />
+                        <ListBox x:Name="ResultsListBox"
+                                 Grid.Row="4"
+                                 ItemsSource="{Binding Results}"
+                                 SelectedItem="{Binding SelectedArticle, Mode=TwoWay}"
+                                 SelectionChanged="ResultsListBox_OnSelectionChanged"
+                                 DoubleTapped="ResultsListBox_OnDoubleTapped"
+                                 KeyDown="ResultsListBox_OnKeyDown"
+                                 Background="{DynamicResource ElevatedSurface}"
+                                 BorderBrush="{DynamicResource Stroke}"
+                                 BorderThickness="1"
+                                 CornerRadius="10">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="10,6"
+                                          ColumnDefinitions="*,Auto"
+                                          PointerPressed="ResultItem_OnPointerPressed">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding CodiceArticolo}"
+                                                       FontSize="12.5"
+                                                       FontWeight="Bold"
+                                                       Foreground="{DynamicResource MainText}" />
+                                            <TextBlock Text="{Binding Descrizione}"
+                                                       Margin="0,3,0,0"
+                                                       FontSize="11.75"
+                                                       Foreground="{DynamicResource MainText}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding VarianteLabel}"
+                                                       Margin="0,2,0,0"
+                                                       FontSize="10.75"
+                                                       Foreground="{DynamicResource MutedText}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1"
+                                                    HorizontalAlignment="Right">
+                                            <TextBlock Text="{Binding PrezzoVendita, StringFormat={}{0:N2} EUR}"
+                                                       FontSize="12.5"
+                                                       FontWeight="Bold"
+                                                       Foreground="{DynamicResource Success}" />
+                                            <TextBlock Text="{Binding Giacenza, StringFormat=Disp. {0:N2}}"
+                                                       Margin="0,4,0,0"
+                                                       FontSize="10.75"
+                                                       Foreground="{DynamicResource MutedText}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="2"
+                        Classes="salePanel">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Dettaglio articolo"
+                                   FontSize="15"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource MainText}" />
+                        <TextBlock Text="{Binding DetailStatus}"
+                                   Foreground="{DynamicResource MutedText}"
+                                   TextWrapping="Wrap" />
+                        <Border Classes="saleField">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{Binding SelectedArticle.CodiceArticolo}"
+                                           FontSize="16"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource MainText}" />
+                                <TextBlock Text="{Binding SelectedArticle.Descrizione}"
+                                           FontSize="13"
+                                           Foreground="{DynamicResource MainText}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding SelectedArticle.VarianteLabel}"
+                                           Foreground="{DynamicResource MutedText}" />
+                            </StackPanel>
+                        </Border>
+                        <Grid ColumnDefinitions="*,10,*">
+                            <Border Classes="saleField">
+                                <StackPanel>
+                                    <TextBlock Text="Prezzo"
+                                               Foreground="{DynamicResource MutedText}" />
+                                    <TextBlock Text="{Binding SelectedArticle.PrezzoVendita, StringFormat={}{0:N2} EUR}"
+                                               Margin="0,4,0,0"
+                                               FontSize="20"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource Success}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="2"
+                                    Classes="saleField">
+                                <StackPanel>
+                                    <TextBlock Text="Disponibilita"
+                                               Foreground="{DynamicResource MutedText}" />
+                                    <TextBlock Text="{Binding SelectedArticle.Giacenza, StringFormat={}{0:N2}}"
+                                               Margin="0,4,0,0"
+                                               FontSize="20"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource MainText}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,10,*,10,*">
+                            <Border Classes="saleField">
+                                <StackPanel>
+                                    <TextBlock Text="UM"
+                                               Foreground="{DynamicResource MutedText}" />
+                                    <TextBlock Text="{Binding SelectedUnitLabel}"
+                                               Margin="0,4,0,0"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource MainText}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="2"
+                                    Classes="saleField">
+                                <StackPanel>
+                                    <TextBlock Text="Minimo"
+                                               Foreground="{DynamicResource MutedText}" />
+                                    <TextBlock Text="{Binding SelectedMinimumQuantityLabel}"
+                                               Margin="0,4,0,0"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource MainText}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="4"
+                                    Classes="saleField">
+                                <StackPanel>
+                                    <TextBlock Text="Fasce"
+                                               Foreground="{DynamicResource MutedText}" />
+                                    <TextBlock Text="{Binding SelectedTierCountLabel}"
+                                               Margin="0,4,0,0"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource MainText}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <TextBlock Text="{Binding VariantHint}"
+                                   Foreground="{DynamicResource Warning}"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="4"
+                  ColumnDefinitions="*,Auto,8,Auto">
+                <TextBlock Text="{Binding StatusMessage}"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource MutedText}" />
+                <Button Grid.Column="1"
+                        Classes="bancoSaleButton"
+                        Content="Annulla"
+                        Click="CloseButton_OnClick" />
+                <Button Grid.Column="3"
+                        Classes="bancoSaleButton primary"
+                        Content="Conferma articolo"
+                        Click="ConfirmButton_OnClick" />
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

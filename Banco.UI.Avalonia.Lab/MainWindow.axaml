@@ -149,7 +149,8 @@
                 </Grid>
             </Border>
 
-            <Grid Grid.Column="1"
+            <Grid Grid.Column="1">
+            <Grid x:Name="DesktopWorkspace"
                   Margin="16"
                   RowDefinitions="Auto,14,*">
                 <Border Background="{DynamicResource HeroSurface}"
@@ -157,7 +158,7 @@
                         BorderThickness="1"
                         CornerRadius="18"
                         Padding="18">
-                    <Grid ColumnDefinitions="*,440,Auto">
+                    <Grid ColumnDefinitions="*,440,Auto,Auto">
                         <StackPanel>
                             <TextBlock Text="Desktop sperimentale"
                                        FontSize="24"
@@ -196,6 +197,33 @@
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource AccentText}" />
                         </Border>
+
+                        <StackPanel Grid.Column="3"
+                                    Margin="8,0,0,0"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"
+                                    Spacing="8">
+                            <Button Classes="labPrimaryButton"
+                                    Content="+ Widget">
+                                <Button.Flyout>
+                                    <MenuFlyout>
+                                        <MenuItem Header="Meteo"
+                                                  Tag="weather"
+                                                  Click="AddWidget_OnClick" />
+                                        <MenuItem Header="Calendario"
+                                                  Tag="calendar"
+                                                  Click="AddWidget_OnClick" />
+                                        <MenuItem Header="Note sticky"
+                                                  Tag="notes"
+                                                  Click="AddWidget_OnClick" />
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                            <Button Classes="labChromeButton"
+                                    Width="78"
+                                    Content="Pulisci"
+                                    Click="ResetWidgets_OnClick" />
+                        </StackPanel>
                     </Grid>
                 </Border>
 
@@ -332,13 +360,9 @@
                                                FontSize="11.5"
                                                Foreground="{DynamicResource MainText}" />
                                 </Border>
-                                <Border Padding="10,4"
-                                        Background="{DynamicResource ElevatedSurface}"
-                                        CornerRadius="10">
-                                    <TextBlock Text="Vendita Banco"
-                                               FontSize="11.5"
-                                               Foreground="{DynamicResource MainText}" />
-                                </Border>
+                                <Button Classes="labChromeButton"
+                                        Content="Vendita Banco"
+                                        Click="OpenAvaloniaBanco_OnClick" />
                             </StackPanel>
                         </Border>
 
@@ -379,6 +403,40 @@
                                                                FontWeight="SemiBold"
                                                                Foreground="{Binding AccentColor}"
                                                                VerticalAlignment="Center" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <ItemsControl Margin="0,4,0,0"
+                                              ItemsSource="{Binding Widgets}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:DashboardWidget">
+                                            <Border Margin="0,0,0,9"
+                                                    Padding="10"
+                                                    Background="{DynamicResource ElevatedSurface}"
+                                                    BorderBrush="{DynamicResource Stroke}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="13">
+                                                <Grid ColumnDefinitions="5,*,Auto">
+                                                    <Border Background="{Binding AccentColor}"
+                                                            CornerRadius="4" />
+                                                    <StackPanel Grid.Column="1"
+                                                                Margin="10,0">
+                                                        <TextBlock Text="{Binding Title}"
+                                                                   FontSize="12.5"
+                                                                   FontWeight="Bold"
+                                                                   Foreground="{DynamicResource MainText}" />
+                                                        <TextBlock Text="{Binding Description}"
+                                                                   FontSize="11.5"
+                                                                   Foreground="{DynamicResource MutedText}"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <Button Grid.Column="2"
+                                                            Classes="labWidgetToolButton"
+                                                            Content="×"
+                                                            Click="CloseWidget_OnClick" />
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
@@ -429,11 +487,23 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+
                             </StackPanel>
                         </Border>
 
                     </Grid>
                 </Grid>
+            </Grid>
+            <Border x:Name="InternalWorkspace"
+                    Margin="16"
+                    Background="{DynamicResource PageBackground}"
+                    BorderBrush="{DynamicResource Stroke}"
+                    BorderThickness="1"
+                    CornerRadius="18"
+                    IsVisible="False"
+                    ClipToBounds="True">
+                <ContentControl x:Name="InternalWorkspaceHost" />
+            </Border>
             </Grid>
         </Grid>
     </Grid>

@@ -1,0 +1,108 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+
+    <Styles.Resources>
+        <SolidColorBrush x:Key="BancoAccentBrush" Color="#0FA978" />
+        <SolidColorBrush x:Key="BancoDangerBrush" Color="#D94B4B" />
+        <SolidColorBrush x:Key="BancoWarningBrush" Color="#D49327" />
+        <SolidColorBrush x:Key="BancoSuccessBrush" Color="#42A873" />
+        <SolidColorBrush x:Key="BancoMainTextBrush" Color="#142238" />
+        <SolidColorBrush x:Key="BancoMutedTextBrush" Color="#536A85" />
+        <SolidColorBrush x:Key="BancoPanelSurfaceBrush" Color="#F7FAFE" />
+        <SolidColorBrush x:Key="BancoElevatedSurfaceBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="BancoSoftSurfaceBrush" Color="#F3F7FC" />
+        <SolidColorBrush x:Key="BancoInputSurfaceBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="BancoStrokeBrush" Color="#D6E2EF" />
+        <SolidColorBrush x:Key="BancoStrokeStrongBrush" Color="#BFD1E6" />
+    </Styles.Resources>
+
+    <Style Selector="Button.bancoCommandButton">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Button.bancoCommandButton.primary">
+        <Setter Property="Background" Value="{DynamicResource BancoAccentBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BancoAccentBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+
+    <Style Selector="Button.bancoCommandButton.secondary">
+        <Setter Property="Background" Value="{DynamicResource BancoSoftSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BancoStrokeBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BancoMainTextBrush}" />
+    </Style>
+
+    <Style Selector="Button.bancoCommandButton.danger">
+        <Setter Property="Background" Value="{DynamicResource BancoDangerBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BancoDangerBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+
+    <Style Selector="Border.bancoPanel">
+        <Setter Property="Background" Value="{DynamicResource BancoPanelSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BancoStrokeBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="Padding" Value="14" />
+    </Style>
+
+    <Style Selector="Border.bancoStatusBadge">
+        <Setter Property="Padding" Value="8,3" />
+        <Setter Property="CornerRadius" Value="9" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="TextBox.bancoSearchBox">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Padding" Value="30,4,8,4" />
+        <Setter Property="CornerRadius" Value="9" />
+        <Setter Property="Background" Value="{DynamicResource BancoInputSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BancoStrokeStrongBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BancoMainTextBrush}" />
+    </Style>
+
+    <Style Selector="DataGrid.bancoDataGrid">
+        <Setter Property="Background" Value="{DynamicResource BancoPanelSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BancoStrokeBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="GridLinesVisibility" Value="Horizontal" />
+        <Setter Property="HeadersVisibility" Value="Column" />
+        <Setter Property="CanUserResizeColumns" Value="True" />
+        <Setter Property="CanUserReorderColumns" Value="True" />
+        <Setter Property="CanUserSortColumns" Value="True" />
+        <Setter Property="RowHeight" Value="32" />
+    </Style>
+
+    <Style Selector="DataGrid.bancoDataGrid DataGridColumnHeader">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="DataGrid.bancoDataGrid.headerAccent DataGridColumnHeader">
+        <Setter Property="Background" Value="{DynamicResource BancoAccentBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+
+    <Style Selector="DataGrid.bancoDataGrid.headerInfo DataGridColumnHeader">
+        <Setter Property="Background" Value="#4F86DC" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+
+    <Style Selector="DataGrid.bancoDataGrid.headerSuccess DataGridColumnHeader">
+        <Setter Property="Background" Value="{DynamicResource BancoSuccessBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+
+    <Style Selector="DataGrid.bancoDataGrid.headerWarning DataGridColumnHeader">
+        <Setter Property="Background" Value="{DynamicResource BancoWarningBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+
+    <Style Selector="DataGrid.bancoDataGrid.headerDanger DataGridColumnHeader">
+        <Setter Property="Background" Value="{DynamicResource BancoDangerBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+</Styles>

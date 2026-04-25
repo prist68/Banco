@@ -8,6 +8,30 @@
         <Setter Property="Padding" Value="10,0" />
     </Style>
 
+    <Style Selector="Button.labPrimaryButton">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Background" Value="{DynamicResource BrandTile}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrandTile}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Button.labWidgetToolButton">
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Background" Value="{DynamicResource SoftSurface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Stroke}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource MainText}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+
     <Style Selector="TextBox.labCommandSearch">
         <Setter Property="Height" Value="30" />
         <Setter Property="Background" Value="{DynamicResource InputSurface}" />

@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Banco.UI.Avalonia.Controls.Controls"
+             x:Class="Banco.UI.Avalonia.Controls.Controls.BancoGridToolbar">
+    <Grid ColumnDefinitions="*,Auto">
+        <controls:BancoSearchBox Text="{Binding SearchText, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                                 Watermark="{Binding SearchWatermark, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+        <StackPanel Grid.Column="1"
+                    Margin="10,0,0,0"
+                    Orientation="Horizontal"
+                    Spacing="8">
+            <ContentPresenter Content="{Binding Actions, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

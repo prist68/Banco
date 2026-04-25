@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Banco.UI.Avalonia.Controls.Controls.BancoEmptyState">
+    <Border Padding="18"
+            Background="{DynamicResource BancoSoftSurfaceBrush}"
+            BorderBrush="{DynamicResource BancoStrokeBrush}"
+            BorderThickness="1"
+            CornerRadius="12">
+        <StackPanel Spacing="5">
+            <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                       FontSize="14"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource BancoMainTextBrush}" />
+            <TextBlock Text="{Binding Message, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                       FontSize="12"
+                       Foreground="{DynamicResource BancoMutedTextBrush}"
+                       TextWrapping="Wrap" />
+        </StackPanel>
+    </Border>
+</UserControl>

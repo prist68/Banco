@@ -39,6 +39,11 @@ public static class BancoAvaloniaTheme
         SetBrush(window, "RailMuted", isDarkTheme ? "#6F86A5" : "#AFC2D9");
         SetBrush(window, "AccentSoft", isDarkTheme ? "#213A60" : "#EAF2FF");
         SetBrush(window, "AccentText", isDarkTheme ? "#9FC5FF" : "#2E6CBD");
+        SetBrush(window, "Accent", isDarkTheme ? "#0C8B6A" : "#0FA978");
+        SetBrush(window, "Info", isDarkTheme ? "#5F9EF4" : "#4F86DC");
+        SetBrush(window, "Warning", isDarkTheme ? "#D99A35" : "#D49327");
+        SetBrush(window, "Danger", isDarkTheme ? "#E06161" : "#D94B4B");
+        SetBrush(window, "Success", isDarkTheme ? "#49B983" : "#42A873");
         SetBrush(window, "BrandTile", isDarkTheme ? "#0C8B6A" : "#0FA978");
     }
 

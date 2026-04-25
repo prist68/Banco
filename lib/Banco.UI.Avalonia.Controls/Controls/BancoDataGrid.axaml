@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Banco.UI.Avalonia.Controls.Controls.BancoDataGrid">
+    <DataGrid x:Name="PART_Grid"
+              Classes="bancoDataGrid"
+              AutoGenerateColumns="False"
+              ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=UserControl}}"
+              IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+              RowDetailsTemplate="{Binding RowDetailsTemplate, RelativeSource={RelativeSource AncestorType=UserControl}}"
+              RowDetailsVisibilityMode="{Binding RowDetailsVisibilityMode, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+</UserControl>

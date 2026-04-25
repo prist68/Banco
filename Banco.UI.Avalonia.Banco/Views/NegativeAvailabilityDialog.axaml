@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Banco.UI.Avalonia.Banco.Views.NegativeAvailabilityDialog"
+        Title="Giacenza non disponibile"
+        Width="680"
+        Height="390"
+        MinWidth="640"
+        MinHeight="360"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="{DynamicResource PageBackground}"
+        FontFamily="Inter">
+    <Border Margin="12"
+            Padding="16"
+            Background="{DynamicResource PanelSurface}"
+            BorderBrush="{DynamicResource Stroke}"
+            BorderThickness="1"
+            CornerRadius="16">
+        <Grid RowDefinitions="Auto,14,*,16,Auto">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel>
+                    <TextBlock Text="BANCO / DISPONIBILITA"
+                               FontSize="11"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource MutedText}" />
+                    <TextBlock Text="Giacenza non disponibile"
+                               Margin="0,4,0,0"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource MainText}" />
+                    <TextBlock Text="L'articolo selezionato ha giacenza zero o negativa. Scegli come proseguire prima di inserirlo nel documento."
+                               Margin="0,6,0,0"
+                               Foreground="{DynamicResource MutedText}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Classes="bancoSaleButton"
+                        Content="Chiudi"
+                        Click="CancelButton_OnClick" />
+            </Grid>
+
+            <Border Grid.Row="2"
+                    Classes="salePanel">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding ArticleLabel}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource MainText}"
+                               TextWrapping="Wrap" />
+                    <Border Classes="saleField">
+                        <TextBlock Text="{Binding HighlightText}"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource Warning}"
+                                   TextWrapping="Wrap" />
+                    </Border>
+                    <TextBlock Foreground="{DynamicResource MutedText}"
+                               TextWrapping="Wrap"
+                               Text="Vendi e aggiungi a lista mantiene il codice articolo e segna il prodotto per il riordino. Scarica comunque mantiene il codice senza riordino. Riga manuale inserisce la descrizione senza legame anagrafico." />
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="4"
+                  ColumnDefinitions="*,Auto,8,Auto,8,Auto,8,Auto">
+                <TextBlock Text="F2 manuale | F8 riordino | F9 scarica comunque"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource MutedText}" />
+                <Button Grid.Column="1"
+                        Classes="bancoSaleButton"
+                        Content="Annulla"
+                        Click="CancelButton_OnClick" />
+                <Button Grid.Column="3"
+                        Classes="bancoSaleButton"
+                        Content="Riga manuale"
+                        Click="ManualButton_OnClick" />
+                <Button Grid.Column="5"
+                        Classes="bancoSaleButton primary"
+                        Content="Vendi e aggiungi"
+                        Click="AddToReorderButton_OnClick" />
+                <Button Grid.Column="7"
+                        Classes="bancoSaleButton"
+                        Content="Scarica comunque"
+                        Click="ForceButton_OnClick" />
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

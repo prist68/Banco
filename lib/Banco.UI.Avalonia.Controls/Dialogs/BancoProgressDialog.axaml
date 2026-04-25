@@ -1,0 +1,23 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Banco.UI.Avalonia.Controls.Dialogs.BancoProgressDialog"
+        Width="420"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BancoPanelSurfaceBrush}">
+    <Border Padding="18">
+        <StackPanel Spacing="12">
+            <TextBlock x:Name="TitleTextBlock"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource BancoMainTextBrush}" />
+            <TextBlock x:Name="MessageTextBlock"
+                       Foreground="{DynamicResource BancoMutedTextBrush}"
+                       TextWrapping="Wrap" />
+            <ProgressBar x:Name="ProgressBar"
+                         IsIndeterminate="True"
+                         Height="6" />
+        </StackPanel>
+    </Border>
+</Window>

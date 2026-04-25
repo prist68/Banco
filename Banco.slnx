@@ -12,6 +12,9 @@
   <Project Path="Banco.Sidebar/Banco.Sidebar.csproj" />
   <Project Path="lib/Banco.UI.Controls/Banco.UI.Controls.csproj" />
   <Project Path="lib/Banco.UI.Shared/Banco.UI.Shared.csproj" />
+  <Project Path="lib/Banco.UI.Grid.Core/Banco.UI.Grid.Core.csproj" />
+  <Project Path="lib/Banco.UI.Avalonia.Controls/Banco.UI.Avalonia.Controls.csproj" />
   <Project Path="Banco.UI.Wpf/Banco.UI.Wpf.csproj" />
   <Project Path="Banco.UI.Avalonia.Lab/Banco.UI.Avalonia.Lab.csproj" />
+  <Project Path="Banco.UI.Avalonia.Banco/Banco.UI.Avalonia.Banco.csproj" />
 </Solution>

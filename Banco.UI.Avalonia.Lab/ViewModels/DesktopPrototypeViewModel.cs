@@ -29,9 +29,9 @@ public sealed class DesktopPrototypeViewModel
 
         StatusTiles =
         [
-            new("Vendite oggi", "-", "In attesa del riepilogo reale", "Dati", "#4F86DC"),
-            new("Cortesie aperte", "-", "Documenti non fiscalizzati", "Controllo", "#D49327"),
-            new("Sospesi", "-", "Da verificare in Documenti", "Banco", "#C75C5C"),
+            new("Vendite oggi", "1.248,50 EUR", "Demo locale senza DB legacy", "Dati", "#4F86DC"),
+            new("Cortesie aperte", "7", "Documenti non fiscalizzati", "Controllo", "#D49327"),
+            new("Sospesi", "3", "Da verificare in Documenti", "Banco", "#C75C5C"),
             new("DB", "db_diltech", "Connessione configurata", "Legacy", "#42A873"),
             new("POS", "Nexi", "Stato operativo sintetico", "Pagamenti", "#5B7D91"),
             new("Fiscale", "WinEcr", "Registratore separato", "Fiscale", "#7B61D1")
@@ -46,10 +46,19 @@ public sealed class DesktopPrototypeViewModel
 
         RecentItems =
         [
-            new("--:--", "Ultimi documenti", "Area pronta per mostrare aperture recenti reali.", "Predisposto"),
-            new("--:--", "Ultimi articoli", "Area pronta per gli ultimi articoli aperti o modificati.", "Predisposto"),
-            new("--:--", "Ultimi clienti", "Area pronta per richiami cliente e fidelity.", "Predisposto")
+            new("10:42", "Vendita salvata", "Cortesia demo pronta per stampa POS80.", "Banco"),
+            new("10:35", "Articolo aggiornato", "Scheda articolo aperta dal launcher.", "Magazzino"),
+            new("10:12", "Backup completato", "Archivio locale verificato nella console.", "Sistema")
         ];
+
+        AvailableWidgets =
+        [
+            new("weather", "Meteo", "#42A873"),
+            new("calendar", "Calendario", "#7B61D1"),
+            new("notes", "Note sticky", "#D49327")
+        ];
+
+        Widgets = [];
     }
 
     public ObservableCollection<NavigationItem> NavigationItems { get; }
@@ -61,6 +70,110 @@ public sealed class DesktopPrototypeViewModel
     public ObservableCollection<AlertItem> Alerts { get; }
 
     public ObservableCollection<RecentItem> RecentItems { get; }
+
+    public ObservableCollection<WidgetCatalogItem> AvailableWidgets { get; }
+
+    public ObservableCollection<DashboardWidget> Widgets { get; }
+
+    public void AddWidget(string widgetId)
+    {
+        Widgets.Add(BuildWidget(widgetId));
+    }
+
+    public void CloseWidget(DashboardWidget widget)
+    {
+        Widgets.Remove(widget);
+    }
+
+    public void MoveWidgetUp(DashboardWidget widget)
+    {
+        var currentIndex = Widgets.IndexOf(widget);
+        if (currentIndex <= 0)
+        {
+            return;
+        }
+
+        Widgets.Move(currentIndex, currentIndex - 1);
+    }
+
+    public void MoveWidgetDown(DashboardWidget widget)
+    {
+        var currentIndex = Widgets.IndexOf(widget);
+        if (currentIndex < 0 || currentIndex >= Widgets.Count - 1)
+        {
+            return;
+        }
+
+        Widgets.Move(currentIndex, currentIndex + 1);
+    }
+
+    public void ResetWidgets()
+    {
+        Widgets.Clear();
+    }
+
+    private static DashboardWidget BuildWidget(string widgetId)
+    {
+        return widgetId switch
+        {
+            "alerts" => new(
+                "Segnalazioni",
+                "Priorita operative",
+                "#D49327",
+                "3",
+                "Da controllare",
+                "F.E. disponibili, documenti non scontrinati e backup archivio."),
+            "recent" => new(
+                "Attivita recenti",
+                "Timeline demo",
+                "#5B7D91",
+                "10:42",
+                "Ultimo evento",
+                "Vendita salvata, articolo aggiornato e backup completato."),
+            "weather" => new(
+                "Meteo",
+                "Widget esterno mock",
+                "#42A873",
+                "18 C",
+                "Sereno",
+                "Dato dimostrativo: in produzione puo usare un provider meteo configurabile."),
+            "calendar" => new(
+                "Calendario",
+                "Agenda banco",
+                "#7B61D1",
+                "25 Apr",
+                "3 promemoria",
+                "Consegna fornitore, controllo sospesi e chiusura cassa."),
+            "notes" => new(
+                "Note sticky",
+                "Appunti rapidi",
+                "#D49327",
+                "2 note",
+                "Da ricordare",
+                "Ordinare rotoli POS80. Verificare barcode duplicati."),
+            "pos" => new(
+                "Stato POS",
+                "Pagamenti",
+                "#5B7D91",
+                "Nexi",
+                "Pronto",
+                "Widget mock per stato terminale e ultimo esito pagamento."),
+            "backup" => new(
+                "Backup",
+                "Archivio",
+                "#42A873",
+                "OK",
+                "Ultima copia 10:12",
+                "Area pronta per mostrare pianificazione e log backup."),
+            _ => new(
+                "Vendite oggi",
+                "Riepilogo operativo",
+                "#4F86DC",
+                "1.248,50 EUR",
+                "18 scontrini demo",
+                "Totali mock per valutare densita e resa grafica senza db_diltech.")
+        };
+    }
 
     private const string DashboardIcon = "M4,4H10V12H4V4M14,4H20V9H14V4M14,13H20V20H14V13M4,16H10V20H4V16Z";
     private const string CartIcon = "M17,18A2,2 0 0,1 19,20A2,2 0 0,1 17,22A2,2 0 0,1 15,20A2,2 0 0,1 17,18M1,2H4.27L5.21,4H20A1,1 0 0,1 21,5L17.3,11.97C16.96,12.58 16.3,13 15.55,13H8.1L7.2,14.63A0.25,0.25 0 0,0 7.42,15H19V17H7C5.89,17 5,16.1 5,15C5,14.65 5.09,14.32 5.24,14.04L6.6,11.59L3,4H1V2Z";
@@ -82,3 +195,13 @@ public sealed record StatusTileItem(string Title, string Value, string Footer, s
 public sealed record AlertItem(string Title, string Subtitle, string Badge, string AccentColor);
 
 public sealed record RecentItem(string Time, string Title, string Subtitle, string Badge);
+
+public sealed record WidgetCatalogItem(string Id, string Title, string AccentColor);
+
+public sealed record DashboardWidget(
+    string Title,
+    string Subtitle,
+    string AccentColor,
+    string Value,
+    string Badge,
+    string Description);

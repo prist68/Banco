@@ -1,0 +1,36 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Banco.UI.Avalonia.Controls.Dialogs.BancoDialogWindow"
+        Width="420"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BancoPanelSurfaceBrush}"
+        FontFamily="Inter">
+    <Border Padding="18"
+            Background="{DynamicResource BancoPanelSurfaceBrush}">
+        <Grid RowDefinitions="Auto,10,Auto,18,Auto">
+            <TextBlock x:Name="TitleTextBlock"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource BancoMainTextBrush}"
+                       TextWrapping="Wrap" />
+            <TextBlock x:Name="MessageTextBlock"
+                       Grid.Row="2"
+                       FontSize="13"
+                       Foreground="{DynamicResource BancoMutedTextBrush}"
+                       TextWrapping="Wrap" />
+            <StackPanel Grid.Row="4"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="8">
+                <Button x:Name="SecondaryButton"
+                        Classes="bancoCommandButton secondary"
+                        Click="SecondaryButton_OnClick" />
+                <Button x:Name="PrimaryButton"
+                        Classes="bancoCommandButton primary"
+                        Click="PrimaryButton_OnClick" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

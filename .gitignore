@@ -48,3 +48,4 @@ _diag_mysql_query/
 *.cache
 Thumbs.db
 Desktop.ini
+.DS_Store
