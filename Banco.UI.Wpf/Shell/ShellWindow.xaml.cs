@@ -181,6 +181,14 @@ public partial class ShellWindow : Window
         }
     }
 
+    private void ArchiveAiMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ShellViewModel shell)
+        {
+            shell.OpenArchiveSettingsWorkspace(ArchiveSettingsSection.Ai);
+        }
+    }
+
     private void HeaderChrome_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (IsInteractiveHeaderSource(e.OriginalSource as DependencyObject))

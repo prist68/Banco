@@ -42,6 +42,16 @@
         <Setter Property="Foreground" Value="{DynamicResource MainText}" />
     </Style>
 
+    <Style Selector="TextBox.labInput">
+        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="Background" Value="{DynamicResource InputSurface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="9,4" />
+        <Setter Property="Foreground" Value="{DynamicResource MainText}" />
+    </Style>
+
     <Style Selector="Button.labRailButton">
         <Setter Property="Width" Value="72" />
         <Setter Property="Height" Value="66" />

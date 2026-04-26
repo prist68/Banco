@@ -2,6 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\lib\Banco.UI.Controls\Banco.UI.Controls.csproj" />
     <ProjectReference Include="..\lib\Banco.UI.Shared\Banco.UI.Shared.csproj" />
+    <ProjectReference Include="..\Banco.AI\Banco.AI.csproj" />
     <ProjectReference Include="..\Banco.Backup\Banco.Backup.csproj" />
     <ProjectReference Include="..\Banco.Magazzino\Banco.Magazzino.csproj" />
     <ProjectReference Include="..\Banco.Riordino\Banco.Riordino.csproj" />

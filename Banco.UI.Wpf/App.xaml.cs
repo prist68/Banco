@@ -1,4 +1,5 @@
 using System.Windows;
+using Banco.AI;
 using Banco.Backup;
 using Banco.Backup.ViewModels;
 using Banco.Magazzino.ViewModels;
@@ -59,6 +60,7 @@ public partial class App : System.Windows.Application
 
                 services.AddInfrastructureServices();
                 services.AddLocalStoreServices();
+                services.AddAiServices();
                 services.AddBackupServices();
                 services.AddStampaServices();
 

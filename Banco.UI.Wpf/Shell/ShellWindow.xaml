@@ -390,6 +390,37 @@
                                     </Grid>
                                 </MenuItem.Header>
                             </MenuItem>
+                            <MenuItem Click="ArchiveAiMenuItem_OnClick"
+                                      Style="{DynamicResource ThemedContextMenuItemStyle}">
+                                <MenuItem.Header>
+                                    <Grid Width="240">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="34" />
+                                            <ColumnDefinition Width="10" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="28"
+                                                Height="28"
+                                                CornerRadius="8"
+                                                Background="{DynamicResource BancoAccentSoftBrush}">
+                                            <Path Width="14"
+                                                  Height="14"
+                                                  Stretch="Uniform"
+                                                  Fill="{DynamicResource BancoAccentSoftForegroundBrush}"
+                                                  Data="{Binding Source=IconAi, Converter={StaticResource ResourceKeyToGeometryConverter}}" />
+                                        </Border>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       Text="Impostazioni AI" />
+                                            <TextBlock Margin="0,2,0,0"
+                                                       FontSize="11.5"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Text="API, modello e supporto SQLite" />
+                                        </StackPanel>
+                                    </Grid>
+                                </MenuItem.Header>
+                            </MenuItem>
                         </ContextMenu>
                     </Button.ContextMenu>
                     <Grid>

@@ -5,5 +5,6 @@ public enum ArchiveSettingsSection
     General,
     Backup,
     Restore,
-    Sqlite
+    Sqlite,
+    Ai
 }

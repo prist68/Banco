@@ -1,0 +1,134 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Banco.AI.ViewModels"
+             x:Class="Banco.UI.Avalonia.Lab.Views.AiSettingsLabView"
+             x:DataType="vm:AiSettingsViewModel">
+    <Grid RowDefinitions="Auto,14,*"
+          Margin="18">
+        <Border Background="{DynamicResource HeroSurface}"
+                BorderBrush="{DynamicResource Stroke}"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="16">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel>
+                    <TextBlock Text="Impostazioni AI"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource MainText}" />
+                    <TextBlock Text="Configurazione locale salvata nel database SQLite tecnico."
+                               Margin="0,4,0,0"
+                               FontSize="12.5"
+                               Foreground="{DynamicResource MutedText}" />
+                </StackPanel>
+                <Border Grid.Column="1"
+                        Height="30"
+                        Padding="12,0"
+                        Background="{DynamicResource AccentSoft}"
+                        CornerRadius="10">
+                    <TextBlock Text="SQLite"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentText}" />
+                </Border>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2"
+              ColumnDefinitions="1.15*,14,0.85*">
+            <Border Classes="labPanel">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Assistente AI"
+                               FontSize="15"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource MainText}" />
+
+                    <CheckBox Content="Abilita funzioni AI"
+                              IsChecked="{Binding Enabled}"
+                              Foreground="{DynamicResource MainText}" />
+
+                    <Grid ColumnDefinitions="*,12,*">
+                        <StackPanel>
+                            <TextBlock Text="Provider"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource MutedText}" />
+                            <TextBox Classes="labInput"
+                                     Text="{Binding Provider}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Modello"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource MutedText}" />
+                            <TextBox Classes="labInput"
+                                     Text="{Binding Model}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="Endpoint API DeepSeek"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource MutedText}" />
+                    <Grid ColumnDefinitions="*,8,Auto">
+                        <TextBox Classes="labInput"
+                                 Text="{Binding ApiBaseUrl}" />
+                        <Button Grid.Column="2"
+                                Classes="labChromeButton"
+                                Content="Usa DeepSeek V4"
+                                Command="{Binding UseDeepSeekCommand}" />
+                    </Grid>
+
+                    <TextBlock Text="API key"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource MutedText}" />
+                    <TextBox Classes="labInput"
+                             PasswordChar="*"
+                             Text="{Binding ApiKey}" />
+
+                    <TextBlock Text="Note operative"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource MutedText}" />
+                    <TextBox Classes="labInput"
+                             MinHeight="86"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Text="{Binding Notes}" />
+
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="8">
+                        <Button Classes="labPrimaryButton"
+                                Content="Salva"
+                                Command="{Binding SaveCommand}" />
+                        <Button Classes="labChromeButton"
+                                Content="Ricarica"
+                                Command="{Binding ReloadCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Classes="labPanel">
+                <StackPanel>
+                    <TextBlock Text="Persistenza"
+                               FontSize="15"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource MainText}" />
+                    <TextBlock Text="Questa pagina non modifica db_diltech e non introduce un flusso documento parallelo."
+                               Margin="0,8,0,0"
+                               FontSize="12.5"
+                               Foreground="{DynamicResource MutedText}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding StatusMessage}"
+                               Margin="0,18,0,0"
+                               FontSize="13"
+                               Foreground="{DynamicResource MainText}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

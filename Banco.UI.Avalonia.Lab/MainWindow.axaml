@@ -363,6 +363,9 @@
                                 <Button Classes="labChromeButton"
                                         Content="Vendita Banco"
                                         Click="OpenAvaloniaBanco_OnClick" />
+                                <Button Classes="labChromeButton"
+                                        Content="Impostazioni AI"
+                                        Click="OpenAiSettings_OnClick" />
                             </StackPanel>
                         </Border>
 

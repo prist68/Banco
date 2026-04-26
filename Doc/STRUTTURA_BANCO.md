@@ -148,6 +148,20 @@ Regola runtime `FastReport Open Source`:
 - se nella root del progetto o della cartella pubblicata e` presente una directory `FastReport` con `Designer.exe`, il modulo deve rilevarla e aprire quel designer direttamente, senza richiedere scorciatoie manuali sul desktop.
 - per il layout POS pilota la preview deve privilegiare dati reali del legacy quando disponibili: intestazione negozio da `config` e vendita esempio da documento Banco reale, invece di restare su payload completamente inventati.
 
+### 2.4 septies Modulo tecnico `AI`
+Il modulo `AI`:
+- vive come modulo root dedicato `Banco.AI`;
+- contiene la logica applicativa e il ViewModel delle impostazioni AI, senza dipendere da WPF o Avalonia;
+- salva le impostazioni tecniche nel database SQLite locale tramite `Banco.Core.LocalStore`;
+- non introduce un secondo documento Banco, stati utente paralleli o persistenza vendita alternativa;
+- puo` essere usato in futuro dalla vendita solo come assistente sopra dati reali del legacy, senza sostituire lookup, writer ufficiale, numerazione o fiscalizzazione.
+
+Regola operativa:
+- le API key e i parametri modello sono supporto tecnico interno;
+- le API key devono essere salvate cifrate nel SQLite locale e mostrate in UI solo tramite campi mascherati;
+- non vanno mostrati come stato documento o categoria di dominio;
+- eventuali funzioni AI devono restituire o suggerire solo entita` reali del catalogo/documento Banco, mai articoli o documenti inventati.
+
 ### 2.4 bis Vendita Banco e supporto locale
 Nella vendita `Banco`:
 - interrogazione articoli, prezzi, documento e pubblicazione devono dipendere dal legacy `db_diltech`;

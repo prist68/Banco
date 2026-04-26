@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddSingleton<IReorderListRepository, SqliteReorderListRepository>();
         services.AddSingleton<IReorderArticleSettingsRepository, SqliteReorderArticleSettingsRepository>();
         services.AddSingleton<ILocalArticleTagRepository, SqliteLocalArticleTagRepository>();
+        services.AddSingleton<IAiIntegrationSettingsRepository, SqliteAiIntegrationSettingsRepository>();
 
         return services;
     }

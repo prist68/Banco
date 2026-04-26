@@ -1,5 +1,23 @@
 # DIARIO-2.md
 
+## 2026-04-26 - Modulo root `Banco.AI` e impostazioni AI in SQLite
+
+Decisione chiusa:
+- le impostazioni AI non vivono dentro `Banco.UI.Wpf` e non vengono salvate nella configurazione JSON generale;
+- e` stato introdotto il modulo root `Banco.AI`, che contiene il ViewModel applicativo delle impostazioni AI senza dipendenze da WPF o Avalonia;
+- la persistenza reale dei parametri AI usa SQLite locale tramite `Banco.Core.LocalStore`, nella tabella tecnica `AiIntegrationSettings`;
+- la schermata WPF `Impostazioni archivio`, aperta dal logo/header, espone una nuova sezione `Impostazioni AI`;
+- il menu del logo/header espone anche l'accesso diretto alla sezione `Impostazioni AI`;
+- il laboratorio Avalonia espone una pagina equivalente collegata allo stesso ViewModel modulare e allo stesso repository SQLite;
+- il preset operativo della sezione AI e` DeepSeek V4 con endpoint `https://api.deepseek.com` e modello default `deepseek-v4-pro`, mantenendo il campo modello modificabile per eventuale `deepseek-v4-flash`;
+- la API key AI viene cifrata a riposo nel SQLite locale con prefisso tecnico `enc:v1:` e i campi WPF/Avalonia la mostrano solo mascherata;
+- l'AI resta supporto tecnico interno: non modifica `db_diltech`, non crea documenti o stati paralleli e non entra ancora nel flusso vendita operativo.
+
+Regola viva:
+- ogni futura funzione AI del Banco deve usare `Banco.AI` come modulo applicativo e SQLite solo per configurazioni tecniche locali;
+- nessuna API key AI deve essere salvata o mostrata in chiaro;
+- la vendita deve continuare a dipendere dal legacy reale per articoli, prezzi, documenti, numerazione e fiscalizzazione.
+
 ## 2026-04-25 - Vendita Banco consuma il barcode senza concatenare letture rapide
 
 Decisione chiusa:

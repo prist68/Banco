@@ -1,7 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Banco.AI;
 using Banco.Core.Infrastructure;
 using Banco.Core.LocalStore;
+using Banco.UI.Avalonia.Lab.Views;
 using Banco.UI.Avalonia.Banco.Services;
 using Banco.UI.Avalonia.Banco.ViewModels;
 using Banco.UI.Avalonia.Banco.Views;
@@ -19,6 +21,7 @@ public sealed partial class MainWindow : Window
     private BancoAvaloniaThemeKind _currentTheme = BancoAvaloniaThemeKind.Light;
     private ServiceProvider? _bancoServiceProvider;
     private BancoSaleView? _bancoSaleView;
+    private AiSettingsLabView? _aiSettingsView;
     private DesktopPrototypeViewModel ViewModel => (DesktopPrototypeViewModel)DataContext!;
 
     public MainWindow()
@@ -86,6 +89,13 @@ public sealed partial class MainWindow : Window
         InternalWorkspace.IsVisible = true;
     }
 
+    private void OpenAiSettings_OnClick(object? sender, RoutedEventArgs e)
+    {
+        _aiSettingsView ??= new AiSettingsLabView(GetBancoServiceProvider().GetRequiredService<global::Banco.AI.ViewModels.AiSettingsViewModel>());
+        InternalWorkspaceHost.Content = _aiSettingsView;
+        InternalWorkspace.IsVisible = true;
+    }
+
     private void CloseInternalWorkspace_OnClick(object? sender, RoutedEventArgs e)
     {
         InternalWorkspace.IsVisible = false;
@@ -103,6 +113,7 @@ public sealed partial class MainWindow : Window
         services.AddSingleton<IConfiguration>(_ => BuildBancoConfiguration());
         services.AddInfrastructureServices();
         services.AddLocalStoreServices();
+        services.AddAiServices();
         services.AddSingleton<IBancoDocumentWorkflowService, BancoDocumentWorkflowService>();
         services.AddSingleton<IPointsRewardRuleService, AvaloniaPointsRewardRuleService>();
         services.AddSingleton<IPointsCustomerBalanceService, AvaloniaPointsCustomerBalanceService>();

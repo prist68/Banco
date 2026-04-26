@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="Banco.Vendita/Banco.Vendita.csproj" />
+  <Project Path="Banco.AI/Banco.AI.csproj" />
   <Project Path="Banco.Backup/Banco.Backup.csproj" />
   <Project Path="Banco.Riordino/Banco.Riordino.csproj" />
   <Project Path="Banco.Magazzino/Banco.Magazzino.csproj" />

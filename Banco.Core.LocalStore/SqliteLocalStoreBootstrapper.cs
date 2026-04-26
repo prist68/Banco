@@ -204,6 +204,17 @@ public sealed class SqliteLocalStoreBootstrapper : ILocalStoreBootstrapper
                 TagsText TEXT NOT NULL DEFAULT '',
                 UpdatedAt TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS AiIntegrationSettings (
+                SettingsKey TEXT PRIMARY KEY,
+                Enabled INTEGER NOT NULL DEFAULT 0,
+                Provider TEXT NOT NULL DEFAULT 'DeepSeek',
+                ApiBaseUrl TEXT NOT NULL DEFAULT 'https://api.deepseek.com',
+                ApiKey TEXT NOT NULL DEFAULT '',
+                Model TEXT NOT NULL DEFAULT 'deepseek-v4-pro',
+                Notes TEXT NOT NULL DEFAULT '',
+                UpdatedAt TEXT NOT NULL
+            );
             """;
 
         await command.ExecuteNonQueryAsync(cancellationToken);
@@ -295,8 +306,28 @@ public sealed class SqliteLocalStoreBootstrapper : ILocalStoreBootstrapper
         await EnsureReorderArticleSettingsColumnAsync(connection, "PrezzoPromo", "REAL NULL", cancellationToken);
         await EnsureCampaignRewardRuleColumnAsync(connection, "RewardArticleTipoArticoloOid", "INTEGER NULL", cancellationToken);
         await EnsureCampaignRewardRuleColumnAsync(connection, "RewardArticlePrezzoVendita", "REAL NULL", cancellationToken);
+        await EnsureAiIntegrationSettingsColumnAsync(connection, "ApiBaseUrl", "TEXT NOT NULL DEFAULT 'https://api.deepseek.com'", cancellationToken);
         await EnsureLegacyPointsRewardRuleColumnsAsync(connection, cancellationToken);
         await MigrateLegacyRewardRulesAsync(connection, cancellationToken);
+    }
+
+    private static async Task EnsureAiIntegrationSettingsColumnAsync(
+        SqliteConnection connection,
+        string columnName,
+        string sqlType,
+        CancellationToken cancellationToken)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = $"ALTER TABLE AiIntegrationSettings ADD COLUMN {columnName} {sqlType};";
+
+        try
+        {
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+        catch (SqliteException)
+        {
+            // La colonna esiste gia`: non serve alcuna azione.
+        }
     }
 
     private static async Task EnsureReorderArticleSettingsColumnAsync(

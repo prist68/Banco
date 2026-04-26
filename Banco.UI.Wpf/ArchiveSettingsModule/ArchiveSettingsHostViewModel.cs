@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
-using Banco.Backup.ViewModels;
+using AiSettingsViewModel = Banco.AI.ViewModels.AiSettingsViewModel;
+using BackupConfigurationViewModel = Banco.Backup.ViewModels.BackupConfigurationViewModel;
+using RestoreConfigurationViewModel = Banco.Backup.ViewModels.RestoreConfigurationViewModel;
 
 namespace Banco.UI.Wpf.ArchiveSettingsModule;
 
-public sealed class ArchiveSettingsHostViewModel : ViewModelBase
+public sealed class ArchiveSettingsHostViewModel : Banco.UI.Wpf.ViewModels.ViewModelBase
 {
     private ArchiveSectionItemViewModel? _selectedSection;
 
@@ -11,19 +13,22 @@ public sealed class ArchiveSettingsHostViewModel : ViewModelBase
         ArchiveGeneralSettingsViewModel generalSettings,
         BackupConfigurationViewModel backupConfiguration,
         RestoreConfigurationViewModel restoreConfiguration,
-        SqliteSettingsViewModel sqliteConfiguration)
+        SqliteSettingsViewModel sqliteConfiguration,
+        AiSettingsViewModel aiSettings)
     {
         GeneralSettings = generalSettings;
         BackupConfiguration = backupConfiguration;
         RestoreConfiguration = restoreConfiguration;
         SqliteConfiguration = sqliteConfiguration;
+        AiSettings = aiSettings;
 
         Sections =
         [
             new ArchiveSectionItemViewModel(ArchiveSettingsSection.General, "Generali", "DB legacy e percorsi FM", "IconSettings"),
             new ArchiveSectionItemViewModel(ArchiveSettingsSection.Backup, "Backup", "Default salvataggio archivio", "IconSaveAction"),
             new ArchiveSectionItemViewModel(ArchiveSettingsSection.Restore, "Restore", "Import e ripristino backup", "IconDocOpen"),
-            new ArchiveSectionItemViewModel(ArchiveSettingsSection.Sqlite, "SQLite", "Supporto tecnico locale", "IconDatabase")
+            new ArchiveSectionItemViewModel(ArchiveSettingsSection.Sqlite, "SQLite", "Supporto tecnico locale", "IconDatabase"),
+            new ArchiveSectionItemViewModel(ArchiveSettingsSection.Ai, "Impostazioni AI", "API e modello assistente", "IconAi")
         ];
 
         foreach (var section in Sections)
@@ -36,7 +41,7 @@ public sealed class ArchiveSettingsHostViewModel : ViewModelBase
 
     public string Titolo => "Impostazioni archivio";
 
-    public string Sottotitolo => "Configurazione archivio FM-like con sezioni dedicate per generale, backup, restore e supporto SQLite.";
+    public string Sottotitolo => "Configurazione archivio FM-like con sezioni dedicate per generale, backup, restore, SQLite e supporti AI.";
 
     public ObservableCollection<ArchiveSectionItemViewModel> Sections { get; }
 
@@ -47,6 +52,8 @@ public sealed class ArchiveSettingsHostViewModel : ViewModelBase
     public RestoreConfigurationViewModel RestoreConfiguration { get; }
 
     public SqliteSettingsViewModel SqliteConfiguration { get; }
+
+    public AiSettingsViewModel AiSettings { get; }
 
     public ArchiveSectionItemViewModel? SelectedSection
     {
@@ -67,6 +74,7 @@ public sealed class ArchiveSettingsHostViewModel : ViewModelBase
         ArchiveSettingsSection.Backup => BackupConfiguration,
         ArchiveSettingsSection.Restore => RestoreConfiguration,
         ArchiveSettingsSection.Sqlite => SqliteConfiguration,
+        ArchiveSettingsSection.Ai => AiSettings,
         _ => GeneralSettings
     };
 
